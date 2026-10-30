@@ -20,7 +20,12 @@ nonisolated struct PhotoItem: Identifiable, Hashable, Sendable {
     var kind: MediaKind { MediaKind(fileExtension: url.pathExtension) }
 
     /// Location of the XMP sidecar Lightroom / Capture One look for: `IMG_0001.xmp`.
-    var sidecarURL: URL { url.deletingPathExtension().appendingPathExtension("xmp") }
+    /// A RAW+JPEG pair of the same shot shares one sidecar.
+    var sidecarURL: URL { Self.sidecarURL(for: url) }
+
+    static func sidecarURL(for url: URL) -> URL {
+        url.deletingPathExtension().appendingPathExtension("xmp")
+    }
 
     init(url: URL, fileSize: Int64, creationDate: Date?) {
         self.url = url

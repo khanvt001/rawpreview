@@ -26,6 +26,17 @@ struct RootView: View {
         .task {
             await library.refreshVolumes()
         }
+        .alert(
+            "Rating Not Saved",
+            isPresented: Binding(
+                get: { library.ratingSaveError != nil },
+                set: { if !$0 { library.ratingSaveError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(library.ratingSaveError ?? "")
+        }
     }
 
     @ViewBuilder

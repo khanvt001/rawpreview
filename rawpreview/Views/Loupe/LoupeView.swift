@@ -27,7 +27,8 @@ struct LoupeView: View {
                 MetadataInspector(
                     item: item,
                     isChecked: library.isChecked(item.id),
-                    rating: library.rating(for: item.id)
+                    rating: library.rating(for: item.id),
+                    ratingStorage: library.ratingStorage(for: item.id)
                 )
                 .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
             }

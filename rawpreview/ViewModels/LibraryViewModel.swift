@@ -19,6 +19,15 @@ final class LibraryViewModel {
         case left, right, up, down
     }
 
+    /// Where a photo's rating is kept.
+    enum RatingStorage: Equatable {
+        /// Written to this sidecar, which Lightroom / Capture One read.
+        case sidecar(URL)
+        /// No RAW file in the shot (e.g. a lone JPEG): Lightroom ignores
+        /// sidecars for those, so the rating lives only in this session.
+        case sessionOnly
+    }
+
     private(set) var volumes: [VolumeInfo] = []
     private(set) var sourceURL: URL? {
         didSet {
@@ -57,7 +66,15 @@ final class LibraryViewModel {
     var focusedID: PhotoItem.ID?
     /// Files ticked for batch copy.
     private(set) var checkedIDs: Set<PhotoItem.ID> = []
-    private(set) var ratings: [PhotoItem.ID: Rating] = [:]
+    /// Keyed by sidecar URL so both files of a RAW+JPEG pair share a rating.
+    private(set) var ratings: [URL: Rating] = [:]
+    /// Last sidecar write failure (e.g. card write-protected), for an alert.
+    var ratingSaveError: String?
+    /// Sidecars of shots that include a RAW file, i.e. the ones worth writing.
+    @ObservationIgnored private var rawSidecars: Set<URL> = []
+    /// Tail of the sidecar write chain; each write waits for the previous one so
+    /// quick 3-then-5 presses can't land on disk as 3.
+    @ObservationIgnored private var lastSidecarWrite: Task<Void, Never>?
     /// Columns currently laid out by the grid; Up/Down move by this many items.
     var columnCount = 1
 
@@ -200,12 +217,30 @@ final class LibraryViewModel {
     }
 
     func rating(for id: PhotoItem.ID) -> Rating {
-        ratings[id] ?? .none
+        ratings[PhotoItem.sidecarURL(for: id)] ?? .none
     }
 
-    /// In-memory only for now; Phase 6 persists ratings to XMP sidecars.
+    func ratingStorage(for id: PhotoItem.ID) -> RatingStorage {
+        let sidecar = PhotoItem.sidecarURL(for: id)
+        return rawSidecars.contains(sidecar) ? .sidecar(sidecar) : .sessionOnly
+    }
+
+    /// Updates the UI immediately; the sidecar write happens in the background.
     func setRating(_ rating: Rating, for id: PhotoItem.ID) {
-        ratings[id] = rating.isRated ? rating : nil
+        let sidecar = PhotoItem.sidecarURL(for: id)
+        guard ratings[sidecar, default: .none] != rating else { return }
+        ratings[sidecar] = rating.isRated ? rating : nil
+
+        guard rawSidecars.contains(sidecar) else { return }
+        let previous = lastSidecarWrite
+        lastSidecarWrite = Task {
+            await previous?.value
+            do {
+                try await XMPService.shared.setRating(rating, sidecar: sidecar)
+            } catch {
+                ratingSaveError = "Couldn't save the rating for \(id.lastPathComponent): \(error.localizedDescription)"
+            }
+        }
     }
 
     func toggleCheckedForFocused() {
@@ -247,6 +282,7 @@ final class LibraryViewModel {
         viewMode = .grid
         checkedIDs = []
         ratings = [:]
+        rawSidecars = []
 
         guard let sourceURL else {
             isScanning = false
@@ -258,7 +294,13 @@ final class LibraryViewModel {
         scanTask = Task {
             do {
                 let found = try await scanner.scan(sourceURL)
+                let sidecars = Set(found.filter { $0.kind == .raw }.map(\.sidecarURL))
+                // Pick up ratings made earlier (here, in Lightroom or Capture One)
+                // before showing the grid, so stars appear with the thumbnails.
+                let existing = await XMPService.shared.readRatings(Array(sidecars))
                 guard !Task.isCancelled else { return }
+                rawSidecars = sidecars
+                ratings = existing
                 items = found
             } catch is CancellationError {
                 return

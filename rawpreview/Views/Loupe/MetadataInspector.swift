@@ -11,6 +11,7 @@ struct MetadataInspector: View {
     let item: PhotoItem
     let isChecked: Bool
     let rating: Rating
+    let ratingStorage: LibraryViewModel.RatingStorage
 
     @State private var exif: ExifInfo?
     @State private var sections: [MetadataSection] = []
@@ -30,6 +31,17 @@ struct MetadataInspector: View {
                         RatingStarsView(rating: rating, size: 11)
                     } else {
                         Text("None")
+                    }
+                }
+                LabeledContent("Saved To") {
+                    switch ratingStorage {
+                    case .sidecar(let url):
+                        Text(url.lastPathComponent)
+                            .help("Read by Lightroom Classic and Capture One")
+                    case .sessionOnly:
+                        Text("This session only")
+                            .foregroundStyle(.secondary)
+                            .help("Lightroom ignores sidecars for files without a RAW, so this rating isn't written to disk.")
                     }
                 }
                 LabeledContent("Copy", value: isChecked ? "Marked" : "Not marked")
