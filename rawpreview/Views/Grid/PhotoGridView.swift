@@ -33,12 +33,18 @@ struct PhotoGridView: View {
     var body: some View {
         let side = side
         let pixelSize = Int(side * displayScale)
-        let columns = Array(repeating: GridItem(.fixed(side), spacing: spacing), count: columnCount)
+        // Flexible, not `.fixed(side)`: fixed columns report their total width
+        // as the grid's minimum, which the window adopts as its minimum size —
+        // and since `side` is derived from the current width, the window could
+        // only ever grow. Flexible columns follow the width they're offered.
+        let columns = Array(repeating: GridItem(.flexible(minimum: 1), spacing: spacing), count: columnCount)
 
         ScrollViewReader { proxy in
             ScrollView {
                 grid(columns: columns, side: side, pixelSize: pixelSize)
             }
+            // The grid adapts to any width, so never let it dictate one.
+            .frame(minWidth: 200, maxWidth: .infinity)
             .overlay {
                 if library.visibleItems.isEmpty {
                     ContentUnavailableView {
