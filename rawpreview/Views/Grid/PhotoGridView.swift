@@ -35,29 +35,39 @@ struct PhotoGridView: View {
         let pixelSize = Int(side * displayScale)
         let columns = Array(repeating: GridItem(.fixed(side), spacing: spacing), count: columnCount)
 
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: spacing) {
-                ForEach(library.visibleItems) { item in
-                    ThumbnailCell(
-                        item: item,
-                        side: side,
-                        pixelSize: pixelSize,
-                        isChecked: library.isChecked(item.id),
-                        isFocused: library.focusedID == item.id,
-                        rating: library.rating(for: item.id),
-                        onToggleCheck: { library.toggleChecked(item.id) }
-                    )
-                    .id(item.id)
-                    .onTapGesture {
-                        library.focusedID = item.id
+        ScrollViewReader { proxy in
+            ScrollView {
+                grid(columns: columns, side: side, pixelSize: pixelSize)
+            }
+            .overlay {
+                if library.visibleItems.isEmpty {
+                    ContentUnavailableView {
+                        Label("All Files Hidden", systemImage: "line.3.horizontal.decrease.circle")
+                    } description: {
+                        Text("Every file type is filtered out.")
+                    } actions: {
+                        Button("Show All") { library.showAllExtensions() }
                     }
                 }
             }
-            .padding(padding)
+            // Keep the keyboard-focused tile on screen (minimal scroll, no jump
+            // when it is already visible).
+            .onChange(of: library.focusedID) { _, id in
+                guard let id else { return }
+                proxy.scrollTo(id)
+            }
+            .onAppear {
+                if let id = library.focusedID {
+                    proxy.scrollTo(id, anchor: .center)
+                }
+            }
         }
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
         .onChange(of: columnCount, initial: true) { _, count in
             library.columnCount = count
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            FilterBar()
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             GridStatusBar()
@@ -72,9 +82,37 @@ struct PhotoGridView: View {
                     Image(systemName: "photo").imageScale(.large)
                 }
                 .frame(width: 160)
+                .focusable(false)
                 .help("Thumbnail size")
             }
         }
+    }
+
+    private func grid(columns: [GridItem], side: CGFloat, pixelSize: Int) -> some View {
+        LazyVGrid(columns: columns, spacing: spacing) {
+            ForEach(library.visibleItems) { item in
+                ThumbnailCell(
+                    item: item,
+                    side: side,
+                    pixelSize: pixelSize,
+                    isChecked: library.isChecked(item.id),
+                    isFocused: library.focusedID == item.id,
+                    rating: library.rating(for: item.id),
+                    onToggleCheck: { library.toggleChecked(item.id) }
+                )
+                .id(item.id)
+                .onTapGesture(count: 2) {
+                    library.focusedID = item.id
+                    library.viewMode = .loupe
+                }
+                // Simultaneous so a single click focuses immediately instead
+                // of waiting out the double-click interval.
+                .simultaneousGesture(TapGesture().onEnded {
+                    library.focusedID = item.id
+                })
+            }
+        }
+        .padding(padding)
     }
 }
 

@@ -43,7 +43,7 @@ struct RootView: View {
                         description: Text("This folder has no RAW, JPEG, HEIF or video files.")
                     )
                 } else {
-                    PhotoGridView()
+                    LibraryContentView()
                 }
             }
             .navigationTitle(sourceURL.lastPathComponent)

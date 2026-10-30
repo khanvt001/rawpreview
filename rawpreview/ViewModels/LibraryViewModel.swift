@@ -10,6 +10,15 @@ import Observation
 /// the user's culling decisions (checked for copy, star ratings).
 @Observable
 final class LibraryViewModel {
+    enum ViewMode {
+        case grid
+        case loupe
+    }
+
+    enum MoveDirection {
+        case left, right, up, down
+    }
+
     private(set) var volumes: [VolumeInfo] = []
     private(set) var sourceURL: URL? {
         didSet {
@@ -27,9 +36,15 @@ final class LibraryViewModel {
     /// `ForEach` doesn't refilter on every body evaluation.
     private(set) var visibleItems: [PhotoItem] = []
     /// Upper-cased extensions (e.g. `"MP4"`) excluded from `visibleItems`.
-    var hiddenExtensions: Set<String> = [] {
-        didSet { updateVisibleItems() }
+    /// Remembered across launches: hiding videos once should stick.
+    private(set) var hiddenExtensions: Set<String> = [] {
+        didSet {
+            UserDefaults.standard.set(hiddenExtensions.sorted(), forKey: Self.hiddenExtensionsKey)
+            updateVisibleItems()
+        }
     }
+
+    var viewMode: ViewMode = .grid
 
     /// The image the keyboard acts on and the loupe shows.
     var focusedID: PhotoItem.ID?
@@ -44,7 +59,10 @@ final class LibraryViewModel {
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var mountObservers: [any NSObjectProtocol] = []
 
+    private static let hiddenExtensionsKey = "hiddenExtensions"
+
     init() {
+        hiddenExtensions = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenExtensionsKey) ?? [])
         observeMounts()
     }
 
@@ -97,8 +115,67 @@ final class LibraryViewModel {
     }
 
     var focusedItem: PhotoItem? {
-        visibleItems.first { $0.id == focusedID }
+        focusedIndex.map { visibleItems[$0] }
     }
+
+    var focusedIndex: Int? {
+        guard let focusedID else { return nil }
+        return visibleItems.firstIndex { $0.id == focusedID }
+    }
+
+    // MARK: - Filtering
+
+    func isExtensionHidden(_ ext: String) -> Bool {
+        hiddenExtensions.contains(ext)
+    }
+
+    func toggleExtension(_ ext: String) {
+        if hiddenExtensions.remove(ext) == nil {
+            hiddenExtensions.insert(ext)
+        }
+    }
+
+    func showAllExtensions() {
+        hiddenExtensions = []
+    }
+
+    // MARK: - Navigation
+
+    func toggleViewMode() {
+        guard focusedID != nil else { return }
+        viewMode = viewMode == .grid ? .loupe : .grid
+    }
+
+    /// Arrow-key movement. In the grid Up/Down jump a row; in the loupe (one
+    /// image, horizontal filmstrip) they act like Left/Right.
+    func moveFocus(_ direction: MoveDirection) {
+        guard !visibleItems.isEmpty else { return }
+        guard let index = focusedIndex else {
+            focusedID = visibleItems.first?.id
+            return
+        }
+        let row = viewMode == .grid ? max(1, columnCount) : 1
+        let delta = switch direction {
+        case .left: -1
+        case .right: 1
+        case .up: -row
+        case .down: row
+        }
+        let target = index + delta
+        // A row jump past either end stays put, like Finder; a single step clamps.
+        guard visibleItems.indices.contains(target) else { return }
+        focusedID = visibleItems[target].id
+    }
+
+    /// Visible items within `radius` of `id`, nearest first, for prefetching.
+    func neighbours(of id: PhotoItem.ID, radius: Int) -> [PhotoItem] {
+        guard let index = visibleItems.firstIndex(where: { $0.id == id }) else { return [] }
+        return (1...max(1, radius)).flatMap { offset in
+            [index + offset, index - offset].filter(visibleItems.indices.contains).map { visibleItems[$0] }
+        }
+    }
+
+    // MARK: - Culling
 
     func isChecked(_ id: PhotoItem.ID) -> Bool {
         checkedIDs.contains(id)
@@ -119,14 +196,34 @@ final class LibraryViewModel {
         ratings[id] = rating.isRated ? rating : nil
     }
 
+    func toggleCheckedForFocused() {
+        if let focusedID { toggleChecked(focusedID) }
+    }
+
+    func setRatingForFocused(_ rating: Rating) {
+        if let focusedID { setRating(rating, for: focusedID) }
+    }
+
     private func updateVisibleItems() {
         visibleItems = hiddenExtensions.isEmpty
             ? items
             : items.filter { !hiddenExtensions.contains($0.fileExtension) }
-        if let focusedID, !visibleItems.contains(where: { $0.id == focusedID }) {
-            self.focusedID = visibleItems.first?.id
-        } else if focusedID == nil {
+
+        guard !visibleItems.isEmpty else {
+            focusedID = nil
+            viewMode = .grid
+            return
+        }
+        guard let focusedID, let allIndex = items.firstIndex(where: { $0.id == focusedID }) else {
             focusedID = visibleItems.first?.id
+            return
+        }
+        // If the focused file was just filtered out, move to the nearest visible
+        // file after it (or before, at the end) instead of jumping to the top.
+        if hiddenExtensions.contains(items[allIndex].fileExtension) {
+            let after = items[allIndex...].first { !hiddenExtensions.contains($0.fileExtension) }
+            let before = items[..<allIndex].last { !hiddenExtensions.contains($0.fileExtension) }
+            self.focusedID = (after ?? before)?.id
         }
     }
 
@@ -135,6 +232,7 @@ final class LibraryViewModel {
         items = []
         scanError = nil
         focusedID = nil
+        viewMode = .grid
         checkedIDs = []
         ratings = [:]
 
