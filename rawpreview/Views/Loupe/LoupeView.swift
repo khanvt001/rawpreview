@@ -11,6 +11,8 @@ struct LoupeView: View {
 
     @State private var image: CGImage?
     @State private var isFullResolution = false
+    /// Neither a thumbnail nor the full image could be decoded.
+    @State private var isUnreadable = false
     @State private var exif: ExifInfo?
     @State private var zoom = ZoomState(percent: 100, isAtFit: true)
 
@@ -59,6 +61,12 @@ struct LoupeView: View {
                     zoomRequest: library.zoomRequest,
                     onZoomChange: { zoom = $0 }
                 )
+            } else if isUnreadable {
+                ContentUnavailableView(
+                    "Can't Preview",
+                    systemImage: "exclamationmark.triangle",
+                    description: Text("\(library.focusedItem?.fileName ?? "This file") may be damaged or in an unsupported format.")
+                )
             } else if library.focusedItem?.kind == .video {
                 ContentUnavailableView("Video", systemImage: "film", description: Text("Videos can't be previewed yet."))
             } else {
@@ -104,6 +112,7 @@ struct LoupeView: View {
         exif = MetadataService.shared.cachedExif(for: item.url)
         image = full ?? PreviewService.shared.placeholder(for: item.url)
         isFullResolution = full != nil
+        isUnreadable = false
 
         let neighbours = library.neighbours(of: item.id, radius: 2).filter(\.kind.isImage)
         PreviewService.shared.prefetch(neighbours.map(\.url))
@@ -111,9 +120,15 @@ struct LoupeView: View {
         if exif == nil {
             exif = await MetadataService.shared.exif(for: item.url)
         }
-        if full == nil, let loaded = await PreviewService.shared.fullResolution(for: item.url), !Task.isCancelled {
-            image = loaded
-            isFullResolution = true
+        if full == nil {
+            let loaded = await PreviewService.shared.fullResolution(for: item.url)
+            guard !Task.isCancelled else { return }
+            if let loaded {
+                image = loaded
+                isFullResolution = true
+            } else if image == nil {
+                isUnreadable = true
+            }
         }
     }
 }

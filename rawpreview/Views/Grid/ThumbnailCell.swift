@@ -21,6 +21,8 @@ struct ThumbnailCell: View {
     @State private var image: CGImage?
     @State private var exif: ExifInfo?
     @State private var isHovering = false
+    /// Decoding finished without an image (corrupt or unsupported file).
+    @State private var isUnreadable = false
 
     init(
         item: PhotoItem,
@@ -88,6 +90,11 @@ struct ThumbnailCell: View {
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
                 .clipShape(RoundedRectangle(cornerRadius: 2))
+        } else if isUnreadable {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.system(size: side / 5))
+                .foregroundStyle(.secondary)
+                .help("Can't read \(item.fileName). The file may be damaged or in an unsupported format.")
         } else {
             Image(systemName: item.kind == .video ? "film" : "photo")
                 .font(.system(size: side / 5))
@@ -164,6 +171,8 @@ struct ThumbnailCell: View {
 
         if let thumbnail = await thumbnail {
             image = thumbnail
+        } else if !Task.isCancelled, image == nil {
+            isUnreadable = true
         }
         if exif == nil, let metadata = await metadata {
             exif = metadata

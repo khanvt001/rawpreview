@@ -12,6 +12,13 @@ struct PhotoGridView: View {
     @AppStorage("gridThumbnailSize") private var thumbnailSize = 180.0
 
     @State private var availableWidth: CGFloat = 0
+    /// Plain reference box: visibility changes many times per second while
+    /// scrolling, and storing them in `@State` would re-render the grid each time.
+    @State private var visibility = VisibilityTracker()
+
+    private final class VisibilityTracker {
+        var ids: [PhotoItem.ID] = []
+    }
 
     static let sizeRange: ClosedRange<Double> = 100...420
     private let spacing: CGFloat = 8
@@ -45,6 +52,14 @@ struct PhotoGridView: View {
             }
             // The grid adapts to any width, so never let it dictate one.
             .frame(minWidth: 200, maxWidth: .infinity)
+            .onScrollTargetVisibilityChange(idType: PhotoItem.ID.self) { ids in
+                visibility.ids = ids
+            }
+            // Warm the next rows once scrolling settles (not during a fling,
+            // where it would compete with the rows actually on screen).
+            .onScrollPhaseChange { _, phase in
+                if phase == .idle { prefetch(pixelSize: pixelSize) }
+            }
             .overlay {
                 if library.visibleItems.isEmpty {
                     ContentUnavailableView {
@@ -94,6 +109,11 @@ struct PhotoGridView: View {
         }
     }
 
+    private func prefetch(pixelSize: Int) {
+        let upcoming = library.prefetchCandidates(visible: visibility.ids, rowsAhead: 3).filter(\.kind.isImage)
+        ThumbnailService.shared.prefetch(upcoming.map(\.url), pixelSize: pixelSize)
+    }
+
     private func grid(columns: [GridItem], side: CGFloat, pixelSize: Int) -> some View {
         LazyVGrid(columns: columns, spacing: spacing) {
             ForEach(library.visibleItems) { item in
@@ -119,6 +139,7 @@ struct PhotoGridView: View {
                 })
             }
         }
+        .scrollTargetLayout()
         .padding(padding)
     }
 }

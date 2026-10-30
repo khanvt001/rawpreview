@@ -84,11 +84,21 @@ struct CopySheet: View {
     private func finished(_ report: CopyService.Report) -> some View {
         Group {
             Label {
-                Text(report.wasCancelled ? "Copy Cancelled" : report.failures.isEmpty ? "Copy Complete" : "Copy Finished with Errors")
+                Text(library.copyInterruption != nil ? "Copy Interrupted"
+                     : report.wasCancelled ? "Copy Cancelled"
+                     : report.failures.isEmpty ? "Copy Complete" : "Copy Finished with Errors")
                     .font(.headline)
             } icon: {
                 Image(systemName: report.failures.isEmpty && !report.wasCancelled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                     .foregroundStyle(report.failures.isEmpty && !report.wasCancelled ? .green : .orange)
+            }
+
+            // Shown however the copy ended: when a card is pulled, the files
+            // in flight often fail before the removal notice cancels the rest.
+            if let reason = library.copyInterruption {
+                Text(reason)
+                    .font(.callout)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             VStack(alignment: .leading, spacing: 4) {

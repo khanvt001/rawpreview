@@ -72,6 +72,11 @@ final class LibraryViewModel {
         didSet { UserDefaults.standard.set(copyDestination?.path(percentEncoded: false), forKey: "copyDestination") }
     }
     private(set) var copyState: CopyState = .idle
+    /// Why the last copy stopped early, when it wasn't the user's Cancel.
+    private(set) var copyInterruption: String?
+    /// Volume currently being ejected (for the sidebar spinner).
+    private(set) var ejectingVolumeID: VolumeInfo.ID?
+    var ejectError: String?
     @ObservationIgnored private var copyTask: Task<Void, Never>?
     @ObservationIgnored private let copier = CopyService()
 
@@ -213,6 +218,18 @@ final class LibraryViewModel {
         focusedID = visibleItems[target].id
     }
 
+    /// Items just past the last visible one, for warming thumbnails before
+    /// the user scrolls there: `rowsAhead` rows below and one row above.
+    func prefetchCandidates(visible ids: [PhotoItem.ID], rowsAhead: Int) -> [PhotoItem] {
+        let visibleSet = Set(ids)
+        let indices = visibleItems.indices.filter { visibleSet.contains(visibleItems[$0].id) }
+        guard let first = indices.first, let last = indices.last else { return [] }
+        let row = max(1, columnCount)
+        let below = (last + 1)..<min(visibleItems.count, last + 1 + row * rowsAhead)
+        let above = max(0, first - row)..<first
+        return (Array(below) + Array(above)).map { visibleItems[$0] }
+    }
+
     /// Visible items within `radius` of `id`, nearest first, for prefetching.
     func neighbours(of id: PhotoItem.ID, radius: Int) -> [PhotoItem] {
         guard let index = visibleItems.firstIndex(where: { $0.id == id }) else { return [] }
@@ -307,6 +324,7 @@ final class LibraryViewModel {
         guard let destination = copyDestination else { return }
 
         let marked = items.filter { checkedIDs.contains($0.id) }
+        copyInterruption = nil
         let ratings = ratings
         let pendingRatingWrite = lastSidecarWrite
         let sourceRoot = sourceURL
@@ -433,9 +451,67 @@ final class LibraryViewModel {
     }
 
     private func handleMountChange(volumeURL: URL?, didUnmount: Bool) {
-        if didUnmount, let volumeURL, let sourceURL, sourceURL.isContained(in: volumeURL) {
-            self.sourceURL = nil
+        if didUnmount, let volumeURL {
+            if isCopying {
+                if sourceURL?.isContained(in: volumeURL) == true {
+                    copyInterruption = "The card was removed during the copy. Files that finished are complete; reinsert the card, mark the photos and copy again — files already copied are skipped."
+                    cancelCopy()
+                } else if copyDestination?.isContained(in: volumeURL) == true {
+                    copyInterruption = "The destination drive was disconnected during the copy. Reconnect it and copy again — files already copied are skipped."
+                    cancelCopy()
+                }
+            }
+            if let sourceURL, sourceURL.isContained(in: volumeURL) {
+                self.sourceURL = nil
+            }
         }
-        Task { await refreshVolumes() }
+        Task {
+            await refreshVolumes()
+            // A card just inserted is what the user wants to look at, even if
+            // another one is already showing (but never switch mid-copy).
+            if !didUnmount, let volumeURL, !isCopying,
+               let card = volumes.first(where: { $0.isRemovable && $0.url.standardizedFileURL.path == volumeURL.standardizedFileURL.path }) {
+                selectVolume(id: card.id)
+            }
+        }
+    }
+
+    // MARK: - Eject
+
+    func eject(_ volume: VolumeInfo) {
+        guard !isCopying else {
+            ejectError = "A copy is in progress. Wait for it to finish, or cancel it, before ejecting."
+            return
+        }
+        guard ejectingVolumeID == nil else { return }
+        ejectingVolumeID = volume.id
+
+        let pendingRatingWrite = lastSidecarWrite
+        let wasBrowsing = sourceURL?.isContained(in: volume.url) == true
+        // Stop reading from the card (scans, thumbnail decodes) before unmounting.
+        if wasBrowsing { sourceURL = nil }
+
+        Task {
+            await pendingRatingWrite?.value
+            do {
+                try await Self.unmountAndEject(volume.url)
+            } catch {
+                ejectError = "Couldn't eject “\(volume.name)”: \(error.localizedDescription)"
+                if wasBrowsing { sourceURL = volume.preferredSourceURL }
+            }
+            ejectingVolumeID = nil
+        }
+    }
+
+    /// Unmounts all partitions and ejects the device. Retries once: a
+    /// thumbnail decode that was mid-read can briefly keep the card busy.
+    @concurrent
+    private static func unmountAndEject(_ url: URL) async throws {
+        do {
+            try await FileManager.default.unmountVolume(at: url, options: [.allPartitionsAndEjectDisk])
+        } catch {
+            try await Task.sleep(for: .milliseconds(800))
+            try await FileManager.default.unmountVolume(at: url, options: [.allPartitionsAndEjectDisk])
+        }
     }
 }

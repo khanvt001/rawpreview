@@ -36,6 +36,17 @@ struct RootView: View {
                 .interactiveDismissDisabled(library.isCopying)
         }
         .alert(
+            "Couldn't Eject",
+            isPresented: Binding(
+                get: { library.ejectError != nil },
+                set: { if !$0 { library.ejectError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(library.ejectError ?? "")
+        }
+        .alert(
             "Rating Not Saved",
             isPresented: Binding(
                 get: { library.ratingSaveError != nil },
@@ -93,7 +104,12 @@ private struct SourceSidebar: View {
         List(selection: selection) {
             if !cards.isEmpty {
                 Section("Cards") {
-                    ForEach(cards) { VolumeRow(volume: $0) }
+                    ForEach(cards) { volume in
+                        VolumeRow(volume: volume)
+                            .contextMenu {
+                                Button("Eject “\(volume.name)”") { library.eject(volume) }
+                            }
+                    }
                 }
             }
             Section("Volumes") {
@@ -105,9 +121,29 @@ private struct SourceSidebar: View {
 }
 
 private struct VolumeRow: View {
+    @Environment(LibraryViewModel.self) private var library
     let volume: VolumeInfo
 
     var body: some View {
+        HStack(spacing: 4) {
+            label
+            if volume.isRemovable {
+                Spacer(minLength: 0)
+                if library.ejectingVolumeID == volume.id {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("Eject", systemImage: "eject.fill") { library.eject(volume) }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                        .help("Eject “\(volume.name)”")
+                }
+            }
+        }
+        .tag(volume.id)
+    }
+
+    private var label: some View {
         Label {
             VStack(alignment: .leading, spacing: 1) {
                 Text(volume.name)
@@ -120,7 +156,6 @@ private struct VolumeRow: View {
         } icon: {
             Image(systemName: volume.isRemovable ? "sdcard" : "internaldrive")
         }
-        .tag(volume.id)
     }
 }
 
