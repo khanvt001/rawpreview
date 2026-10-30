@@ -23,6 +23,7 @@ struct RootView: View {
                 .keyboardShortcut("o", modifiers: .command)
             }
         }
+        .background(WindowFrameGuard())
         .task {
             await library.refreshVolumes()
         }
