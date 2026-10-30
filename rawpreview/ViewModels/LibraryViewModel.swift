@@ -59,8 +59,8 @@ final class LibraryViewModel {
     var showsInspector: Bool = UserDefaults.standard.object(forKey: "showsInspector") as? Bool ?? true {
         didSet { UserDefaults.standard.set(showsInspector, forKey: "showsInspector") }
     }
-    /// Incremented to ask the loupe to toggle Fit ⇄ 100% (the Z key).
-    private(set) var zoomToggleRequest = 0
+    /// Latest zoom command for the loupe (Z, ⌘+, ⌘−, ⌘0).
+    private(set) var zoomRequest: ZoomRequest?
 
     /// The image the keyboard acts on and the loupe shows.
     var focusedID: PhotoItem.ID?
@@ -170,9 +170,9 @@ final class LibraryViewModel {
         viewMode = viewMode == .grid ? .loupe : .grid
     }
 
-    func requestZoomToggle() {
+    func requestZoom(_ command: ZoomRequest.Command) {
         guard viewMode == .loupe else { return }
-        zoomToggleRequest += 1
+        zoomRequest = ZoomRequest(command: command, serial: (zoomRequest?.serial ?? 0) + 1)
     }
 
     /// Arrow-key movement. In the grid Up/Down jump a row; in the loupe (one

@@ -13,9 +13,25 @@ struct ZoomState: Equatable {
     var isAtFit: Bool
 }
 
+/// A zoom command from outside the view (keyboard / menu). `serial` makes
+/// repeated identical commands (⌘+ ⌘+ ⌘+) distinct.
+struct ZoomRequest: Equatable {
+    enum Command {
+        /// Fit ⇄ 100% (Z).
+        case toggle
+        /// Next step up / down the zoom ladder (⌘+ / ⌘−).
+        case zoomIn, zoomOut
+        /// Whole image in view (⌘0).
+        case fit
+    }
+
+    let command: Command
+    let serial: Int
+}
+
 /// Pixel-peeping image view: an `NSScrollView` with native magnification
-/// (trackpad pinch), double-click to toggle Fit ⇄ 100% at the cursor, and
-/// drag-to-pan.
+/// (trackpad pinch, ⌥-scroll), double-click to toggle Fit ⇄ 100% at the
+/// cursor, stepped zoom commands, and drag-to-pan.
 ///
 /// The image is drawn as `CALayer` contents rather than through `NSImageView`'s
 /// drawing, so zooming and panning are pure GPU compositing of an already
@@ -26,8 +42,8 @@ struct ZoomableImageView: NSViewRepresentable {
     /// Full-resolution pixel size of the photo, even while `image` is still a
     /// smaller placeholder, so geometry and zoom don't jump when it upgrades.
     let pixelSize: CGSize
-    /// Bumped by the view model (the Z key) to toggle Fit ⇄ 100%.
-    let zoomToggleRequest: Int
+    /// Latest keyboard / menu zoom command; each new `serial` runs once.
+    let zoomRequest: ZoomRequest?
     let onZoomChange: (ZoomState) -> Void
 
     func makeNSView(context: Context) -> ZoomingScrollView {
@@ -38,21 +54,23 @@ struct ZoomableImageView: NSViewRepresentable {
         scrollView.onZoomChange = onZoomChange
         scrollView.display(image, pixelSize: pixelSize)
 
-        if context.coordinator.lastZoomToggleRequest != zoomToggleRequest {
-            context.coordinator.lastZoomToggleRequest = zoomToggleRequest
-            scrollView.toggleZoom(at: nil)
+        if let zoomRequest, zoomRequest.serial != context.coordinator.lastSerial {
+            context.coordinator.lastSerial = zoomRequest.serial
+            scrollView.perform(zoomRequest.command)
         }
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(lastZoomToggleRequest: zoomToggleRequest)
+        // Start from the current serial so a request made before this view
+        // existed (e.g. in another photo's loupe) isn't replayed.
+        Coordinator(lastSerial: zoomRequest?.serial ?? 0)
     }
 
     final class Coordinator {
-        var lastZoomToggleRequest: Int
+        var lastSerial: Int
 
-        init(lastZoomToggleRequest: Int) {
-            self.lastZoomToggleRequest = lastZoomToggleRequest
+        init(lastSerial: Int) {
+            self.lastSerial = lastSerial
         }
     }
 }
@@ -66,9 +84,14 @@ final class ZoomingScrollView: NSScrollView {
     private var pixelSize: CGSize = .zero
     private(set) var isAtFit = true
     private var lastReported: ZoomState?
+    /// Where zoom is heading. While an animated zoom runs, `magnification` is
+    /// still the old value, so quick repeated ⌘+ presses must step from here.
+    private var targetMagnification: CGFloat = 1
 
     private static let maximumZoom: CGFloat = 8
     private static let animationDuration: TimeInterval = 0.18
+    /// ⌘+ / ⌘− stops (Fit sits below wherever it falls for the window).
+    static let zoomSteps: [CGFloat] = [0.25, 0.33, 0.5, 0.67, 1, 1.5, 2, 3, 4, 6, 8]
 
     init() {
         super.init(frame: .zero)
@@ -76,10 +99,12 @@ final class ZoomingScrollView: NSScrollView {
         documentView = imageView
         drawsBackground = false
         contentView.drawsBackground = false
-        hasHorizontalScroller = true
-        hasVerticalScroller = true
-        autohidesScrollers = true
-        scrollerStyle = .overlay
+        // No scroll bars, like Preview / Lightroom: pan by dragging or
+        // scrolling. With a mouse attached macOS forces legacy scroll bars,
+        // which appear on the first zoom-in and shrink the viewport, shifting
+        // the image under the cursor mid-zoom.
+        hasHorizontalScroller = false
+        hasVerticalScroller = false
         allowsMagnification = true
         maxMagnification = Self.maximumZoom
 
@@ -114,27 +139,118 @@ final class ZoomingScrollView: NSScrollView {
     /// otherwise back to Fit. `point` is in document coordinates; `nil` zooms
     /// around the centre of what is visible.
     func toggleZoom(at point: NSPoint?) {
-        let fit = fitMagnification
-        let target: CGFloat
-        if magnification < 0.999 {
-            target = 1
+        if targetMagnification < 0.999 {
+            zoom(to: 1, at: point, animated: true)
         } else if isAtFit {
-            target = 2 // Image already fits at 100% (small file): go to 200%.
+            zoom(to: 2, at: point, animated: true) // Small image already fits at 100%.
+        } else {
+            fit(animated: true)
+        }
+    }
+
+    func perform(_ command: ZoomRequest.Command) {
+        switch command {
+        case .toggle: toggleZoom(at: nil)
+        case .zoomIn: zoomIn()
+        case .zoomOut: zoomOut()
+        case .fit: fit(animated: true)
+        }
+    }
+
+    /// Next step above the current zoom, around the centre of the view.
+    func zoomIn() {
+        let target = Self.zoomSteps.first { $0 > targetMagnification + 0.001 } ?? Self.maximumZoom
+        zoom(to: target, at: nil, animated: true)
+    }
+
+    /// Next step below the current zoom; the last step out is Fit.
+    func zoomOut() {
+        let fit = fitMagnification
+        if let target = Self.zoomSteps.last(where: { $0 < targetMagnification - 0.001 && $0 > fit + 0.001 }) {
+            zoom(to: target, at: nil, animated: true)
         } else {
             self.fit(animated: true)
+        }
+    }
+
+    /// ⌥ + scroll wheel (or two-finger scroll) zooms smoothly around the
+    /// cursor; plain scrolling still pans.
+    override func scrollWheel(with event: NSEvent) {
+        guard event.modifierFlags.contains(.option), event.scrollingDeltaY != 0 else {
+            super.scrollWheel(with: event)
             return
         }
+        // Same physical direction zooms the same way whatever the user's
+        // "natural scrolling" setting: away from you / up = zoom in.
+        var delta = event.scrollingDeltaY
+        if event.isDirectionInvertedFromDevice { delta = -delta }
+        // Trackpads send many small pixel deltas; mouse wheels send ~1 per notch.
+        let sensitivity: CGFloat = event.hasPreciseScrollingDeltas ? 0.01 : 0.15
+        let target = min(max(targetMagnification * exp(delta * sensitivity), fitMagnification), Self.maximumZoom)
+        zoom(to: target, at: imageView.convert(event.locationInWindow, from: nil), animated: false)
+    }
 
+    /// Zooms to `target`, keeping `point` (document coordinates; `nil` = centre
+    /// of the visible area) fixed on screen.
+    private func zoom(to target: CGFloat, at point: NSPoint?, animated: Bool) {
+        let fit = fitMagnification
         let anchor = point ?? NSPoint(x: documentVisibleRect.midX, y: documentVisibleRect.midY)
-        isAtFit = abs(target - fit) < 0.001
+        isAtFit = abs(target - fit) < 0.002
+        targetMagnification = target
         minMagnification = min(fit, target)
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = Self.animationDuration
-            // Despite the name, `centeredAt` keeps `anchor` fixed on screen
-            // rather than centring it: exactly "zoom in where I clicked".
-            animator().setMagnification(target, centeredAt: anchor)
-        }
+        // Despite the name, `centeredAt` keeps `anchor` fixed on screen rather
+        // than centring it: exactly "zoom in where I clicked".
+        animateMagnification(to: target, centeredAt: anchor, animated: animated)
         report(magnification: target)
+    }
+
+    /// One zoom animation at a time, driven by a display link. AppKit's
+    /// `animator().setMagnification` animations overlap badly when commands
+    /// arrive quickly (⌘+ ⌘+ ⌘0 settled just below Fit in testing); here a new
+    /// command simply restarts the animation from the current zoom.
+    private struct ZoomAnimation {
+        let from: CGFloat
+        let to: CGFloat
+        let anchor: NSPoint
+        let start: CFTimeInterval
+    }
+
+    private var zoomAnimation: ZoomAnimation?
+    private var zoomDisplayLink: CADisplayLink?
+
+    private func animateMagnification(to target: CGFloat, centeredAt anchor: NSPoint, animated: Bool) {
+        guard animated, window != nil, magnification > 0 else {
+            stopZoomAnimation()
+            setMagnification(target, centeredAt: anchor)
+            return
+        }
+        zoomAnimation = ZoomAnimation(from: magnification, to: target, anchor: anchor, start: CACurrentMediaTime())
+        if zoomDisplayLink == nil {
+            let link = displayLink(target: self, selector: #selector(stepZoomAnimation))
+            link.add(to: .main, forMode: .common)
+            zoomDisplayLink = link
+        }
+    }
+
+    @objc private func stepZoomAnimation(_ link: CADisplayLink) {
+        guard let animation = zoomAnimation else {
+            stopZoomAnimation()
+            return
+        }
+        let progress = min(1, (CACurrentMediaTime() - animation.start) / Self.animationDuration)
+        let eased = 1 - pow(1 - progress, 3) // ease-out cubic
+        // Interpolate geometrically so 25%→50% feels as fast as 200%→400%.
+        let value = animation.from * pow(animation.to / animation.from, eased)
+        setMagnification(progress >= 1 ? animation.to : value, centeredAt: animation.anchor)
+        if progress >= 1 {
+            stopZoomAnimation()
+        }
+    }
+
+    private func stopZoomAnimation() {
+        zoomAnimation = nil
+        zoomDisplayLink?.invalidate()
+        zoomDisplayLink = nil
     }
 
     // MARK: Layout
@@ -180,19 +296,19 @@ final class ZoomingScrollView: NSScrollView {
         let fit = fitMagnification
         minMagnification = fit
         isAtFit = true
+        targetMagnification = fit
         let center = NSPoint(x: imageView.bounds.midX, y: imageView.bounds.midY)
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = Self.animationDuration
-                animator().setMagnification(fit, centeredAt: center)
-            }
-        } else {
-            setMagnification(fit, centeredAt: center)
-        }
+        animateMagnification(to: fit, centeredAt: center, animated: animated)
         report(magnification: fit)
     }
 
+    override func magnify(with event: NSEvent) {
+        stopZoomAnimation() // A pinch takes over from any running zoom animation.
+        super.magnify(with: event)
+    }
+
     @objc private func liveMagnifyDidEnd(_ notification: Notification) {
+        targetMagnification = magnification
         isAtFit = abs(magnification - fitMagnification) < 0.002
         report(magnification: magnification)
     }

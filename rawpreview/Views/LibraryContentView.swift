@@ -15,6 +15,7 @@ import SwiftUI
 /// | S          | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
+/// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | I          | Single Image: show / hide info sidebar  |
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
@@ -54,7 +55,13 @@ struct LibraryContentView: View {
     }
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
-        // Leave ⌘/⌃/⌥ combinations to menus and the system.
+        // ⌘+ is typed as ⌘⇧= on most layouts, which the View menu's ⌘= item
+        // doesn't match, so catch it here.
+        if press.modifiers.contains(.command), press.characters == "+", library.viewMode == .loupe {
+            library.requestZoom(.zoomIn)
+            return .handled
+        }
+        // Leave other ⌘/⌃/⌥ combinations to menus and the system.
         guard press.modifiers.isDisjoint(with: [.command, .control, .option]) else { return .ignored }
 
         switch press.key {
@@ -88,7 +95,7 @@ struct LibraryContentView: View {
             library.toggleCheckedForFocused()
             return .handled
         case "z" where library.viewMode == .loupe:
-            library.requestZoomToggle()
+            library.requestZoom(.toggle)
             return .handled
         case "i" where library.viewMode == .loupe:
             library.showsInspector.toggle()

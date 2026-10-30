@@ -56,7 +56,7 @@ struct LoupeView: View {
                 ZoomableImageView(
                     image: image,
                     pixelSize: displayPixelSize(for: image),
-                    zoomToggleRequest: library.zoomToggleRequest,
+                    zoomRequest: library.zoomRequest,
                     onZoomChange: { zoom = $0 }
                 )
             } else if library.focusedItem?.kind == .video {
@@ -144,7 +144,7 @@ private struct LoupeInfoBar: View {
                 Divider().frame(height: 12)
                 Text(zoom.isAtFit ? "Fit (\(Int(zoom.percent))%)" : "\(Int(zoom.percent))%")
                     .foregroundStyle(.secondary)
-                    .help("Double-click or press Z to toggle Fit / 100%")
+                    .help("Z or double-click: Fit / 100% · ⌘+ ⌘− ⌘0 · ⌥-scroll or pinch to zoom")
             }
             if isLoadingFullResolution {
                 ProgressView()

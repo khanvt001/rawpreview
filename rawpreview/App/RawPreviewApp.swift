@@ -18,5 +18,8 @@ struct RawPreviewApp: App {
         }
         .defaultSize(width: 1280, height: 820)
         .windowToolbarStyle(.unified)
+        .commands {
+            ZoomCommands(library: library)
+        }
     }
 }
