@@ -218,6 +218,15 @@ final class LibraryViewModel {
         focusedID = visibleItems[target].id
     }
 
+    /// The photos around the focused one, for the loupe's filmstrip. Bounded
+    /// so the strip's layout cost doesn't grow with the size of the card.
+    func filmstripItems(radius: Int) -> ArraySlice<PhotoItem> {
+        guard let index = focusedIndex else { return visibleItems.prefix(radius * 2 + 1) }
+        let lower = max(0, index - radius)
+        let upper = min(visibleItems.count, index + radius + 1)
+        return visibleItems[lower..<upper]
+    }
+
     /// Items just past the last visible one, for warming thumbnails before
     /// the user scrolls there: `rowsAhead` rows below and one row above.
     func prefetchCandidates(visible ids: [PhotoItem.ID], rowsAhead: Int) -> [PhotoItem] {

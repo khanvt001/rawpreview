@@ -17,6 +17,7 @@ import SwiftUI
 /// | Return     | Copy marked files to the destination    |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
+/// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library

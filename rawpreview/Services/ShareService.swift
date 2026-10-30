@@ -92,7 +92,8 @@ nonisolated enum ShareService {
 
     private static func makeJPEG(for item: PhotoItem, named name: String, in folder: URL) throws -> URL {
         try Task.checkCancellation()
-        guard let image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize) else {
+        // sRGB, not the screen's colour space: the JPEG goes to other devices.
+        guard let image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize, forDisplay: false) else {
             throw ShareError.decodeFailed(item.fileName)
         }
 

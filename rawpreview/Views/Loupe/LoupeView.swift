@@ -106,31 +106,49 @@ struct LoupeView: View {
             return
         }
 
-        // Paint whatever is already in memory (full image or grid thumbnail) on
-        // this frame, then upgrade to full resolution.
+        // 1. Paint whatever is in memory (full image or a thumbnail) this frame.
         let full = PreviewService.shared.cachedFullResolution(for: item.url)
         exif = MetadataService.shared.cachedExif(for: item.url)
         image = full ?? PreviewService.shared.placeholder(for: item.url)
         isFullResolution = full != nil
         isUnreadable = false
 
-        let neighbours = library.neighbours(of: item.id, radius: 2).filter(\.kind.isImage)
-        PreviewService.shared.prefetch(neighbours.map(\.url))
+        // Screen-sharp previews for the next few photos are cheap (~25 ms each
+        // from the embedded JPEG), so warm them right away.
+        let neighbours = library.neighbours(of: item.id, radius: 3).filter(\.kind.isImage)
+        ThumbnailService.shared.prefetch(neighbours.map(\.url), pixelSize: Self.navigationPixelSize)
 
         if exif == nil {
             exif = await MetadataService.shared.exif(for: item.url)
         }
-        if full == nil {
-            let loaded = await PreviewService.shared.fullResolution(for: item.url)
-            guard !Task.isCancelled else { return }
-            if let loaded {
-                image = loaded
-                isFullResolution = true
-            } else if image == nil {
-                isUnreadable = true
-            }
+        guard full == nil else { return }
+
+        // 2. A 1024 px image looks sharp at Fit and is ready almost at once.
+        if (image?.width ?? 0) < Self.navigationPixelSize,
+           let preview = await ThumbnailService.shared.thumbnail(for: item.url, pixelSize: Self.navigationPixelSize),
+           !Task.isCancelled {
+            image = preview
+        }
+
+        // 3. Full resolution (for zooming) only once navigation pauses. While an
+        //    arrow key is held, each step cancels this task here, so photos you
+        //    skip past never pay for a 20 MP decode and swap.
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled else { return }
+        PreviewService.shared.prefetch(library.neighbours(of: item.id, radius: 1).filter(\.kind.isImage).map(\.url))
+
+        let loaded = await PreviewService.shared.fullResolution(for: item.url)
+        guard !Task.isCancelled else { return }
+        if let loaded {
+            image = loaded
+            isFullResolution = true
+        } else if image == nil {
+            isUnreadable = true
         }
     }
+
+    /// Longest side of the image shown while moving between photos.
+    private static let navigationPixelSize = 1024
 }
 
 private struct LoupeInfoBar: View {
@@ -159,7 +177,7 @@ private struct LoupeInfoBar: View {
                 Divider().frame(height: 12)
                 Text(zoom.isAtFit ? "Fit (\(Int(zoom.percent))%)" : "\(Int(zoom.percent))%")
                     .foregroundStyle(.secondary)
-                    .help("Z or double-click: Fit / 100% · ⌘+ ⌘− ⌘0 · ⌥-scroll or pinch to zoom")
+                    .help("Z or double-click: Fit / 100% · ⌘+ ⌘− ⌘0 · ⌘-scroll, ⌥-scroll or pinch to zoom")
             }
             if isLoadingFullResolution {
                 ProgressView()

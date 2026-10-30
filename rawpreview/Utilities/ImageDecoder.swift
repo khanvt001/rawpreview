@@ -23,9 +23,39 @@ import ImageIO
 /// ARWs embed 1616 px). For JPEG/HEIF the embedded EXIF thumbnail is a useless
 /// 160×120, so those go straight to decoding the image (≈40 ms for 512 px).
 nonisolated enum ImageDecoder {
-    /// - Parameter maxPixelSize: Longest side of the result; `nil` for the image's
-    ///   full pixel dimensions (100% zoom).
-    static func decode(_ url: URL, maxPixelSize: Int?) -> CGImage? {
+    /// - Parameters:
+    ///   - maxPixelSize: Longest side of the result; `nil` for the image's full
+    ///     pixel dimensions (100% zoom).
+    ///   - forDisplay: Convert to the current screen's colour space so drawing
+    ///     it costs the main thread nothing (see `DisplayColorSpace`). Pass
+    ///     `false` for images that are written to files.
+    static func decode(_ url: URL, maxPixelSize: Int?, forDisplay: Bool = true) -> CGImage? {
+        guard let image = decodeOriginal(url, maxPixelSize: maxPixelSize) else { return nil }
+        return forDisplay ? prepareForDisplay(image) : image
+    }
+
+    /// Redraws `image` in the screen's colour space with the 32-bit BGRA layout
+    /// Core Animation uses natively, so it is uploaded as-is instead of being
+    /// colour-matched on the main thread when it first appears (measured ~80 ms
+    /// → <1 ms for a 20 MP photo on an external monitor).
+    static func prepareForDisplay(_ image: CGImage) -> CGImage {
+        guard !Task.isCancelled,
+              let context = CGContext(
+                  data: nil,
+                  width: image.width,
+                  height: image.height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: DisplayColorSpace.target,
+                  bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+              )
+        else { return image }
+        context.interpolationQuality = .none
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return context.makeImage() ?? image
+    }
+
+    private static func decodeOriginal(_ url: URL, maxPixelSize: Int?) -> CGImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
 

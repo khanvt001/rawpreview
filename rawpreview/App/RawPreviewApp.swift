@@ -11,6 +11,14 @@ import SwiftUI
 struct RawPreviewApp: App {
     @State private var library = LibraryViewModel()
 
+    init() {
+        // Seed before the first thumbnails decode; the window's observer
+        // refines it once the window is on screen.
+        if let space = NSScreen.main?.colorSpace?.cgColorSpace {
+            DisplayColorSpace.update(to: space)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

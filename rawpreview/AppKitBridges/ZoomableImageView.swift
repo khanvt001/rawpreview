@@ -173,10 +173,11 @@ final class ZoomingScrollView: NSScrollView {
         }
     }
 
-    /// ⌥ + scroll wheel (or two-finger scroll) zooms smoothly around the
+    /// ⌘ or ⌥ + scroll wheel (or two-finger scroll) zooms smoothly around the
     /// cursor; plain scrolling still pans.
     override func scrollWheel(with event: NSEvent) {
-        guard event.modifierFlags.contains(.option), event.scrollingDeltaY != 0 else {
+        let zoomModifiers = event.modifierFlags.intersection([.command, .option])
+        guard !zoomModifiers.isEmpty, event.scrollingDeltaY != 0 else {
             super.scrollWheel(with: event)
             return
         }

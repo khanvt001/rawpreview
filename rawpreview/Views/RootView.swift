@@ -24,6 +24,7 @@ struct RootView: View {
             }
         }
         .background(WindowFrameGuard())
+        .background(ScreenColorSpaceObserver())
         .task {
             await library.refreshVolumes()
         }
