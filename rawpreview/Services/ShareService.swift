@@ -1,0 +1,148 @@
+//
+//  ShareService.swift
+//  rawpreview
+//
+
+import CoreGraphics
+import Foundation
+import ImageIO
+import UniformTypeIdentifiers
+
+/// Makes lightweight JPEG copies for sharing (AirDrop, Messages, Mail…), so a
+/// 25 MB RAW goes out as a ~1 MB JPEG the other side can open.
+///
+/// - Decoded from the RAW's embedded preview (`ImageDecoder`), so it's fast
+///   and matches what the camera showed.
+/// - Long edge 2048 px, quality 0.85; orientation baked in.
+/// - Camera EXIF (exposure, lens, date) is kept; GPS is removed, so a shared
+///   photo doesn't reveal where it was taken.
+/// - Written under a per-share folder in the temporary directory; old
+///   folders are purged at launch.
+nonisolated enum ShareService {
+    static let maxPixelSize = 2048
+    static let quality = 0.85
+
+    enum ShareError: LocalizedError {
+        case decodeFailed(String)
+        case writeFailed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .decodeFailed(let name): "Couldn't read \(name)."
+            case .writeFailed(let name): "Couldn't create a JPEG for \(name)."
+            }
+        }
+    }
+
+    static var exportRoot: URL {
+        FileManager.default.temporaryDirectory.appending(path: "RawPreview-Share", directoryHint: .isDirectory)
+    }
+
+    /// One JPEG per shot, in input order, named after the original
+    /// (`DSC_6260.NEF` → `DSC_6260.jpg`).
+    @concurrent
+    static func makeJPEGs(for items: [PhotoItem]) async throws -> [URL] {
+        let folder = exportRoot.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let jobs = uniqueJobs(for: items)
+
+        return try await withThrowingTaskGroup(of: (Int, URL).self) { group in
+            for (index, job) in jobs.enumerated() {
+                group.addTask {
+                    (index, try makeJPEG(for: job.item, named: job.name, in: folder))
+                }
+            }
+            var results = [URL?](repeating: nil, count: jobs.count)
+            for try await (index, url) in group {
+                results[index] = url
+            }
+            return results.compactMap(\.self)
+        }
+    }
+
+    /// A RAW+JPEG pair is one shot: share it once, from the RAW. Different
+    /// photos with the same name (`100NZ_50/DSC_0001`, `101NZ_50/DSC_0001`)
+    /// get `-2`, `-3`… so they don't overwrite each other.
+    private static func uniqueJobs(for items: [PhotoItem]) -> [(item: PhotoItem, name: String)] {
+        var byShot: [URL: PhotoItem] = [:]
+        var order: [URL] = []
+        for item in items {
+            let shot = item.sidecarURL
+            if let existing = byShot[shot] {
+                if existing.kind != .raw, item.kind == .raw { byShot[shot] = item }
+            } else {
+                byShot[shot] = item
+                order.append(shot)
+            }
+        }
+
+        var used = Set<String>()
+        return order.map { shot in
+            let item = byShot[shot]!
+            var name = item.baseName
+            var suffix = 2
+            while used.contains(name.lowercased()) {
+                name = "\(item.baseName)-\(suffix)"
+                suffix += 1
+            }
+            used.insert(name.lowercased())
+            return (item, "\(name).jpg")
+        }
+    }
+
+    private static func makeJPEG(for item: PhotoItem, named name: String, in folder: URL) throws -> URL {
+        try Task.checkCancellation()
+        guard let image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize) else {
+            throw ShareError.decodeFailed(item.fileName)
+        }
+
+        let destinationURL = folder.appending(path: name)
+        guard let destination = CGImageDestinationCreateWithURL(
+            destinationURL as CFURL, UTType.jpeg.identifier as CFString, 1, nil
+        ) else { throw ShareError.writeFailed(item.fileName) }
+
+        var properties: [CFString: Any] = [
+            kCGImageDestinationLossyCompressionQuality: quality,
+            // The pixels are already rotated upright by the decoder.
+            kCGImagePropertyOrientation: 1,
+        ]
+        if let source = CGImageSourceCreateWithURL(item.url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
+           let original = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] {
+            if let exif = original[kCGImagePropertyExifDictionary] as? [CFString: Any] {
+                var exif = exif
+                // Describe the new image, not the sensor.
+                exif[kCGImagePropertyExifPixelXDimension] = image.width
+                exif[kCGImagePropertyExifPixelYDimension] = image.height
+                properties[kCGImagePropertyExifDictionary] = exif
+            }
+            if var tiff = original[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
+                tiff[kCGImagePropertyTIFFOrientation] = 1
+                properties[kCGImagePropertyTIFFDictionary] = tiff
+            }
+            // GPS deliberately not copied.
+        }
+
+        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else {
+            throw ShareError.writeFailed(item.fileName)
+        }
+        return destinationURL
+    }
+
+    /// Removes share folders older than a day. Recent ones are kept in case a
+    /// transfer (e.g. AirDrop) is still reading them.
+    @concurrent
+    static func purgeOldExports() async {
+        let fileManager = FileManager.default
+        guard let folders = try? fileManager.contentsOfDirectory(
+            at: exportRoot, includingPropertiesForKeys: [.creationDateKey]
+        ) else { return }
+        let cutoff = Date.now.addingTimeInterval(-24 * 60 * 60)
+        for folder in folders {
+            let created = (try? folder.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantPast
+            if created < cutoff {
+                try? fileManager.removeItem(at: folder)
+            }
+        }
+    }
+}

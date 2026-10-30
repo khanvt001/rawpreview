@@ -52,6 +52,18 @@ struct LibraryContentView: View {
                 .disabled(library.focusedID == nil)
                 .help("Toggle Grid / Single Image (Space)")
             }
+            ToolbarItem {
+                Menu {
+                    if let item = library.focusedItem {
+                        ShareMenuItems(items: library.actionTargets(for: item))
+                    }
+                } label: {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+                .focusable(false)
+                .disabled(library.focusedItem == nil)
+                .help("Share the selected photo, or all marked photos if it is marked")
+            }
         }
     }
 

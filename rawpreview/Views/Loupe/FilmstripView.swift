@@ -35,6 +35,7 @@ struct FilmstripView: View {
                         onToggleCheck: { library.toggleChecked(item.id) }
                     )
                     .id(item.id)
+                    .contextMenu { PhotoContextMenu(item: item) }
                     .onTapGesture {
                         library.focusedID = item.id
                     }

@@ -104,6 +104,7 @@ final class LibraryViewModel {
     init() {
         hiddenExtensions = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenExtensionsKey) ?? [])
         observeMounts()
+        Task { await ShareService.purgeOldExports() }
     }
 
     /// The volume that contains `sourceURL` (deepest match wins, so an SD card
@@ -257,6 +258,13 @@ final class LibraryViewModel {
                 ratingSaveError = "Couldn't save the rating for \(id.lastPathComponent): \(error.localizedDescription)"
             }
         }
+    }
+
+    /// What a right-click (or the toolbar Share menu) acts on: every marked
+    /// file when the clicked one is among several marked, otherwise just it.
+    func actionTargets(for item: PhotoItem) -> [PhotoItem] {
+        guard checkedIDs.contains(item.id), checkedIDs.count > 1 else { return [item] }
+        return items.filter { checkedIDs.contains($0.id) }
     }
 
     func clearChecked() {

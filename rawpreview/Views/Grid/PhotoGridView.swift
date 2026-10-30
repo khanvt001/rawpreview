@@ -107,6 +107,7 @@ struct PhotoGridView: View {
                     onToggleCheck: { library.toggleChecked(item.id) }
                 )
                 .id(item.id)
+                .contextMenu { PhotoContextMenu(item: item) }
                 .onTapGesture(count: 2) {
                     library.focusedID = item.id
                     library.viewMode = .loupe
