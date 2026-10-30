@@ -14,6 +14,8 @@ import SwiftUI
 /// | Esc        | Back to Grid                            |
 /// | S          | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
+/// | Z          | Single Image: toggle Fit ⇄ 100%         |
+/// | I          | Single Image: show / hide info sidebar  |
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
     @FocusState private var hasKeyFocus: Bool
@@ -81,9 +83,18 @@ struct LibraryContentView: View {
         }
 
         let character = press.characters.lowercased()
-        if character == "s" {
+        switch character {
+        case "s":
             library.toggleCheckedForFocused()
             return .handled
+        case "z" where library.viewMode == .loupe:
+            library.requestZoomToggle()
+            return .handled
+        case "i" where library.viewMode == .loupe:
+            library.showsInspector.toggle()
+            return .handled
+        default:
+            break
         }
         if let stars = Int(character), (0...Rating.maxStars).contains(stars) {
             library.setRatingForFocused(Rating(stars))

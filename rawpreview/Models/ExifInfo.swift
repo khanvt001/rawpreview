@@ -3,6 +3,7 @@
 //  rawpreview
 //
 
+import CoreGraphics
 import Foundation
 
 /// The subset of EXIF / TIFF metadata the UI cares about. Filled by
@@ -42,6 +43,22 @@ nonisolated struct ExifInfo: Hashable, Sendable {
     }
 
     var isoText: String? { iso.map { "ISO \($0)" } }
+
+    var exposureBiasText: String? {
+        guard let bias = exposureBias else { return nil }
+        let value = bias.formatted(.number.precision(.fractionLength(0...1)).sign(strategy: .always(includingZero: false)).locale(Self.numberLocale))
+        return value + " EV"
+    }
+
+    /// Pixel size as displayed, i.e. with EXIF orientation applied
+    /// (orientations 5–8 rotate by 90°, swapping width and height).
+    var orientedPixelSize: CGSize? {
+        guard let pixelWidth, let pixelHeight else { return nil }
+        let isRotated = (5...8).contains(orientation ?? 1)
+        return isRotated
+            ? CGSize(width: pixelHeight, height: pixelWidth)
+            : CGSize(width: pixelWidth, height: pixelHeight)
+    }
 
     var focalLengthText: String? {
         focalLength.map { $0.formatted(.number.precision(.fractionLength(0)).locale(Self.numberLocale)) + "mm" }

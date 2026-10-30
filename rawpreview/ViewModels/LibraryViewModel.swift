@@ -46,6 +46,13 @@ final class LibraryViewModel {
 
     var viewMode: ViewMode = .grid
 
+    /// Single Image mode's EXIF sidebar; remembered across launches.
+    var showsInspector: Bool = UserDefaults.standard.object(forKey: "showsInspector") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showsInspector, forKey: "showsInspector") }
+    }
+    /// Incremented to ask the loupe to toggle Fit ⇄ 100% (the Z key).
+    private(set) var zoomToggleRequest = 0
+
     /// The image the keyboard acts on and the loupe shows.
     var focusedID: PhotoItem.ID?
     /// Files ticked for batch copy.
@@ -144,6 +151,11 @@ final class LibraryViewModel {
     func toggleViewMode() {
         guard focusedID != nil else { return }
         viewMode = viewMode == .grid ? .loupe : .grid
+    }
+
+    func requestZoomToggle() {
+        guard viewMode == .loupe else { return }
+        zoomToggleRequest += 1
     }
 
     /// Arrow-key movement. In the grid Up/Down jump a row; in the loupe (one
