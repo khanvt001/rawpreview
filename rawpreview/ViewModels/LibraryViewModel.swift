@@ -6,14 +6,24 @@
 import AppKit
 import Observation
 
-/// App-wide state: available volumes and the currently selected source folder.
-/// Scanning, filtering, selection and ratings are added in later phases.
+/// App-wide state: available volumes, the selected source folder and its files.
+/// Filtering, selection and ratings are added in later phases.
 @Observable
 final class LibraryViewModel {
     private(set) var volumes: [VolumeInfo] = []
-    private(set) var sourceURL: URL?
+    private(set) var sourceURL: URL? {
+        didSet {
+            if sourceURL != oldValue { rescan() }
+        }
+    }
+
+    private(set) var items: [PhotoItem] = []
+    private(set) var isScanning = false
+    private(set) var scanError: String?
 
     @ObservationIgnored private let volumeService = VolumeService()
+    @ObservationIgnored private let scanner = FileScanner()
+    @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var mountObservers: [any NSObjectProtocol] = []
 
     init() {
@@ -59,6 +69,45 @@ final class LibraryViewModel {
         if panel.runModal() == .OK, let url = panel.url {
             sourceURL = url
         }
+    }
+
+    /// File count per extension (e.g. `["NEF": 481, "JPG": 484]`), for filter chips.
+    var extensionCounts: [(ext: String, count: Int)] {
+        Dictionary(grouping: items, by: \.fileExtension)
+            .map { (ext: $0.key, count: $0.value.count) }
+            .sorted { $0.ext < $1.ext }
+    }
+
+    func rescan() {
+        scanTask?.cancel()
+        items = []
+        scanError = nil
+
+        guard let sourceURL else {
+            isScanning = false
+            clearCaches()
+            return
+        }
+
+        isScanning = true
+        scanTask = Task {
+            do {
+                let found = try await scanner.scan(sourceURL)
+                guard !Task.isCancelled else { return }
+                items = found
+            } catch is CancellationError {
+                return
+            } catch {
+                scanError = error.localizedDescription
+            }
+            isScanning = false
+        }
+    }
+
+    private func clearCaches() {
+        ThumbnailService.shared.removeAll()
+        PreviewService.shared.removeAll()
+        MetadataService.shared.removeAll()
     }
 
     // MARK: - Mount / unmount

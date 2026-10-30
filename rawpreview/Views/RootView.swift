@@ -32,12 +32,21 @@ struct RootView: View {
     private var detail: some View {
         if let sourceURL = library.sourceURL {
             // Replaced by the photo grid in Phase 3.
-            ContentUnavailableView(
-                sourceURL.lastPathComponent,
-                systemImage: "photo.on.rectangle.angled",
-                description: Text(sourceURL.path(percentEncoded: false))
-            )
+            Group {
+                if library.isScanning {
+                    ProgressView("Scanning \(sourceURL.lastPathComponent)…")
+                } else if let error = library.scanError {
+                    ContentUnavailableView("Couldn't Read Folder", systemImage: "exclamationmark.triangle", description: Text(error))
+                } else {
+                    ContentUnavailableView(
+                        "\(library.items.count) Files",
+                        systemImage: "photo.on.rectangle.angled",
+                        description: Text(library.extensionCounts.map { "\($0.count) \($0.ext)" }.joined(separator: " · "))
+                    )
+                }
+            }
             .navigationTitle(sourceURL.lastPathComponent)
+            .navigationSubtitle(sourceURL.path(percentEncoded: false))
         } else {
             ContentUnavailableView(
                 "No Source Selected",
