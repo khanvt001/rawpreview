@@ -27,6 +27,14 @@ struct RootView: View {
         .task {
             await library.refreshVolumes()
         }
+        .sheet(isPresented: Binding(
+            get: { library.copyState != .idle },
+            set: { if !$0 { library.dismissCopyResult() } }
+        )) {
+            CopySheet()
+                .environment(library)
+                .interactiveDismissDisabled(library.isCopying)
+        }
         .alert(
             "Rating Not Saved",
             isPresented: Binding(

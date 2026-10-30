@@ -19,6 +19,13 @@ final class LibraryViewModel {
         case left, right, up, down
     }
 
+    enum CopyState: Equatable {
+        case idle
+        case running(CopyService.Progress)
+        case finished(CopyService.Report)
+        case failed(String)
+    }
+
     /// Where a photo's rating is kept.
     enum RatingStorage: Equatable {
         /// Written to this sidecar, which Lightroom / Capture One read.
@@ -59,6 +66,15 @@ final class LibraryViewModel {
     var showsInspector: Bool = UserDefaults.standard.object(forKey: "showsInspector") as? Bool ?? true {
         didSet { UserDefaults.standard.set(showsInspector, forKey: "showsInspector") }
     }
+    /// Folder marked files are copied into; remembered across launches.
+    private(set) var copyDestination: URL? = UserDefaults.standard.string(forKey: "copyDestination")
+        .map { URL(filePath: $0, directoryHint: .isDirectory) } {
+        didSet { UserDefaults.standard.set(copyDestination?.path(percentEncoded: false), forKey: "copyDestination") }
+    }
+    private(set) var copyState: CopyState = .idle
+    @ObservationIgnored private var copyTask: Task<Void, Never>?
+    @ObservationIgnored private let copier = CopyService()
+
     /// Latest zoom command for the loupe (Z, ⌘+, ⌘−, ⌘0).
     private(set) var zoomRequest: ZoomRequest?
 
@@ -241,6 +257,80 @@ final class LibraryViewModel {
                 ratingSaveError = "Couldn't save the rating for \(id.lastPathComponent): \(error.localizedDescription)"
             }
         }
+    }
+
+    func clearChecked() {
+        checkedIDs = []
+    }
+
+    // MARK: - Batch copy
+
+    var isCopying: Bool {
+        if case .running = copyState { return true }
+        return false
+    }
+
+    /// Asks for the destination folder. Returns `false` if the user cancelled.
+    @discardableResult
+    func chooseCopyDestination() -> Bool {
+        let panel = NSOpenPanel()
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Copy Here"
+        panel.message = "Choose where marked photos are copied."
+        panel.directoryURL = copyDestination
+            ?? FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
+        guard panel.runModal() == .OK, let url = panel.url else { return false }
+        copyDestination = url
+        return true
+    }
+
+    /// Enter: copies every marked file (including ones hidden by the filter,
+    /// matching the "N marked" count) to the destination.
+    func startCopy() {
+        guard !isCopying else { return }
+        guard !checkedIDs.isEmpty else {
+            NSSound.beep()
+            return
+        }
+        if copyDestination == nil, !chooseCopyDestination() { return }
+        guard let destination = copyDestination else { return }
+
+        let marked = items.filter { checkedIDs.contains($0.id) }
+        let ratings = ratings
+        let pendingRatingWrite = lastSidecarWrite
+        let sourceRoot = sourceURL
+        copyState = .running(CopyService.Progress(totalFiles: marked.count))
+
+        copyTask = Task {
+            // Let queued rating writes land on the card first so the copied
+            // sidecars carry the latest stars.
+            await pendingRatingWrite?.value
+            do {
+                let plans = try await copier.plan(marked, to: destination, from: sourceRoot)
+                let report = await copier.copy(plans, to: destination, ratings: ratings) { progress in
+                    Task { @MainActor [weak self] in
+                        // A late progress update must not overwrite the result.
+                        guard let self, self.isCopying else { return }
+                        self.copyState = .running(progress)
+                    }
+                }
+                copyState = .finished(report)
+            } catch {
+                copyState = .failed(error.localizedDescription)
+            }
+        }
+    }
+
+    func cancelCopy() {
+        copyTask?.cancel()
+    }
+
+    func dismissCopyResult() {
+        guard !isCopying else { return }
+        copyState = .idle
     }
 
     func toggleCheckedForFocused() {

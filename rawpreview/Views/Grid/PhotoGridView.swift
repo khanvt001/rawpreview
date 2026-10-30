@@ -122,6 +122,37 @@ struct PhotoGridView: View {
     }
 }
 
+/// "Copy 12 to Shoot ⏎" plus a menu to change the destination.
+private struct CopyButton: View {
+    @Environment(LibraryViewModel.self) private var library
+
+    var body: some View {
+        let count = library.checkedIDs.count
+        let folder = library.copyDestination?.lastPathComponent
+
+        Menu {
+            Button("Copy \(count) Marked Files") { library.startCopy() }
+            Button("Change Destination…") { library.chooseCopyDestination() }
+            Divider()
+            Button("Clear Marks") { library.clearChecked() }
+        } label: {
+            Label(
+                folder.map { "Copy \(count) to \($0)  ⏎" } ?? "Copy \(count) marked…  ⏎",
+                systemImage: "checkmark.circle.fill"
+            )
+        } primaryAction: {
+            library.startCopy()
+        }
+        .menuStyle(.button)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.small)
+        .fixedSize()
+        .focusable(false)
+        .disabled(library.isCopying)
+        .help(library.copyDestination.map { "Copy marked files to \($0.path(percentEncoded: false)) (Return)" } ?? "Choose a folder and copy marked files (Return)")
+    }
+}
+
 private struct GridStatusBar: View {
     @Environment(LibraryViewModel.self) private var library
 
@@ -129,8 +160,7 @@ private struct GridStatusBar: View {
         HStack(spacing: 12) {
             Text("\(library.visibleItems.count) of \(library.items.count) files")
             if !library.checkedIDs.isEmpty {
-                Label("\(library.checkedIDs.count) marked for copy", systemImage: "checkmark.circle.fill")
-                    .foregroundStyle(Color.accentColor)
+                CopyButton()
             }
             Spacer()
             if let item = library.focusedItem {

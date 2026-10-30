@@ -14,6 +14,7 @@ import SwiftUI
 /// | Esc        | Back to Grid                            |
 /// | S          | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
+/// | Return     | Copy marked files to the destination    |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | I          | Single Image: show / hide info sidebar  |
@@ -84,6 +85,9 @@ struct LibraryContentView: View {
             return .handled
         case .escape where library.viewMode == .loupe:
             library.viewMode = .grid
+            return .handled
+        case .return:
+            library.startCopy()
             return .handled
         default:
             break
