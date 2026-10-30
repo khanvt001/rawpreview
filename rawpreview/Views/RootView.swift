@@ -31,18 +31,19 @@ struct RootView: View {
     @ViewBuilder
     private var detail: some View {
         if let sourceURL = library.sourceURL {
-            // Replaced by the photo grid in Phase 3.
             Group {
                 if library.isScanning {
                     ProgressView("Scanning \(sourceURL.lastPathComponent)…")
                 } else if let error = library.scanError {
                     ContentUnavailableView("Couldn't Read Folder", systemImage: "exclamationmark.triangle", description: Text(error))
-                } else {
+                } else if library.items.isEmpty {
                     ContentUnavailableView(
-                        "\(library.items.count) Files",
+                        "No Photos",
                         systemImage: "photo.on.rectangle.angled",
-                        description: Text(library.extensionCounts.map { "\($0.count) \($0.ext)" }.joined(separator: " · "))
+                        description: Text("This folder has no RAW, JPEG, HEIF or video files.")
                     )
+                } else {
+                    PhotoGridView()
                 }
             }
             .navigationTitle(sourceURL.lastPathComponent)

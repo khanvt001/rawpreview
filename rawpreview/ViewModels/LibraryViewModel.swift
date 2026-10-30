@@ -6,8 +6,8 @@
 import AppKit
 import Observation
 
-/// App-wide state: available volumes, the selected source folder and its files.
-/// Filtering, selection and ratings are added in later phases.
+/// App-wide state: available volumes, the selected source folder, its files and
+/// the user's culling decisions (checked for copy, star ratings).
 @Observable
 final class LibraryViewModel {
     private(set) var volumes: [VolumeInfo] = []
@@ -17,9 +17,27 @@ final class LibraryViewModel {
         }
     }
 
-    private(set) var items: [PhotoItem] = []
+    private(set) var items: [PhotoItem] = [] {
+        didSet { updateVisibleItems() }
+    }
     private(set) var isScanning = false
     private(set) var scanError: String?
+
+    /// `items` minus hidden extensions. Stored, not computed, so the grid's
+    /// `ForEach` doesn't refilter on every body evaluation.
+    private(set) var visibleItems: [PhotoItem] = []
+    /// Upper-cased extensions (e.g. `"MP4"`) excluded from `visibleItems`.
+    var hiddenExtensions: Set<String> = [] {
+        didSet { updateVisibleItems() }
+    }
+
+    /// The image the keyboard acts on and the loupe shows.
+    var focusedID: PhotoItem.ID?
+    /// Files ticked for batch copy.
+    private(set) var checkedIDs: Set<PhotoItem.ID> = []
+    private(set) var ratings: [PhotoItem.ID: Rating] = [:]
+    /// Columns currently laid out by the grid; Up/Down move by this many items.
+    var columnCount = 1
 
     @ObservationIgnored private let volumeService = VolumeService()
     @ObservationIgnored private let scanner = FileScanner()
@@ -78,10 +96,47 @@ final class LibraryViewModel {
             .sorted { $0.ext < $1.ext }
     }
 
+    var focusedItem: PhotoItem? {
+        visibleItems.first { $0.id == focusedID }
+    }
+
+    func isChecked(_ id: PhotoItem.ID) -> Bool {
+        checkedIDs.contains(id)
+    }
+
+    func toggleChecked(_ id: PhotoItem.ID) {
+        if checkedIDs.remove(id) == nil {
+            checkedIDs.insert(id)
+        }
+    }
+
+    func rating(for id: PhotoItem.ID) -> Rating {
+        ratings[id] ?? .none
+    }
+
+    /// In-memory only for now; Phase 6 persists ratings to XMP sidecars.
+    func setRating(_ rating: Rating, for id: PhotoItem.ID) {
+        ratings[id] = rating.isRated ? rating : nil
+    }
+
+    private func updateVisibleItems() {
+        visibleItems = hiddenExtensions.isEmpty
+            ? items
+            : items.filter { !hiddenExtensions.contains($0.fileExtension) }
+        if let focusedID, !visibleItems.contains(where: { $0.id == focusedID }) {
+            self.focusedID = visibleItems.first?.id
+        } else if focusedID == nil {
+            focusedID = visibleItems.first?.id
+        }
+    }
+
     func rescan() {
         scanTask?.cancel()
         items = []
         scanError = nil
+        focusedID = nil
+        checkedIDs = []
+        ratings = [:]
 
         guard let sourceURL else {
             isScanning = false

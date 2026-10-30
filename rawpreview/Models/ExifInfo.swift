@@ -26,14 +26,17 @@ nonisolated struct ExifInfo: Hashable, Sendable {
 
     // MARK: Formatted values for overlays
 
+    /// Photographic notation is always "f/4.5", never the locale's "f/4,5".
+    private static let numberLocale = Locale(identifier: "en_US_POSIX")
+
     var apertureText: String? {
-        fNumber.map { "ƒ/" + $0.formatted(.number.precision(.fractionLength(0...1))) }
+        fNumber.map { "ƒ/" + $0.formatted(.number.precision(.fractionLength(0...1)).locale(Self.numberLocale)) }
     }
 
     var shutterText: String? {
         guard let t = exposureTime, t > 0 else { return nil }
         if t >= 1 {
-            return t.formatted(.number.precision(.fractionLength(0...1))) + "s"
+            return t.formatted(.number.precision(.fractionLength(0...1)).locale(Self.numberLocale)) + "s"
         }
         return "1/\(Int((1 / t).rounded()))s"
     }
@@ -41,7 +44,7 @@ nonisolated struct ExifInfo: Hashable, Sendable {
     var isoText: String? { iso.map { "ISO \($0)" } }
 
     var focalLengthText: String? {
-        focalLength.map { $0.formatted(.number.precision(.fractionLength(0))) + "mm" }
+        focalLength.map { $0.formatted(.number.precision(.fractionLength(0)).locale(Self.numberLocale)) + "mm" }
     }
 
     /// Compact "ƒ/2.8 · 1/250s · ISO 400" line for grid thumbnails.
