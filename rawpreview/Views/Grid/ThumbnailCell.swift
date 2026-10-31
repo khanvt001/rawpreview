@@ -82,10 +82,26 @@ struct ThumbnailCell: View {
             }
         }
         .contentShape(RoundedRectangle(cornerRadius: 6))
+        // One element for VoiceOver: name, state and the mark action.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.fileName)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityAddTraits(isFocused ? [.isImage, .isSelected] : .isImage)
+        .accessibilityAction(named: isChecked ? Text("Unmark for Copy") : Text("Mark for Copy"), onToggleCheck)
         .onHover { isHovering = $0 }
         .task(id: LoadKey(url: item.url, bucket: ThumbnailService.bucket(for: pixelSize))) {
             await load()
         }
+    }
+
+    /// "Marked, 3 of 5 stars, f/2.8 1/250 ISO 200".
+    private var accessibilityValue: String {
+        var parts: [String] = []
+        if isChecked { parts.append(String(localized: "Marked")) }
+        if rating.isRated { parts.append(String(localized: "\(rating.rawValue) of \(Rating.maxStars) stars")) }
+        if isUnreadable { parts.append(String(localized: "Can't read this file")) }
+        if let summary = exif?.summaryLine, !summary.isEmpty { parts.append(summary) }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Parts

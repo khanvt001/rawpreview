@@ -38,14 +38,18 @@ struct ShareMenuItems: View {
                 SharingController.airDropJPEGs(of: images)
             }
 
+            // Grouped, so the menu stays short and the look's name is said once.
             if let look = edits.exportLook(preset: presets.appliedPreset, for: images) {
-                Divider()
-                Button("Share as \(shots) JPEGs with \(look.title)…", systemImage: "camera.filters") {
-                    SharingController.shareJPEGs(of: images, look: look)
-                }
-                .help("Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
-                Button("AirDrop as \(shots) JPEGs with \(look.title)", systemImage: "dot.radiowaves.left.and.right") {
-                    SharingController.airDropJPEGs(of: images, look: look)
+                Menu {
+                    Button("Share as \(shots) JPEGs…", systemImage: "photo") {
+                        SharingController.shareJPEGs(of: images, look: look)
+                    }
+                    .help("Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
+                    Button("AirDrop as \(shots) JPEGs", systemImage: "dot.radiowaves.left.and.right") {
+                        SharingController.airDropJPEGs(of: images, look: look)
+                    }
+                } label: {
+                    Label("With \(look.title)", systemImage: "camera.filters")
                 }
             }
 

@@ -405,44 +405,6 @@
         }
       }
     },
-    "AirDrop as %lld JPEGs with %@": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AirDrop as %#@jpegs@ with %2$@"
-          },
-          "substitutions": {
-            "jpegs": {
-              "argNum": 1,
-              "formatSpecifier": "lld",
-              "variations": {
-                "plural": {
-                  "one": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "JPEG"
-                    }
-                  },
-                  "other": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg JPEGs"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "AirDrop %1$lld JPEG với %2$@"
-          }
-        }
-      }
-    },
     "AirDrop isn't available. Check that Wi-Fi and Bluetooth are on.": {
       "localizations": {
         "vi": {
@@ -687,6 +649,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Không đọc được %@. Tệp có thể bị hỏng hoặc có định dạng không được hỗ trợ."
+          }
+        }
+      }
+    },
+    "Can't read this file": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đọc được tệp này"
           }
         }
       }
@@ -2585,44 +2557,6 @@
         }
       }
     },
-    "Share as %lld JPEGs with %@…": {
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Share as %#@jpegs@ with %2$@…"
-          },
-          "substitutions": {
-            "jpegs": {
-              "argNum": 1,
-              "formatSpecifier": "lld",
-              "variations": {
-                "plural": {
-                  "one": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "JPEG"
-                    }
-                  },
-                  "other": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg JPEGs"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chia sẻ %1$lld JPEG với %2$@…"
-          }
-        }
-      }
-    },
     "Share as %lld JPEGs…": {
       "localizations": {
         "en": {
@@ -3205,6 +3139,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ổ đĩa"
+          }
+        }
+      }
+    },
+    "With %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kèm %@"
           }
         }
       }
