@@ -20,6 +20,11 @@ nonisolated enum PresetRenderer {
     /// One full-resolution render plus navigation previews: the original is
     /// already in `PreviewService`, so more would mostly duplicate memory.
     private static let cache = ImageCache(name: "preset", totalCostLimitMB: 120, countLimit: 6)
+    /// The newest render's cache key for each photo at each size. A new render
+    /// replaces the previous one of the same photo and size: every step of an
+    /// Edit slider drag (or of [ / ] through presets) is a new look, and
+    /// keeping those ~80 MB renders around only pushes useful ones out.
+    private static let latestKeys = OSAllocatedUnfairLock<[String: String]>(initialState: [:])
     /// Lookup tables by preset revision; ~575 KB each, built on first use.
     /// Stepping through presets ([ / ]) can touch hundreds, so only the most
     /// recent `cubeLimit` are kept.
@@ -51,15 +56,27 @@ nonisolated enum PresetRenderer {
     static func render(_ image: CGImage, preset: DevelopPreset?, url: URL) -> CGImage {
         if let hit = cached(image, preset: preset, url: url) { return hit }
         guard let preset, let rendered = apply(preset, to: image) else { return image }
-        cache[key(image, preset: preset, url: url)] = rendered
+        let key = key(image, preset: preset, url: url)
+        cache[key] = rendered
+        let previous = latestKeys.withLock { $0.updateValue(key, forKey: slot(image, url: url)) }
+        if let previous, previous != key {
+            cache[previous] = nil
+        }
         return rendered
     }
 
     static func renderDetached(_ image: CGImage, preset: DevelopPreset?, url: URL) async -> CGImage {
         if let hit = cached(image, preset: preset, url: url) { return hit }
-        return await Task.detached(priority: .userInitiated) {
+        let task = Task.detached(priority: .userInitiated) {
             render(image, preset: preset, url: url)
-        }.value
+        }
+        // A detached task doesn't inherit cancellation: pass it on, so a
+        // slider drag doesn't queue up a full-resolution render per step.
+        return await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     /// For files written out (copy / share): renders on the current thread
@@ -276,6 +293,11 @@ nonisolated enum PresetRenderer {
     }
 
     private static func key(_ image: CGImage, preset: DevelopPreset, url: URL) -> String {
-        "\(preset.revision)|\(image.width)x\(image.height)|\(url.path(percentEncoded: false))"
+        "\(preset.revision)|\(slot(image, url: url))"
+    }
+
+    /// One photo at one size, whatever the look.
+    private static func slot(_ image: CGImage, url: URL) -> String {
+        "\(image.width)x\(image.height)|\(url.path(percentEncoded: false))"
     }
 }

@@ -11,6 +11,7 @@ import SwiftUI
 struct RawPreviewApp: App {
     @State private var library = LibraryViewModel()
     @State private var presets = PresetStore()
+    @State private var edits = EditStore()
 
     init() {
         // Seed before the first thumbnails decode; the window's observer
@@ -18,6 +19,8 @@ struct RawPreviewApp: App {
         if let space = NSScreen.main?.colorSpace?.cgColorSpace {
             DisplayColorSpace.update(to: space)
         }
+        Analytics.start()
+        Analytics.track("app_started")
     }
 
     var body: some Scene {
@@ -25,6 +28,7 @@ struct RawPreviewApp: App {
             RootView()
                 .environment(library)
                 .environment(presets)
+                .environment(edits)
         }
         .defaultSize(width: 1280, height: 820)
         .windowToolbarStyle(.unified)
@@ -34,6 +38,10 @@ struct RawPreviewApp: App {
                 Button("Import Presets…") { presets.chooseAndImport() }
                     .keyboardShortcut("i", modifiers: [.command, .shift])
             }
+        }
+
+        Settings {
+            SettingsView()
         }
     }
 }

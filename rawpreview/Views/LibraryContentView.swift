@@ -149,6 +149,9 @@ struct LibraryContentView: View {
         case "i" where library.viewMode == .loupe:
             library.toggleInspector(.info)
             return .handled
+        case "e" where library.viewMode == .loupe:
+            library.toggleInspector(.edit)
+            return .handled
         case "p" where library.viewMode == .loupe:
             library.toggleInspector(.presets)
             return .handled

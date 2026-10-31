@@ -94,6 +94,7 @@ final class LibraryViewModel {
 
     enum InspectorTab: String {
         case info
+        case edit
         case presets
     }
 
@@ -112,9 +113,9 @@ final class LibraryViewModel {
         didSet { UserDefaults.standard.set(copiesIntoDateFolders, forKey: "copiesIntoDateFolders") }
     }
     private(set) var copyState: CopyState = .idle
-    /// The preset the current / last copy exported JPEGs with; `nil` when it
+    /// The look the current / last copy exported JPEGs with; `nil` when it
     /// copied the original files.
-    private(set) var copyPreset: DevelopPreset?
+    private(set) var copyLook: ExportLook?
     /// Why the last copy stopped early, when it wasn't the user's Cancel.
     private(set) var copyInterruption: String?
     /// Volume currently being ejected (for the sidebar spinner).
@@ -509,9 +510,9 @@ final class LibraryViewModel {
     }
 
     /// ⌘Return: copies every marked file (including ones hidden by the filter,
-    /// matching the "N marked" count) to the destination. With a preset, each
+    /// matching the "N marked" count) to the destination. With a look, each
     /// marked shot is exported as a JPEG with it applied instead.
-    func startCopy(applying preset: DevelopPreset? = nil) {
+    func startCopy(applying look: ExportLook? = nil) {
         guard !isCopying else { return }
         guard !checkedIDs.isEmpty else {
             NSSound.beep()
@@ -526,7 +527,7 @@ final class LibraryViewModel {
         let pendingRatingWrite = lastSidecarWrite
         let sourceRoot = sourceURL
         let intoDateFolders = copiesIntoDateFolders
-        copyPreset = preset
+        copyLook = look
         copyState = .running(CopyService.Progress(totalFiles: marked.count))
 
         copyTask = Task {
@@ -536,7 +537,7 @@ final class LibraryViewModel {
             do {
                 let plans = try await copier.plan(
                     marked, to: destination, from: sourceRoot,
-                    intoDateFolders: intoDateFolders, preset: preset
+                    intoDateFolders: intoDateFolders, look: look
                 )
                 let report = await copier.copy(plans, to: destination, ratings: ratings) { progress in
                     Task { @MainActor [weak self] in

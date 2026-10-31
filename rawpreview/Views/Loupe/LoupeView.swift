@@ -5,10 +5,11 @@
 
 import SwiftUI
 
-/// Single Image mode: zoomable image, filmstrip below, Info / Presets sidebar on the right.
+/// Single Image mode: zoomable image, filmstrip below, Info / Edit / Presets sidebar on the right.
 struct LoupeView: View {
     @Environment(LibraryViewModel.self) private var library
     @Environment(PresetStore.self) private var presets
+    @Environment(EditStore.self) private var edits
 
     @State private var image: CGImage?
     @State private var isFullResolution = false
@@ -29,6 +30,7 @@ struct LoupeView: View {
             VStack(spacing: 0) {
                 Picker("Sidebar", selection: $library.inspectorTab) {
                     Text("Info").tag(LibraryViewModel.InspectorTab.info)
+                    Text("Edit").tag(LibraryViewModel.InspectorTab.edit)
                     Text("Presets").tag(LibraryViewModel.InspectorTab.presets)
                 }
                 .pickerStyle(.segmented)
@@ -50,6 +52,8 @@ struct LoupeView: View {
                     } else {
                         Spacer()
                     }
+                case .edit:
+                    EditInspector(item: library.focusedItem, image: image)
                 case .presets:
                     PresetInspector()
                 }
@@ -64,6 +68,15 @@ struct LoupeView: View {
                 .focusable(false)
                 .disabled(library.focusedItem == nil)
                 .help("Delete this photo permanently, or all marked photos if it is marked (⌘⌫)")
+            }
+            ToolbarItem {
+                Button("Edit", systemImage: "slider.horizontal.3") {
+                    library.toggleInspector(.edit)
+                }
+                // Tinted while this photo has adjustments.
+                .foregroundStyle(edits.hasAdjustments(library.focusedID) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+                .focusable(false)
+                .help("Show / hide edit (E)")
             }
             ToolbarItem {
                 Button("Presets", systemImage: "camera.filters") {
@@ -82,12 +95,17 @@ struct LoupeView: View {
                 .help("Show / hide info (I)")
             }
         }
-        .task(id: LoadKey(photo: library.focusedID, preset: presets.activePreset?.revision)) {
+        .task(id: LoadKey(photo: library.focusedID, preset: renderPreset?.revision)) {
             await load()
         }
     }
 
-    /// Reload when the photo or the applied preset changes.
+    /// The applied preset with this photo's Edit adjustments on top.
+    private var renderPreset: DevelopPreset? {
+        edits.preset(applying: presets.activePreset, to: library.focusedID)
+    }
+
+    /// Reload when the photo, the applied preset or its adjustments change.
     private struct LoadKey: Equatable {
         let photo: PhotoItem.ID?
         let preset: UUID?
@@ -162,7 +180,7 @@ struct LoupeView: View {
             return
         }
 
-        let preset = presets.activePreset
+        let preset = renderPreset
 
         // 1. Paint whatever is in memory (full image or a thumbnail) this frame.
         //    Thumbnails take the preset inline, so a photo never flashes
@@ -196,11 +214,11 @@ struct LoupeView: View {
         // 3. Full resolution (for zooming) only once navigation pauses. While an
         //    arrow key is held, each step cancels this task here, so photos you
         //    skip past never pay for a 20 MP decode and swap. Already decoded
-        //    (only the preset changed): no reason to wait.
-        if full == nil {
-            try? await Task.sleep(for: .milliseconds(150))
-            guard !Task.isCancelled else { return }
-        }
+        //    (only the preset or a slider changed): a shorter pause, so a
+        //    slider drag shows the quick preview and renders full size once
+        //    it slows down.
+        try? await Task.sleep(for: .milliseconds(full == nil ? 150 : 60))
+        guard !Task.isCancelled else { return }
         PreviewService.shared.prefetch(library.neighbours(of: item.id, radius: 1).filter(\.kind.isImage).map(\.url))
 
         let loaded = await PreviewService.shared.fullResolution(for: item.url)

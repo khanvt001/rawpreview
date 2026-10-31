@@ -19,6 +19,8 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     let title: String
     /// One-line description, for built-in presets.
     let summary: String?
+    /// The preset file's settings, kept so Edit adjustments can be added on top.
+    let settings: [String: PresetValue]
     let look: PresetLook
     /// Human-readable names of the adjustments this preset makes that the
     /// preview leaves out, e.g. `["Calibration"]`.
@@ -61,8 +63,26 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         self.id = id
         self.title = title
         self.summary = summary
+        self.settings = settings
         look = PresetLook(settings: settings)
         unsupportedSettings = Self.unsupported(in: settings)
+    }
+
+    /// `preset` with `light` added to its Basic tone values (or `light` alone
+    /// when there is no preset), as one preset the renderer can apply.
+    static func combining(_ preset: DevelopPreset?, with light: LightAdjustments) -> DevelopPreset? {
+        guard !light.isZero else { return preset }
+        var settings = preset?.settings ?? [:]
+        for slider in LightAdjustments.Slider.allCases where light[slider] != 0 {
+            let total = (settings[slider.settingsKey]?.number ?? 0) + light[slider]
+            settings[slider.settingsKey] = .number(min(max(total, slider.range.lowerBound), slider.range.upperBound))
+        }
+        return DevelopPreset(
+            id: preset?.id ?? "edit",
+            title: preset?.title ?? "Edit",
+            summary: preset?.summary,
+            settings: settings
+        )
     }
 
     var isMonochrome: Bool {

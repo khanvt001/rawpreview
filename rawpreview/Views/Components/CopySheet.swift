@@ -34,7 +34,7 @@ struct CopySheet: View {
     private func running(_ progress: CopyService.Progress) -> some View {
         Group {
             Label {
-                Text("\(library.copyPreset == nil ? "Copying" : "Exporting") \(progress.completedFiles) of \(progress.totalFiles)")
+                Text("\(library.copyLook == nil ? "Copying" : "Exporting") \(progress.completedFiles) of \(progress.totalFiles)")
                     .font(.headline)
             } icon: {
                 Image(systemName: "doc.on.doc")
@@ -52,8 +52,8 @@ struct CopySheet: View {
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
 
-            if let preset = library.copyPreset {
-                Text("JPEG with “\(preset.title)” applied")
+            if let look = library.copyLook {
+                Text("JPEG with \(look.title) applied")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -108,7 +108,7 @@ struct CopySheet: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                summaryRow("\(report.copied) \(library.copyPreset == nil ? "copied" : "exported")", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
+                summaryRow("\(report.copied) \(library.copyLook == nil ? "copied" : "exported")", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
                 if report.skipped > 0 {
                     summaryRow("\(report.skipped) already there", detail: "skipped (same name and size)")
                 }
@@ -179,7 +179,7 @@ struct CopySheet: View {
                 Button("Choose Another Folder…") {
                     library.dismissCopyResult()
                     if library.chooseCopyDestination() {
-                        library.startCopy(applying: library.copyPreset)
+                        library.startCopy(applying: library.copyLook)
                     }
                 }
                 Spacer()

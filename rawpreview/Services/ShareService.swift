@@ -12,7 +12,7 @@ import Foundation
 /// - Decoded from the RAW's embedded preview (`ImageDecoder`), so it's fast
 ///   and matches what the camera showed.
 /// - Long edge 2048 px, quality 0.85; orientation baked in.
-/// - Optionally with a develop preset applied (`PresetRenderer.export`).
+/// - Optionally with a preset and Edit adjustments applied (`ExportLook`).
 /// - Camera EXIF (exposure, lens, date) is kept; GPS is removed, so a shared
 ///   photo doesn't reveal where it was taken.
 /// - Written under a per-share folder in the temporary directory; old
@@ -38,9 +38,9 @@ nonisolated enum ShareService {
     }
 
     /// One JPEG per shot, in input order, named after the original
-    /// (`DSC_6260.NEF` → `DSC_6260.jpg`), with `preset` applied if given.
+    /// (`DSC_6260.NEF` → `DSC_6260.jpg`), with `look` applied if given.
     @concurrent
-    static func makeJPEGs(for items: [PhotoItem], preset: DevelopPreset? = nil) async throws -> [URL] {
+    static func makeJPEGs(for items: [PhotoItem], look: ExportLook? = nil) async throws -> [URL] {
         let folder = exportRoot.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let jobs = uniqueJobs(for: items)
@@ -48,7 +48,7 @@ nonisolated enum ShareService {
         return try await withThrowingTaskGroup(of: (Int, URL).self) { group in
             for (index, job) in jobs.enumerated() {
                 group.addTask {
-                    (index, try makeJPEG(for: job.item, named: job.name, preset: preset, in: folder))
+                    (index, try makeJPEG(for: job.item, named: job.name, preset: look?.preset(for: job.item), in: folder))
                 }
             }
             var results = [URL?](repeating: nil, count: jobs.count)

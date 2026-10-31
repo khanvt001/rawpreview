@@ -10,6 +10,7 @@ import SwiftUI
 /// menus and the toolbar's Share menu.
 struct ShareMenuItems: View {
     @Environment(PresetStore.self) private var presets
+    @Environment(EditStore.self) private var edits
     let items: [PhotoItem]
 
     var body: some View {
@@ -34,14 +35,14 @@ struct ShareMenuItems: View {
                 SharingController.airDropJPEGs(of: images)
             }
 
-            if let preset = presets.selectedPreset {
+            if let look = edits.exportLook(preset: presets.selectedPreset, for: images) {
                 Divider()
-                Button("Share as \(noun) with “\(preset.title)”…", systemImage: "camera.filters") {
-                    SharingController.shareJPEGs(of: images, preset: preset)
+                Button("Share as \(noun) with \(look.title)…", systemImage: "camera.filters") {
+                    SharingController.shareJPEGs(of: images, look: look)
                 }
-                .help("Makes 2048 px JPEG copies with the preset applied (GPS removed) and opens the share sheet")
-                Button("AirDrop as \(noun) with “\(preset.title)”", systemImage: "dot.radiowaves.left.and.right") {
-                    SharingController.airDropJPEGs(of: images, preset: preset)
+                .help("Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
+                Button("AirDrop as \(noun) with \(look.title)", systemImage: "dot.radiowaves.left.and.right") {
+                    SharingController.airDropJPEGs(of: images, look: look)
                 }
             }
         }
@@ -51,13 +52,14 @@ struct ShareMenuItems: View {
 /// Generates temporary JPEGs and hands them to AppKit sharing.
 @MainActor
 enum SharingController {
-    static func shareJPEGs(of items: [PhotoItem], preset: DevelopPreset? = nil) {
+    static func shareJPEGs(of items: [PhotoItem], look: ExportLook? = nil) {
         // Remember where the click happened; the picker is anchored there once
         // the JPEGs are ready.
         let window = NSApp.keyWindow
         let mouse = window?.mouseLocationOutsideOfEventStream
+        Analytics.track("photos_shared", ["count": items.count, "via": "share_sheet", "with_preset": look?.preset != nil, "with_edits": look?.adjustments.isEmpty == false])
         Task {
-            guard let urls = await makeJPEGs(items, preset: preset),
+            guard let urls = await makeJPEGs(items, look: look),
                   let window, let mouse, let view = window.contentView
             else { return }
             let point = view.convert(mouse, from: nil)
@@ -66,9 +68,10 @@ enum SharingController {
         }
     }
 
-    static func airDropJPEGs(of items: [PhotoItem], preset: DevelopPreset? = nil) {
+    static func airDropJPEGs(of items: [PhotoItem], look: ExportLook? = nil) {
+        Analytics.track("photos_shared", ["count": items.count, "via": "airdrop", "with_preset": look?.preset != nil, "with_edits": look?.adjustments.isEmpty == false])
         Task {
-            guard let urls = await makeJPEGs(items, preset: preset) else { return }
+            guard let urls = await makeJPEGs(items, look: look) else { return }
             guard let airDrop = NSSharingService(named: .sendViaAirDrop), airDrop.canPerform(withItems: urls) else {
                 showError("AirDrop isn't available. Check that Wi-Fi and Bluetooth are on.")
                 return
@@ -77,9 +80,9 @@ enum SharingController {
         }
     }
 
-    private static func makeJPEGs(_ items: [PhotoItem], preset: DevelopPreset?) async -> [URL]? {
+    private static func makeJPEGs(_ items: [PhotoItem], look: ExportLook?) async -> [URL]? {
         do {
-            return try await ShareService.makeJPEGs(for: items, preset: preset)
+            return try await ShareService.makeJPEGs(for: items, look: look)
         } catch {
             showError(error.localizedDescription)
             return nil

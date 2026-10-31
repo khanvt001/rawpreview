@@ -24,9 +24,10 @@ import Foundation
 ///   one (e.g. Lightroom edits) it is kept and only the rating is merged in;
 ///   the rating is also written when the card itself couldn't take a sidecar
 ///   (write-locked card).
-/// - With a develop preset, each shot is instead exported as a full-size
-///   JPEG with the preset applied (`render`): one per RAW+JPEG pair, from the
-///   same image the loupe shows, star rating embedded. A JPEG already at the
+/// - With an `ExportLook` (a preset and / or Edit adjustments), each shot is
+///   instead exported as a full-size JPEG with its look applied (`render`):
+///   one per RAW+JPEG pair, from the same image the loupe shows, star rating
+///   embedded. A shot the look doesn't change is exported as shot. A JPEG already at the
 ///   destination is never overwritten or skipped; the export gets a suffix.
 nonisolated struct CopyService: Sendable {
     struct Progress: Sendable, Equatable {
@@ -86,8 +87,8 @@ nonisolated struct CopyService: Sendable {
         enum Action: Sendable {
             case copy
             case skipExisting
-            /// Export a JPEG with this preset applied.
-            case render(DevelopPreset)
+            /// Export a JPEG with this preset applied (`nil`: as shot).
+            case render(DevelopPreset?)
         }
 
         let source: URL
@@ -109,7 +110,7 @@ nonisolated struct CopyService: Sendable {
         to folder: URL,
         from sourceRoot: URL?,
         intoDateFolders: Bool = false,
-        preset: DevelopPreset? = nil
+        look: ExportLook? = nil
     ) async throws -> [Plan] {
         if let sourceRoot, folder.isContained(in: sourceRoot) {
             throw CopyError.destinationInsideSource
@@ -122,7 +123,7 @@ nonisolated struct CopyService: Sendable {
             ? Dictionary(items.compactMap { item in item.creationDate.map { (item.sidecarURL, $0) } }, uniquingKeysWith: min)
             : [:]
 
-        let items = preset == nil ? items : Self.oneImagePerShot(items)
+        let items = look == nil ? items : Self.oneImagePerShot(items)
         var reserved = Set<String>()
         var createdFolders: Set<URL> = [folder]
         var plans: [Plan] = []
@@ -134,13 +135,13 @@ nonisolated struct CopyService: Sendable {
                     try fileManager.createDirectory(at: itemFolder, withIntermediateDirectories: true)
                 }
             }
-            if let preset {
+            if let look {
                 let destination = Self.resolveExportDestination(for: item, in: itemFolder, reserved: &reserved)
                 plans.append(Plan(
                     source: item.url,
                     destination: destination,
                     size: item.fileSize,
-                    action: .render(preset),
+                    action: .render(look.preset(for: item)),
                     isRaw: false,
                     sourceSidecar: nil
                 ))
@@ -304,6 +305,8 @@ nonisolated struct CopyService: Sendable {
 
         report.wasCancelled = Task.isCancelled && progress.completedFiles < plans.count
         report.duration = ContinuousClock.now - start
+        let withPreset = plans.contains { if case .render = $0.action { true } else { false } }
+        Analytics.track("photos_copied", ["count": report.copied, "with_preset": withPreset])
         return report
     }
 
@@ -337,9 +340,9 @@ nonisolated struct CopyService: Sendable {
         }
     }
 
-    /// Decodes, applies the preset and writes the JPEG; returns its size.
-    /// Off the cooperative pool's threads: one takes several hundred ms.
-    private static func render(_ plan: Plan, preset: DevelopPreset, rating: Rating?) async throws -> Int64 {
+    /// Decodes, applies the preset (if any) and writes the JPEG; returns its
+    /// size. Off the cooperative pool's threads: one takes several hundred ms.
+    private static func render(_ plan: Plan, preset: DevelopPreset?, rating: Rating?) async throws -> Int64 {
         try await Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
             let name = plan.source.lastPathComponent
@@ -349,7 +352,7 @@ nonisolated struct CopyService: Sendable {
                 throw ExportError.decodeFailed(name)
             }
             try Task.checkCancellation()
-            guard let rendered = PresetRenderer.export(image, preset: preset) else {
+            guard let rendered = preset.map({ PresetRenderer.export(image, preset: $0) }) ?? image else {
                 throw CancellationError()
             }
             let partial = plan.destination.appendingPathExtension("partial")
