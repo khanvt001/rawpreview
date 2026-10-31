@@ -18,7 +18,7 @@ struct ExportOptionsView: View {
 
         VStack(alignment: .leading, spacing: 14) {
             Label {
-                Text("Export \(shots == 1 ? "1 Photo" : "\(shots) Photos")")
+                Text("Export \(shots) Photos")
                     .font(.headline)
             } icon: {
                 Image(systemName: "square.and.arrow.up.on.square")
@@ -75,7 +75,7 @@ struct ExportOptionsView: View {
             HStack(spacing: 6) {
                 Image(systemName: "folder")
                     .foregroundStyle(.secondary)
-                Text(library.copyDestination?.path(percentEncoded: false) ?? "No folder chosen")
+                Text(library.copyDestination?.path(percentEncoded: false) ?? String(localized: "No folder chosen"))
                     .lineLimit(1)
                     .truncationMode(.middle)
                     .foregroundStyle(library.copyDestination == nil ? .secondary : .primary)
@@ -110,16 +110,16 @@ struct ExportOptionsView: View {
     }
 
     private func note(_ settings: ExportSettings) -> String {
-        let source = "RAW files are exported from the camera's full-size embedded preview."
+        let source = String(localized: "RAW files are exported from the camera's full-size embedded preview.")
         switch settings.format {
         case .jpeg:
-            return "Smallest files, readable everywhere. 90 or above keeps compression hard to see. \(source)"
+            return String(localized: "Smallest files, readable everywhere. 90 or above keeps compression hard to see. \(source)")
         case .heif:
-            return "About half the size of a JPEG at the same quality; best for Apple devices. \(source)"
+            return String(localized: "About half the size of a JPEG at the same quality; best for Apple devices. \(source)")
         case .png:
             // Measured on 20 MP Nikon files: 8-bit 12 MB for a sky-heavy photo, more for busy ones.
             let size = settings.uses16Bit ? "25–70 MB" : "10–35 MB"
-            return "Lossless, no compression artifacts. Around \(size) per photo at full size. \(source)"
+            return String(localized: "Lossless, no compression artifacts. Around \(size) per photo at full size. \(source)")
         }
     }
 }

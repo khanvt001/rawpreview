@@ -69,11 +69,11 @@ nonisolated struct CopyService: Sendable {
         var errorDescription: String? {
             switch self {
             case .destinationInsideSource:
-                "Choose a destination outside the folder you're copying from."
+                String(localized: "Choose a destination outside the folder you're copying from.")
             case let .notEnoughSpace(needed, available):
-                "Not enough space: \(needed.formatted(.byteCount(style: .file))) needed, \(available.formatted(.byteCount(style: .file))) available."
+                String(localized: "Not enough space: \(needed.formatted(.byteCount(style: .file))) needed, \(available.formatted(.byteCount(style: .file))) available.")
             case .sizeMismatch:
-                "The copy's size doesn't match the original."
+                String(localized: "The copy's size doesn't match the original.")
             }
         }
     }
@@ -93,7 +93,7 @@ nonisolated struct CopyService: Sendable {
         /// What the progress and summary say, e.g. "PNG with Edits applied".
         var title: String {
             if let look, settings.appliesLook {
-                return "\(settings.format.title) with \(look.title) applied"
+                return String(localized: "\(settings.format.title) with \(look.title) applied")
             }
             return settings.format.title
         }
@@ -342,7 +342,7 @@ nonisolated struct CopyService: Sendable {
 
     /// Copies one file (and its sidecar) on a TaskGroup child.
     private static func perform(_ plan: Plan, rating: Rating?) async -> Outcome {
-        guard !Task.isCancelled else { return .failed("Cancelled") }
+        guard !Task.isCancelled else { return .failed(String(localized: "Cancelled")) }
         let fileManager = FileManager.default
         do {
             if case let .render(preset, settings) = plan.action {
@@ -408,7 +408,7 @@ nonisolated struct CopyService: Sendable {
 
         var errorDescription: String? {
             switch self {
-            case .decodeFailed(let name): "Couldn't read \(name)."
+            case .decodeFailed(let name): String(localized: "Couldn't read \(name).")
             }
         }
     }

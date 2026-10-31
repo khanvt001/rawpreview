@@ -30,22 +30,21 @@ struct ShareMenuItems: View {
         if !images.isEmpty {
             // One JPEG per shot: a RAW+JPEG pair is shared once.
             let shots = Set(images.map(\.sidecarURL)).count
-            let noun = shots == 1 ? "JPEG" : "\(shots) JPEGs"
-            Button("Share as \(noun)…", systemImage: "photo") {
+            Button("Share as \(shots) JPEGs…", systemImage: "photo") {
                 SharingController.shareJPEGs(of: images)
             }
             .help("Makes 2048 px JPEG copies (GPS removed) and opens the share sheet")
-            Button("AirDrop as \(noun)", systemImage: "dot.radiowaves.left.and.right") {
+            Button("AirDrop as \(shots) JPEGs", systemImage: "dot.radiowaves.left.and.right") {
                 SharingController.airDropJPEGs(of: images)
             }
 
             if let look = edits.exportLook(preset: presets.appliedPreset, for: images) {
                 Divider()
-                Button("Share as \(noun) with \(look.title)…", systemImage: "camera.filters") {
+                Button("Share as \(shots) JPEGs with \(look.title)…", systemImage: "camera.filters") {
                     SharingController.shareJPEGs(of: images, look: look)
                 }
                 .help("Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
-                Button("AirDrop as \(noun) with \(look.title)", systemImage: "dot.radiowaves.left.and.right") {
+                Button("AirDrop as \(shots) JPEGs with \(look.title)", systemImage: "dot.radiowaves.left.and.right") {
                     SharingController.airDropJPEGs(of: images, look: look)
                 }
             }
@@ -100,7 +99,7 @@ enum SharingController {
         Task {
             guard let urls = await makeJPEGs(items, look: look) else { return }
             guard let airDrop = NSSharingService(named: .sendViaAirDrop), airDrop.canPerform(withItems: urls) else {
-                showError("AirDrop isn't available. Check that Wi-Fi and Bluetooth are on.")
+                showError(String(localized: "AirDrop isn't available. Check that Wi-Fi and Bluetooth are on."))
                 return
             }
             airDrop.perform(withItems: urls)
@@ -118,7 +117,7 @@ enum SharingController {
 
     private static func showError(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "Couldn't Share"
+        alert.messageText = String(localized: "Couldn't Share")
         alert.informativeText = message
         alert.runModal()
     }
@@ -139,7 +138,7 @@ struct PhotoContextMenu: View {
         }
         Menu("Rating") {
             ForEach(0...Rating.maxStars, id: \.self) { stars in
-                Button(stars == 0 ? "None" : String(repeating: "★", count: stars)) {
+                Button(stars == 0 ? String(localized: "None") : String(repeating: "★", count: stars)) {
                     library.setRating(Rating(stars), for: item.id)
                 }
             }

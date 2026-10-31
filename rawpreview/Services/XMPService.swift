@@ -21,7 +21,7 @@ actor XMPService {
         var errorDescription: String? {
             switch self {
             case .unreadableSidecar(let url):
-                "\(url.lastPathComponent) exists but isn't valid XMP, so it was left untouched."
+                String(localized: "\(url.lastPathComponent) exists but isn't valid XMP, so it was left untouched.")
             }
         }
     }

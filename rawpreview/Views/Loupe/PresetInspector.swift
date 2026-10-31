@@ -71,14 +71,14 @@ struct PresetInspector: View {
                             }
                         } header: {
                             if !imported.isEmpty {
-                                GridHeader(title: "Imported", count: imported.count)
+                                GridHeader(title: String(localized: "Imported"), count: imported.count)
                             }
                         }
                     } else if !imported.isEmpty {
                         Section {
                             ForEach(imported) { tile($0) }
                         } header: {
-                            GridHeader(title: "Imported", count: imported.count)
+                            GridHeader(title: String(localized: "Imported"), count: imported.count)
                         }
                     }
 
@@ -214,7 +214,7 @@ private struct PresetTile: View {
     var body: some View {
         Button(action: select) {
             HStack(spacing: 4) {
-                Text(preset?.title ?? "None")
+                Text(preset?.title ?? String(localized: "None"))
                     .font(.caption)
                     .fontWeight(isSelected ? .semibold : .regular)
                     .lineLimit(2)
@@ -242,7 +242,7 @@ private struct PresetTile: View {
         .buttonStyle(.plain)
         .focusable(false)
         .onHover { isHovered = $0 }
-        .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? "The photo as shot")
+        .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? String(localized: "The photo as shot"))
     }
 
     private var background: AnyShapeStyle {
@@ -315,7 +315,7 @@ private struct CurrentPresetCard: View {
                         PresetMenuItems()
                     } label: {
                         HStack(spacing: 4) {
-                            Text(store.selectedPreset?.title ?? "No Preset")
+                            Text(store.selectedPreset?.title ?? String(localized: "No Preset"))
                                 .font(.headline)
                                 .lineLimit(1)
                             Image(systemName: "chevron.up.chevron.down")
@@ -390,9 +390,9 @@ private struct CurrentPresetCard: View {
     }
 
     private var subtitle: String {
-        guard let preset = store.selectedPreset else { return "Choose a preset below to preview it" }
-        let source = store.category(of: preset.id)?.name ?? "Imported"
-        return store.isEnabled ? source : "\(source) · showing original"
+        guard let preset = store.selectedPreset else { return String(localized: "Choose a preset below to preview it") }
+        let source = store.category(of: preset.id)?.name ?? String(localized: "Imported")
+        return store.isEnabled ? source : String(localized: "\(source) · showing original")
     }
 }
 

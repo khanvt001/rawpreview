@@ -32,7 +32,7 @@ struct DeleteSheet: View {
 
             if !paired.isEmpty {
                 Toggle(isOn: $library.deletesPairedFiles) {
-                    Text("Also delete the matching \(Self.kinds(of: paired)) with the same name (\(paired.count) \(paired.count == 1 ? "file" : "files"))")
+                    Text("Also delete the matching \(Self.kinds(of: paired)) with the same name (\(paired.count) files)")
                 }
                 .help(paired.prefix(5).map(\.fileName).joined(separator: ", ") + (paired.count > 5 ? "…" : ""))
             }

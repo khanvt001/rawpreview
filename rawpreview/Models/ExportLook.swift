@@ -30,8 +30,8 @@ nonisolated struct ExportLook: Sendable {
     var title: String {
         switch (preset, adjustments.isEmpty) {
         case (let preset?, true): "“\(preset.titleWithAmount)”"
-        case (let preset?, false): "“\(preset.titleWithAmount)” + Edits"
-        case (nil, _): "Edits"
+        case (let preset?, false): String(localized: "“\(preset.titleWithAmount)” + Edits")
+        case (nil, _): String(localized: "Edits")
         }
     }
 }

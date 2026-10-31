@@ -53,17 +53,17 @@ final class LibraryViewModel {
 
         var title: String {
             switch self {
-            case .captureDate: "Capture Date"
-            case .name: "File Name"
-            case .fileSize: "File Size"
+            case .captureDate: String(localized: "Capture Date")
+            case .name: String(localized: "File Name")
+            case .fileSize: String(localized: "File Size")
             }
         }
 
         func directionTitle(ascending: Bool) -> String {
             switch self {
-            case .captureDate: ascending ? "Oldest First" : "Newest First"
-            case .name: ascending ? "A to Z" : "Z to A"
-            case .fileSize: ascending ? "Smallest First" : "Largest First"
+            case .captureDate: ascending ? String(localized: "Oldest First") : String(localized: "Newest First")
+            case .name: ascending ? String(localized: "A to Z") : String(localized: "Z to A")
+            case .fileSize: ascending ? String(localized: "Smallest First") : String(localized: "Largest First")
             }
         }
     }
@@ -284,7 +284,7 @@ final class LibraryViewModel {
         panel.canChooseDirectories = true
         panel.canChooseFiles = false
         panel.allowsMultipleSelection = false
-        panel.prompt = "Open"
+        panel.prompt = String(localized: "Open")
         panel.directoryURL = sourceURL ?? URL(filePath: "/Volumes", directoryHint: .isDirectory)
         if panel.runModal() == .OK, let url = panel.url {
             sourceURL = url
@@ -445,7 +445,7 @@ final class LibraryViewModel {
             do {
                 try await XMPService.shared.setRating(rating, sidecar: sidecar)
             } catch {
-                ratingSaveError = "Couldn't save the rating for \(id.lastPathComponent): \(error.localizedDescription)"
+                ratingSaveError = String(localized: "Couldn't save the rating for \(id.lastPathComponent): \(error.localizedDescription)")
             }
         }
     }
@@ -468,7 +468,7 @@ final class LibraryViewModel {
     func requestDelete(_ targets: [PhotoItem]) {
         guard !targets.isEmpty else { return }
         guard !isCopying else {
-            deleteError = "A copy is in progress. Wait for it to finish, or cancel it, before deleting."
+            deleteError = String(localized: "A copy is in progress. Wait for it to finish, or cancel it, before deleting.")
             return
         }
         pendingDeletion = targets
@@ -519,8 +519,10 @@ final class LibraryViewModel {
             items.removeAll { deleted.contains($0.id) }
 
             if let first = failures.first {
-                let more = failures.count > 1 ? " (and \(failures.count - 1) more)" : ""
-                deleteError = "Couldn't delete \(first.url.lastPathComponent)\(more): \(first.reason)"
+                let name = first.url.lastPathComponent
+                deleteError = failures.count > 1
+                    ? String(localized: "Couldn't delete \(name) (and \(failures.count - 1) more): \(first.reason)")
+                    : String(localized: "Couldn't delete \(name): \(first.reason)")
             }
         }
     }
@@ -560,9 +562,9 @@ final class LibraryViewModel {
         panel.canChooseFiles = false
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = "Copy Here"
-        panel.message = "Choose where marked photos are copied. Use New Folder to make one."
-        let dateFolders = NSButton(checkboxWithTitle: "Sort into date folders (YYYY-MM-DD)", target: nil, action: nil)
+        panel.prompt = String(localized: "Copy Here")
+        panel.message = String(localized: "Choose where marked photos are copied. Use New Folder to make one.")
+        let dateFolders = NSButton(checkboxWithTitle: String(localized: "Sort into date folders (YYYY-MM-DD)"), target: nil, action: nil)
         dateFolders.state = copiesIntoDateFolders ? .on : .off
         panel.accessoryView = dateFolders
         panel.isAccessoryViewDisclosed = true
@@ -790,10 +792,10 @@ final class LibraryViewModel {
         if didUnmount, let volumeURL {
             if isCopying {
                 if sourceURL?.isContained(in: volumeURL) == true {
-                    copyInterruption = "The card was removed during the copy. Files that finished are complete; reinsert the card, mark the photos and copy again — files already copied are skipped."
+                    copyInterruption = String(localized: "The card was removed during the copy. Files that finished are complete; reinsert the card, mark the photos and copy again — files already copied are skipped.")
                     cancelCopy()
                 } else if copyDestination?.isContained(in: volumeURL) == true {
-                    copyInterruption = "The destination drive was disconnected during the copy. Reconnect it and copy again — files already copied are skipped."
+                    copyInterruption = String(localized: "The destination drive was disconnected during the copy. Reconnect it and copy again — files already copied are skipped.")
                     cancelCopy()
                 }
             }
@@ -816,7 +818,7 @@ final class LibraryViewModel {
 
     func eject(_ volume: VolumeInfo) {
         guard !isCopying else {
-            ejectError = "A copy is in progress. Wait for it to finish, or cancel it, before ejecting."
+            ejectError = String(localized: "A copy is in progress. Wait for it to finish, or cancel it, before ejecting.")
             return
         }
         guard ejectingVolumeID == nil else { return }
@@ -832,7 +834,7 @@ final class LibraryViewModel {
             do {
                 try await Self.unmountAndEject(volume.url)
             } catch {
-                ejectError = "Couldn't eject “\(volume.name)”: \(error.localizedDescription)"
+                ejectError = String(localized: "Couldn't eject “\(volume.name)”: \(error.localizedDescription)")
                 if wasBrowsing { sourceURL = volume.preferredSourceURL }
             }
             ejectingVolumeID = nil

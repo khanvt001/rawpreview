@@ -17,7 +17,7 @@ nonisolated enum ImageWriter {
         var errorDescription: String? {
             switch self {
             case let .failed(name, type):
-                "Couldn't create a \(type.preferredFilenameExtension?.uppercased() ?? "file") for \(name)."
+                String(localized: "Couldn't create a \(type.preferredFilenameExtension?.uppercased() ?? "file") for \(name).")
             }
         }
     }

@@ -175,8 +175,8 @@ final class PresetStore {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
         panel.allowedContentTypes = DevelopPreset.fileExtensions.compactMap { UTType(filenameExtension: $0) }
-        panel.prompt = "Import"
-        panel.message = "Choose Lightroom presets (.lrtemplate or .xmp), or folders containing them."
+        panel.prompt = String(localized: "Import")
+        panel.message = String(localized: "Choose Lightroom presets (.lrtemplate or .xmp), or folders containing them.")
         guard panel.runModal() == .OK else { return }
         importPresets(from: panel.urls)
     }
@@ -228,10 +228,10 @@ final class PresetStore {
         reload()
         if let lastImported { selectedID = lastImported }
         if lastImported == nil, failures.isEmpty {
-            failures.append("No Lightroom develop presets were found.")
+            failures.append(String(localized: "No Lightroom develop presets were found."))
         }
         if skippedInFolders > 0, !failures.isEmpty || lastImported == nil {
-            failures.append("\(skippedInFolders) other file\(skippedInFolders == 1 ? "" : "s") in the folders weren't develop presets.")
+            failures.append(String(localized: "\(skippedInFolders) other files in the folders weren't develop presets."))
         }
         if !failures.isEmpty { loadError = failures.joined(separator: "\n") }
     }

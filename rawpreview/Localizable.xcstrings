@@ -1,0 +1,2804 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ exists but isn't valid XMP, so it was left untouched.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ đã tồn tại nhưng không phải XMP hợp lệ nên được giữ nguyên."
+          }
+        }
+      }
+    },
+    "%@ free": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Còn trống %@"
+          }
+        }
+      }
+    },
+    "%@ in %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ trong %2$@"
+          }
+        }
+      }
+    },
+    "%@ isn't a Develop preset.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ không phải Develop preset."
+          }
+        }
+      }
+    },
+    "%@ isn't a Lightroom preset this app can read.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ không phải Lightroom preset mà ứng dụng đọc được."
+          }
+        }
+      }
+    },
+    "%@ may be damaged or in an unsupported format.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ có thể bị hỏng hoặc có định dạng không được hỗ trợ."
+          }
+        }
+      }
+    },
+    "%@ of %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ / %2$@"
+          }
+        }
+      }
+    },
+    "%@ with %@ applied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ có áp dụng %2$@"
+          }
+        }
+      }
+    },
+    "%@ · showing original": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · đang hiện ảnh gốc"
+          }
+        }
+      }
+    },
+    "%@/s · %@ left": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@/s · còn %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld already there": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld đã có sẵn"
+          }
+        }
+      }
+    },
+    "%lld copied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã sao chép %lld"
+          }
+        }
+      }
+    },
+    "%lld exported": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã xuất %lld"
+          }
+        }
+      }
+    },
+    "%lld failed": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bị lỗi"
+          }
+        }
+      }
+    },
+    "%lld of %lld files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld tệp"
+          }
+        }
+      }
+    },
+    "%lld of %lld stars": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld of %#@stars@"
+          },
+          "substitutions": {
+            "stars": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg star"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg stars"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld / %2$lld sao"
+          }
+        }
+      }
+    },
+    "%lld other files in the folders weren't develop presets.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld other file in the folders wasn't a develop preset."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld other files in the folders weren't develop presets."
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tệp khác trong thư mục không phải develop preset."
+          }
+        }
+      }
+    },
+    "%lld px long edge": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cạnh dài %lld px"
+          }
+        }
+      }
+    },
+    "%lld renamed": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld được đổi tên"
+          }
+        }
+      }
+    },
+    "%lld × %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld × %2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        }
+      }
+    },
+    "16-bit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "16-bit"
+          }
+        }
+      }
+    },
+    "16-bit keeps smooth gradients after strong edits, at about twice the file size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "16-bit giữ chuyển màu mượt sau khi chỉnh mạnh, dung lượng tệp gấp khoảng hai lần"
+          }
+        }
+      }
+    },
+    "8-bit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8-bit"
+          }
+        }
+      }
+    },
+    "A copy is in progress. Wait for it to finish, or cancel it, before deleting.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang sao chép. Hãy chờ hoàn tất hoặc huỷ trước khi xoá."
+          }
+        }
+      }
+    },
+    "A copy is in progress. Wait for it to finish, or cancel it, before ejecting.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang sao chép. Hãy chờ hoàn tất hoặc huỷ trước khi tháo."
+          }
+        }
+      }
+    },
+    "A to Z": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A đến Z"
+          }
+        }
+      }
+    },
+    "About half the size of a JPEG at the same quality; best for Apple devices. %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dung lượng khoảng một nửa JPEG ở cùng chất lượng; phù hợp nhất cho thiết bị Apple. %@"
+          }
+        }
+      }
+    },
+    "AirDrop as %lld JPEGs": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "AirDrop as JPEG"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "AirDrop as %lld JPEGs"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop %lld JPEG"
+          }
+        }
+      }
+    },
+    "AirDrop as %lld JPEGs with %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop as %#@jpegs@ with %2$@"
+          },
+          "substitutions": {
+            "jpegs": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "JPEG"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg JPEGs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop %1$lld JPEG với %2$@"
+          }
+        }
+      }
+    },
+    "AirDrop isn't available. Check that Wi-Fi and Bluetooth are on.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AirDrop không khả dụng. Hãy kiểm tra Wi-Fi và Bluetooth đã bật."
+          }
+        }
+      }
+    },
+    "All Files Hidden": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã ẩn tất cả tệp"
+          }
+        }
+      }
+    },
+    "Also delete the matching %@ with the same name (%lld files)": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Also delete the matching %1$@ with the same name (%#@files@)"
+          },
+          "substitutions": {
+            "files": {
+              "argNum": 2,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg file"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá luôn %1$@ cùng tên (%2$lld tệp)"
+          }
+        }
+      }
+    },
+    "Amount": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Amount"
+          }
+        }
+      }
+    },
+    "Any Rating": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mọi xếp hạng"
+          }
+        }
+      }
+    },
+    "Aperture": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Khẩu độ"
+          }
+        }
+      }
+    },
+    "Apply %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Áp dụng %@"
+          }
+        }
+      }
+    },
+    "Approximate preview · [ ] previous / next": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem trước gần đúng · [ ] trước / sau"
+          }
+        }
+      }
+    },
+    "Approximate preview · this session only · double-click a slider to reset it": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xem trước gần đúng · chỉ trong phiên này · nhấp đúp vào thanh trượt để đặt lại"
+          }
+        }
+      }
+    },
+    "Auto": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
+    "B&W": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B&W"
+          }
+        }
+      }
+    },
+    "Before / after (\\)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trước / sau (\\)"
+          }
+        }
+      }
+    },
+    "Bit Depth": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bit Depth"
+          }
+        }
+      }
+    },
+    "Built-in": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Có sẵn"
+          }
+        }
+      }
+    },
+    "Camera": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Máy ảnh"
+          }
+        }
+      }
+    },
+    "Can't Preview": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể xem trước"
+          }
+        }
+      }
+    },
+    "Can't read %@. The file may be damaged or in an unsupported format.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đọc được %@. Tệp có thể bị hỏng hoặc có định dạng không được hỗ trợ."
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huỷ"
+          }
+        }
+      }
+    },
+    "Cancelled": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã huỷ"
+          }
+        }
+      }
+    },
+    "Capture": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chụp"
+          }
+        }
+      }
+    },
+    "Capture Date": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ngày chụp"
+          }
+        }
+      }
+    },
+    "Captured": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thời điểm chụp"
+          }
+        }
+      }
+    },
+    "Cards": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thẻ nhớ"
+          }
+        }
+      }
+    },
+    "Change Destination…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đổi thư mục đích…"
+          }
+        }
+      }
+    },
+    "Change…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đổi…"
+          }
+        }
+      }
+    },
+    "Choose Another Folder…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn thư mục khác…"
+          }
+        }
+      }
+    },
+    "Choose Lightroom presets (.lrtemplate or .xmp), or folders containing them.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn Lightroom preset (.lrtemplate hoặc .xmp), hoặc thư mục chứa chúng."
+          }
+        }
+      }
+    },
+    "Choose a destination outside the folder you're copying from.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hãy chọn thư mục đích nằm ngoài thư mục đang sao chép."
+          }
+        }
+      }
+    },
+    "Choose a folder and copy marked files (⌘Return)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn thư mục và sao chép các tệp đã đánh dấu (⌘Return)"
+          }
+        }
+      }
+    },
+    "Choose a preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn preset"
+          }
+        }
+      }
+    },
+    "Choose a preset below to preview it": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn một preset bên dưới để xem trước"
+          }
+        }
+      }
+    },
+    "Choose format, quality and size, then save the files to a folder or share them": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn định dạng, chất lượng và kích thước, rồi lưu tệp vào thư mục hoặc chia sẻ"
+          }
+        }
+      }
+    },
+    "Choose where marked photos are copied. Use New Folder to make one.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chọn nơi sao chép ảnh đã đánh dấu. Dùng Thư mục mới để tạo thư mục."
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ chọn"
+          }
+        }
+      }
+    },
+    "Clear Marks": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ đánh dấu"
+          }
+        }
+      }
+    },
+    "Clear Search": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá tìm kiếm"
+          }
+        }
+      }
+    },
+    "Clear search": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá tìm kiếm"
+          }
+        }
+      }
+    },
+    "Copy": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép"
+          }
+        }
+      }
+    },
+    "Copy %lld Marked Files": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Copy %lld Marked File"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Copy %lld Marked Files"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép %lld tệp đã đánh dấu"
+          }
+        }
+      }
+    },
+    "Copy %lld marked…  ⌘⏎": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép %lld tệp…  ⌘⏎"
+          }
+        }
+      }
+    },
+    "Copy %lld to %@  ⌘⏎": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép %1$lld vào %2$@  ⌘⏎"
+          }
+        }
+      }
+    },
+    "Copy Cancelled": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã huỷ sao chép"
+          }
+        }
+      }
+    },
+    "Copy Complete": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép hoàn tất"
+          }
+        }
+      }
+    },
+    "Copy Finished with Errors": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép xong nhưng có lỗi"
+          }
+        }
+      }
+    },
+    "Copy GPS coordinates from the originals": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ toạ độ GPS từ ảnh gốc"
+          }
+        }
+      }
+    },
+    "Copy Here": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép vào đây"
+          }
+        }
+      }
+    },
+    "Copy Interrupted": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép bị gián đoạn"
+          }
+        }
+      }
+    },
+    "Copy marked files to %@ (⌘Return)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép các tệp đã đánh dấu vào %@ (⌘Return)"
+          }
+        }
+      }
+    },
+    "Copying %lld of %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang sao chép %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "Couldn't Delete": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể xoá"
+          }
+        }
+      }
+    },
+    "Couldn't Eject": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể tháo"
+          }
+        }
+      }
+    },
+    "Couldn't Read Folder": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đọc được thư mục"
+          }
+        }
+      }
+    },
+    "Couldn't Share": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể chia sẻ"
+          }
+        }
+      }
+    },
+    "Couldn't Start Copy": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể bắt đầu sao chép"
+          }
+        }
+      }
+    },
+    "Couldn't create a %@ for %@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tạo được tệp %1$@ cho %2$@."
+          }
+        }
+      }
+    },
+    "Couldn't create a JPEG for %@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tạo được JPEG cho %@."
+          }
+        }
+      }
+    },
+    "Couldn't delete %@ (and %lld more): %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không xoá được %1$@ (và %2$lld tệp khác): %3$@"
+          }
+        }
+      }
+    },
+    "Couldn't delete %@: %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không xoá được %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't eject “%@”: %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tháo được “%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't read %@.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đọc được %@."
+          }
+        }
+      }
+    },
+    "Couldn't save the rating for %@: %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không lưu được xếp hạng cho %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Counts app launches and how many photos are copied or shared, with the app and macOS version. Never file names, folders or photos.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đếm số lần mở ứng dụng và số ảnh được sao chép hoặc chia sẻ, kèm phiên bản ứng dụng và macOS. Không bao giờ gửi tên tệp, thư mục hay ảnh."
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá"
+          }
+        }
+      }
+    },
+    "Delete %lld Files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá %lld tệp"
+          }
+        }
+      }
+    },
+    "Delete %lld Files…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá %lld tệp…"
+          }
+        }
+      }
+    },
+    "Delete this photo permanently, or all marked photos if it is marked (⌘⌫)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá vĩnh viễn ảnh này, hoặc tất cả ảnh đã đánh dấu nếu ảnh này được đánh dấu (⌘⌫)"
+          }
+        }
+      }
+    },
+    "Delete…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá…"
+          }
+        }
+      }
+    },
+    "Dimensions": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kích thước ảnh"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xong"
+          }
+        }
+      }
+    },
+    "Drag to adjust · double-click to reset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kéo để chỉnh · nhấp đúp để đặt lại"
+          }
+        }
+      }
+    },
+    "Edit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Edits": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Eject": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tháo"
+          }
+        }
+      }
+    },
+    "Eject “%@”": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tháo “%@”"
+          }
+        }
+      }
+    },
+    "Every file type is filtered out.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tất cả loại tệp đều đang bị lọc."
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất"
+          }
+        }
+      }
+    },
+    "Export %lld Photos": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Export %lld Photo"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Export %lld Photos"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất %lld ảnh"
+          }
+        }
+      }
+    },
+    "Export %lld Photos…": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Export %lld Photo…"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Export %lld Photos…"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất %lld ảnh…"
+          }
+        }
+      }
+    },
+    "Export & Share…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất & chia sẻ…"
+          }
+        }
+      }
+    },
+    "Export with these options into a temporary folder, then share or AirDrop the files without keeping them": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xuất với các tuỳ chọn này vào thư mục tạm, rồi chia sẻ hoặc AirDrop mà không giữ lại tệp"
+          }
+        }
+      }
+    },
+    "Exporting %lld of %lld": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang xuất %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "Exposure Bias": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bù sáng"
+          }
+        }
+      }
+    },
+    "File": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp"
+          }
+        }
+      }
+    },
+    "File Name": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tên tệp"
+          }
+        }
+      }
+    },
+    "File Size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dung lượng tệp"
+          }
+        }
+      }
+    },
+    "Filter by file type": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lọc theo loại tệp"
+          }
+        }
+      }
+    },
+    "Filter by star rating": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lọc theo số sao"
+          }
+        }
+      }
+    },
+    "Find": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm"
+          }
+        }
+      }
+    },
+    "Fit (%lld%%)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vừa khung (%lld%%)"
+          }
+        }
+      }
+    },
+    "Focal Length": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiêu cự"
+          }
+        }
+      }
+    },
+    "Format": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Định dạng"
+          }
+        }
+      }
+    },
+    "Full Size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kích thước gốc"
+          }
+        }
+      }
+    },
+    "Grid": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưới"
+          }
+        }
+      }
+    },
+    "Hide .%@ files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ẩn tệp .%@"
+          }
+        }
+      }
+    },
+    "Histogram": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Histogram"
+          }
+        }
+      }
+    },
+    "How strongly the preset is applied, mixed with the photo as shot. Edits are not affected.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mức độ áp dụng preset, trộn với ảnh gốc. Không ảnh hưởng đến phần chỉnh sửa."
+          }
+        }
+      }
+    },
+    "ISO": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ISO"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập"
+          }
+        }
+      }
+    },
+    "Import Lightroom presets (.lrtemplate / .xmp), or folders of them. You can also drop them here.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập Lightroom preset (.lrtemplate / .xmp) hoặc thư mục chứa chúng. Bạn cũng có thể thả chúng vào đây."
+          }
+        }
+      }
+    },
+    "Import Lightroom presets (.lrtemplate / .xmp), or folders of them. You can also drop them on this sidebar.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập Lightroom preset (.lrtemplate / .xmp) hoặc thư mục chứa chúng. Bạn cũng có thể thả chúng vào thanh bên này."
+          }
+        }
+      }
+    },
+    "Import Presets…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập preset…"
+          }
+        }
+      }
+    },
+    "Imported": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã nhập"
+          }
+        }
+      }
+    },
+    "Import…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhập…"
+          }
+        }
+      }
+    },
+    "Include Location": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giữ vị trí"
+          }
+        }
+      }
+    },
+    "Info": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thông tin"
+          }
+        }
+      }
+    },
+    "Insert an SD card or choose a folder to start previewing.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cắm thẻ SD hoặc chọn một thư mục để bắt đầu xem ảnh."
+          }
+        }
+      }
+    },
+    "JPEG, HEIF or PNG files in the size you choose, with the preset and each photo's edits applied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp JPEG, HEIF hoặc PNG theo kích thước bạn chọn, có áp dụng preset và chỉnh sửa của từng ảnh"
+          }
+        }
+      }
+    },
+    "Largest First": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lớn nhất trước"
+          }
+        }
+      }
+    },
+    "Lens": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ống kính"
+          }
+        }
+      }
+    },
+    "Light": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Lightroom ignores sidecars for files without a RAW, so this rating isn't written to disk.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lightroom bỏ qua sidecar của tệp không có RAW, nên xếp hạng này không được ghi ra đĩa."
+          }
+        }
+      }
+    },
+    "Loading full resolution…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang tải độ phân giải đầy đủ…"
+          }
+        }
+      }
+    },
+    "Lossless, no compression artifacts. Around %@ per photo at full size. %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không nén mất dữ liệu, không bị nhiễu nén. Khoảng %1$@ mỗi ảnh ở kích thước gốc. %2$@"
+          }
+        }
+      }
+    },
+    "Makes 2048 px JPEG copies (GPS removed) and opens the share sheet": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo bản JPEG 2048 px (đã bỏ GPS) và mở bảng chia sẻ"
+          }
+        }
+      }
+    },
+    "Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tạo bản JPEG 2048 px có áp dụng preset và chỉnh sửa của từng ảnh (đã bỏ GPS) và mở bảng chia sẻ"
+          }
+        }
+      }
+    },
+    "Mark for Copy": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đánh dấu để sao chép"
+          }
+        }
+      }
+    },
+    "Mark for copy (S)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đánh dấu để sao chép (S)"
+          }
+        }
+      }
+    },
+    "Marked": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã đánh dấu"
+          }
+        }
+      }
+    },
+    "Move the selected imported preset to the Trash": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển preset đã nhập đang chọn vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Newest First": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mới nhất trước"
+          }
+        }
+      }
+    },
+    "No Lightroom develop presets were found.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không tìm thấy Lightroom develop preset nào."
+          }
+        }
+      }
+    },
+    "No Marked Files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có tệp đã đánh dấu"
+          }
+        }
+      }
+    },
+    "No Matches": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có kết quả"
+          }
+        }
+      }
+    },
+    "No Matching Ratings": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có ảnh khớp xếp hạng"
+          }
+        }
+      }
+    },
+    "No Photos": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có ảnh"
+          }
+        }
+      }
+    },
+    "No Preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không preset"
+          }
+        }
+      }
+    },
+    "No Source Selected": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa chọn nguồn"
+          }
+        }
+      }
+    },
+    "No file names contain “%@”.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có tên tệp nào chứa “%@”."
+          }
+        }
+      }
+    },
+    "No files match the star filter.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có tệp nào khớp bộ lọc sao."
+          }
+        }
+      }
+    },
+    "No folder chosen": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa chọn thư mục"
+          }
+        }
+      }
+    },
+    "None": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không"
+          }
+        }
+      }
+    },
+    "Not enough space: %@ needed, %@ available.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không đủ dung lượng: cần %1$@, còn trống %2$@."
+          }
+        }
+      }
+    },
+    "Not marked": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa đánh dấu"
+          }
+        }
+      }
+    },
+    "Not previewed: %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa xem trước được: %@"
+          }
+        }
+      }
+    },
+    "Nothing to Edit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không có gì để chỉnh"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Oldest First": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cũ nhất trước"
+          }
+        }
+      }
+    },
+    "Open": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở"
+          }
+        }
+      }
+    },
+    "Open Folder…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở thư mục…"
+          }
+        }
+      }
+    },
+    "Order": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thứ tự"
+          }
+        }
+      }
+    },
+    "Permanently delete %lld files?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá vĩnh viễn %lld tệp?"
+          }
+        }
+      }
+    },
+    "Permanently delete “%@”?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá vĩnh viễn “%@”?"
+          }
+        }
+      }
+    },
+    "Photo": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ảnh"
+          }
+        }
+      }
+    },
+    "Preset Problem": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lỗi preset"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        }
+      }
+    },
+    "Press Return or S on a photo to mark it.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấn Return hoặc S trên một ảnh để đánh dấu."
+          }
+        }
+      }
+    },
+    "Previewing preset “%@” (approximate) · \\ shows before / after": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang xem trước preset “%@” (gần đúng) · \\ để xem trước / sau"
+          }
+        }
+      }
+    },
+    "Quality": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chất lượng"
+          }
+        }
+      }
+    },
+    "RAW files are exported from the camera's full-size embedded preview.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp RAW được xuất từ ảnh xem trước kích thước đầy đủ do máy ảnh nhúng sẵn."
+          }
+        }
+      }
+    },
+    "Rating": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xếp hạng"
+          }
+        }
+      }
+    },
+    "Rating Not Saved": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa lưu được xếp hạng"
+          }
+        }
+      }
+    },
+    "RawPreview": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RawPreview"
+          }
+        }
+      }
+    },
+    "Read by Lightroom Classic and Capture One": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lightroom Classic và Capture One đọc được"
+          }
+        }
+      }
+    },
+    "Remove Preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá preset"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đặt lại"
+          }
+        }
+      }
+    },
+    "Saved To": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưu vào"
+          }
+        }
+      }
+    },
+    "Scanning %@…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đang quét %@…"
+          }
+        }
+      }
+    },
+    "Search file names": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm tên tệp"
+          }
+        }
+      }
+    },
+    "Search file names (⌘F)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm tên tệp (⌘F)"
+          }
+        }
+      }
+    },
+    "Search presets": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tìm preset"
+          }
+        }
+      }
+    },
+    "Set the Light sliders for a balanced exposure": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tự đặt các thanh trượt Light để phơi sáng cân bằng"
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ"
+          }
+        }
+      }
+    },
+    "Share %lld Originals": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ %lld ảnh gốc"
+          }
+        }
+      }
+    },
+    "Share Original": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ ảnh gốc"
+          }
+        }
+      }
+    },
+    "Share anonymous usage statistics": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ thống kê sử dụng ẩn danh"
+          }
+        }
+      }
+    },
+    "Share as %lld JPEGs with %@…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share as %#@jpegs@ with %2$@…"
+          },
+          "substitutions": {
+            "jpegs": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "JPEG"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg JPEGs"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ %1$lld JPEG với %2$@…"
+          }
+        }
+      }
+    },
+    "Share as %lld JPEGs…": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Share as JPEG…"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Share as %lld JPEGs…"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ %lld JPEG…"
+          }
+        }
+      }
+    },
+    "Share or AirDrop the %lld exported files": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Share or AirDrop the exported file"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Share or AirDrop the %lld exported files"
+                }
+              }
+            }
+          }
+        },
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ hoặc AirDrop %lld tệp đã xuất"
+          }
+        }
+      }
+    },
+    "Share the selected photo, or all marked photos if it is marked": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ ảnh đang chọn, hoặc tất cả ảnh đã đánh dấu nếu ảnh này được đánh dấu"
+          }
+        }
+      }
+    },
+    "Share…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ…"
+          }
+        }
+      }
+    },
+    "Show .%@ files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tệp .%@"
+          }
+        }
+      }
+    },
+    "Show / hide edit (E)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện / ẩn chỉnh sửa (E)"
+          }
+        }
+      }
+    },
+    "Show / hide info (I)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện / ẩn thông tin (I)"
+          }
+        }
+      }
+    },
+    "Show / hide presets (P)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện / ẩn presets (P)"
+          }
+        }
+      }
+    },
+    "Show All": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tất cả"
+          }
+        }
+      }
+    },
+    "Show All Files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tất cả tệp"
+          }
+        }
+      }
+    },
+    "Show Preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện preset"
+          }
+        }
+      }
+    },
+    "Show Presets Folder": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mở thư mục preset"
+          }
+        }
+      }
+    },
+    "Show all files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tất cả tệp"
+          }
+        }
+      }
+    },
+    "Show imported presets in Finder": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện preset đã nhập trong Finder"
+          }
+        }
+      }
+    },
+    "Show in Finder": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện trong Finder"
+          }
+        }
+      }
+    },
+    "Show only marked files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ hiện tệp đã đánh dấu"
+          }
+        }
+      }
+    },
+    "Shutter": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tốc độ màn trập"
+          }
+        }
+      }
+    },
+    "Sidebar": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanh bên"
+          }
+        }
+      }
+    },
+    "Single Image": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một ảnh"
+          }
+        }
+      }
+    },
+    "Size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kích thước"
+          }
+        }
+      }
+    },
+    "Smallest First": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhỏ nhất trước"
+          }
+        }
+      }
+    },
+    "Smallest files, readable everywhere. 90 or above keeps compression hard to see. %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp nhỏ nhất, mở được ở mọi nơi. Từ 90 trở lên thì khó thấy dấu vết nén. %@"
+          }
+        }
+      }
+    },
+    "Sort By": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sắp xếp theo"
+          }
+        }
+      }
+    },
+    "Sort by %@, %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sắp xếp theo %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Sort into Date Folders": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia vào thư mục theo ngày"
+          }
+        }
+      }
+    },
+    "Sort into date folders (YYYY-MM-DD)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia vào thư mục theo ngày (YYYY-MM-DD)"
+          }
+        }
+      }
+    },
+    "Stops after the files in progress finish; nothing is left half-copied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dừng sau khi các tệp đang chép xong; không để lại tệp chép dở"
+          }
+        }
+      }
+    },
+    "The card was removed during the copy. Files that finished are complete; reinsert the card, mark the photos and copy again — files already copied are skipped.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thẻ nhớ đã bị rút ra khi đang sao chép. Các tệp đã chép xong vẫn nguyên vẹn; hãy cắm lại thẻ, đánh dấu ảnh và sao chép lại — các tệp đã chép sẽ được bỏ qua."
+          }
+        }
+      }
+    },
+    "The copy's size doesn't match the original.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dung lượng bản sao không khớp với tệp gốc."
+          }
+        }
+      }
+    },
+    "The destination drive was disconnected during the copy. Reconnect it and copy again — files already copied are skipped.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ổ đích đã bị ngắt khi đang sao chép. Hãy kết nối lại và sao chép lần nữa — các tệp đã chép sẽ được bỏ qua."
+          }
+        }
+      }
+    },
+    "The photo as shot": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ảnh gốc như khi chụp"
+          }
+        }
+      }
+    },
+    "This can’t be undone: the files are erased, not moved to the Trash.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Không thể hoàn tác: tệp bị xoá hẳn, không chuyển vào Thùng rác."
+          }
+        }
+      }
+    },
+    "This file may be damaged or in an unsupported format.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tệp này có thể bị hỏng hoặc có định dạng không được hỗ trợ."
+          }
+        }
+      }
+    },
+    "This folder has no RAW, JPEG, HEIF or video files.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thư mục này không có tệp RAW, JPEG, HEIF hay video."
+          }
+        }
+      }
+    },
+    "This session only": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chỉ trong phiên này"
+          }
+        }
+      }
+    },
+    "Thumbnail Size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cỡ thumbnail"
+          }
+        }
+      }
+    },
+    "Thumbnail size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cỡ thumbnail"
+          }
+        }
+      }
+    },
+    "To %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đến %@"
+          }
+        }
+      }
+    },
+    "Toggle Fit / 100%": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển Vừa khung / 100%"
+          }
+        }
+      }
+    },
+    "Toggle Grid / Single Image (Space)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển Lưới / Một ảnh (Space)"
+          }
+        }
+      }
+    },
+    "Unexpected character at offset %lld.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ký tự không hợp lệ ở vị trí %lld."
+          }
+        }
+      }
+    },
+    "Unmark for Copy": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ đánh dấu sao chép"
+          }
+        }
+      }
+    },
+    "Unmark for copy (S)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ đánh dấu sao chép (S)"
+          }
+        }
+      }
+    },
+    "Unmark the copied photos": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bỏ đánh dấu các ảnh đã sao chép"
+          }
+        }
+      }
+    },
+    "Unrated": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa xếp hạng"
+          }
+        }
+      }
+    },
+    "Video": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video"
+          }
+        }
+      }
+    },
+    "Videos can't be previewed yet.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chưa hỗ trợ xem trước video."
+          }
+        }
+      }
+    },
+    "View Mode": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chế độ xem"
+          }
+        }
+      }
+    },
+    "Volumes": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ổ đĩa"
+          }
+        }
+      }
+    },
+    "Z or double-click: Fit / 100% · ⌘+ ⌘− ⌘0 · ⌘-scroll, ⌥-scroll or pinch to zoom": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z hoặc nhấp đúp: Vừa khung / 100% · ⌘+ ⌘− ⌘0 · ⌘-cuộn, ⌥-cuộn hoặc chụm để thu phóng"
+          }
+        }
+      }
+    },
+    "Z to A": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Z đến A"
+          }
+        }
+      }
+    },
+    "Zoom In": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phóng to"
+          }
+        }
+      }
+    },
+    "Zoom Out": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thu nhỏ"
+          }
+        }
+      }
+    },
+    "Zoom to Fit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vừa khung"
+          }
+        }
+      }
+    },
+    "a different file had the same name": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trùng tên với một tệp khác"
+          }
+        }
+      }
+    },
+    "skipped (same name and size)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bỏ qua (cùng tên và dung lượng)"
+          }
+        }
+      }
+    },
+    "“%@” + Edits": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” + Chỉnh sửa"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

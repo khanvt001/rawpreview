@@ -27,8 +27,8 @@ nonisolated enum ShareService {
 
         var errorDescription: String? {
             switch self {
-            case .decodeFailed(let name): "Couldn't read \(name)."
-            case .writeFailed(let name): "Couldn't create a JPEG for \(name)."
+            case .decodeFailed(let name): String(localized: "Couldn't read \(name).")
+            case .writeFailed(let name): String(localized: "Couldn't create a JPEG for \(name).")
             }
         }
     }

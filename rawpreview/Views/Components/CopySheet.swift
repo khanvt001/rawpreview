@@ -36,7 +36,9 @@ struct CopySheet: View {
     private func running(_ progress: CopyService.Progress) -> some View {
         Group {
             Label {
-                Text("\(library.copyExport == nil ? "Copying" : "Exporting") \(progress.completedFiles) of \(progress.totalFiles)")
+                Text(library.copyExport == nil
+                     ? "Copying \(progress.completedFiles) of \(progress.totalFiles)"
+                     : "Exporting \(progress.completedFiles) of \(progress.totalFiles)")
                     .font(.headline)
             } icon: {
                 Image(systemName: "doc.on.doc")
@@ -84,7 +86,7 @@ struct CopySheet: View {
         let seconds = Double(progress.totalBytes - progress.completedBytes) / rate
         let speed = Int64(rate).formatted(.byteCount(style: .file))
         let left = Duration.seconds(seconds).formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
-        return "\(speed)/s · \(left) left"
+        return String(localized: "\(speed)/s · \(left) left")
     }
 
     // MARK: - Finished
@@ -110,7 +112,7 @@ struct CopySheet: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                summaryRow("\(report.copied) \(library.copyExport == nil ? "copied" : "exported")", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
+                summaryRow(library.copyExport == nil ? "\(report.copied) copied" : "\(report.copied) exported", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
                 if report.skipped > 0 {
                     summaryRow("\(report.skipped) already there", detail: "skipped (same name and size)")
                 }
@@ -146,7 +148,7 @@ struct CopySheet: View {
                     Button("Share…") {
                         SharingController.share(report.exported, from: .pointer())
                     }
-                    .help("Share or AirDrop the \(report.exported.count == 1 ? "exported file" : "\(report.exported.count) exported files")")
+                    .help("Share or AirDrop the \(report.exported.count) exported files")
                 }
                 Spacer()
                 if report.failures.isEmpty && !report.wasCancelled && library.copiedMarkedPhotos {
@@ -162,7 +164,7 @@ struct CopySheet: View {
         }
     }
 
-    private func summaryRow(_ title: String, detail: String?) -> some View {
+    private func summaryRow(_ title: LocalizedStringKey, detail: LocalizedStringKey?) -> some View {
         HStack(spacing: 6) {
             Text(title).fontWeight(.medium)
             if let detail {

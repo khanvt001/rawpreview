@@ -23,7 +23,7 @@ struct CopyButton: View {
             Button("Copy \(count) Marked Files") { library.startCopy() }
             // One file per shot: a RAW+JPEG pair is exported once; videos are left out.
             let shots = Set(marked.filter(\.kind.isImage).map(\.sidecarURL)).count
-            Button("Export \(shots == 1 ? "1 Photo" : "\(shots) Photos")…") {
+            Button("Export \(shots) Photos…") {
                 library.showExportOptions(for: marked, look: edits.exportLook(preset: presets.appliedPreset, for: marked))
             }
             .disabled(shots == 0)
@@ -36,7 +36,7 @@ struct CopyButton: View {
             Button("Clear Marks") { library.clearChecked() }
         } label: {
             Label(
-                folder.map { "Copy \(count) to \($0)  ⌘⏎" } ?? "Copy \(count) marked…  ⌘⏎",
+                folder.map { String(localized: "Copy \(count) to \($0)  ⌘⏎") } ?? String(localized: "Copy \(count) marked…  ⌘⏎"),
                 systemImage: "checkmark.circle.fill"
             )
         } primaryAction: {
@@ -48,6 +48,6 @@ struct CopyButton: View {
         .fixedSize()
         .focusable(false)
         .disabled(library.isCopying)
-        .help(library.copyDestination.map { "Copy marked files to \($0.path(percentEncoded: false)) (⌘Return)" } ?? "Choose a folder and copy marked files (⌘Return)")
+        .help(library.copyDestination.map { String(localized: "Copy marked files to \($0.path(percentEncoded: false)) (⌘Return)") } ?? String(localized: "Choose a folder and copy marked files (⌘Return)"))
     }
 }

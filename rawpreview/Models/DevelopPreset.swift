@@ -41,8 +41,8 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
 
         var errorDescription: String? {
             switch self {
-            case .unreadable(let name): "\(name) isn't a Lightroom preset this app can read."
-            case .notADevelopPreset(let name): "\(name) isn't a Develop preset."
+            case .unreadable(let name): String(localized: "\(name) isn't a Lightroom preset this app can read.")
+            case .notADevelopPreset(let name): String(localized: "\(name) isn't a Develop preset.")
             }
         }
     }

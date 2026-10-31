@@ -44,7 +44,7 @@ nonisolated struct LuaTable: Sendable {
 nonisolated struct LuaTableParser {
     struct ParseError: LocalizedError {
         let offset: Int
-        var errorDescription: String? { "Unexpected character at offset \(offset)." }
+        var errorDescription: String? { String(localized: "Unexpected character at offset \(offset).") }
     }
 
     private let bytes: [UInt8]

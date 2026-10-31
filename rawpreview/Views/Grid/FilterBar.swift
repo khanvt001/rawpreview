@@ -199,7 +199,7 @@ private struct RatingFilterChip: View {
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "star.fill")
-                Text(library.ratingFilter.map(Self.label) ?? "Rating")
+                Text(library.ratingFilter.map(Self.label) ?? String(localized: "Rating"))
                     .fontWeight(.semibold)
             }
             .font(.callout.monospacedDigit())
@@ -223,7 +223,7 @@ private struct RatingFilterChip: View {
 
     private static func label(for filter: LibraryViewModel.RatingFilter) -> String {
         switch filter {
-        case .unrated: "Unrated"
+        case .unrated: String(localized: "Unrated")
         case .atLeast(let rating) where rating.rawValue == Rating.maxStars: String(repeating: "★", count: Rating.maxStars)
         case .atLeast(let rating): String(repeating: "★", count: rating.rawValue) + "+"
         }

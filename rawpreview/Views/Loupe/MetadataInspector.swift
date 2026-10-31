@@ -44,7 +44,7 @@ struct MetadataInspector: View {
                             .help("Lightroom ignores sidecars for files without a RAW, so this rating isn't written to disk.")
                     }
                 }
-                LabeledContent("Copy", value: isChecked ? "Marked" : "Not marked")
+                LabeledContent("Copy") { Text(isChecked ? "Marked" : "Not marked") }
             }
 
             if let exif {
@@ -89,7 +89,7 @@ struct MetadataInspector: View {
     }
 
     @ViewBuilder
-    private func row(_ label: String, _ value: String?) -> some View {
+    private func row(_ label: LocalizedStringKey, _ value: String?) -> some View {
         if let value, !value.isEmpty {
             LabeledContent(label, value: value)
         }

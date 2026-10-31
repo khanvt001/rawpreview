@@ -127,7 +127,8 @@ struct LoupeView: View {
                 ContentUnavailableView(
                     "Can't Preview",
                     systemImage: "exclamationmark.triangle",
-                    description: Text("\(library.focusedItem?.fileName ?? "This file") may be damaged or in an unsupported format.")
+                    description: Text(library.focusedItem.map { String(localized: "\($0.fileName) may be damaged or in an unsupported format.") }
+                                      ?? String(localized: "This file may be damaged or in an unsupported format."))
                 )
             } else if library.focusedItem?.kind == .video {
                 ContentUnavailableView("Video", systemImage: "film", description: Text("Videos can't be previewed yet."))
@@ -285,12 +286,12 @@ private struct LoupeInfoBar: View {
     }
 
     private func presetHelp(_ preset: DevelopPreset) -> String {
-        var help = "Previewing preset “\(preset.title)” (approximate) · \\ shows before / after"
+        var help = String(localized: "Previewing preset “\(preset.title)” (approximate) · \\ shows before / after")
         if let summary = preset.summary {
             help += "\n\(summary)"
         }
         if !preset.unsupportedSettings.isEmpty {
-            help += "\nNot previewed: \(preset.unsupportedSettings.joined(separator: ", "))"
+            help += "\n" + String(localized: "Not previewed: \(preset.unsupportedSettings.joined(separator: ", "))")
         }
         return help
     }
