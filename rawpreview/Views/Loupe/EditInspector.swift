@@ -6,8 +6,8 @@
 import SwiftUI
 
 /// The sidebar's Edit page: a histogram of the photo as shown, then the
-/// Light sliders. Changes preview on the photo straight away and last for
-/// this session.
+/// Light sliders. Changes preview on the photo straight away and are kept
+/// (see `EditStore`) until reset.
 struct EditInspector: View {
     let item: PhotoItem?
     /// What the loupe is showing (edits included), for the histogram.
@@ -34,7 +34,7 @@ struct EditInspector: View {
                 }
                 .scrollIndicators(.never)
                 Divider()
-                Text("Approximate preview · this session only · double-click a slider to reset it")
+                Text("Approximate preview · saved on this Mac · double-click a slider to reset it")
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
                     .frame(maxWidth: .infinity, alignment: .leading)

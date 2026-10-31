@@ -541,12 +541,12 @@
         }
       }
     },
-    "Approximate preview · this session only · double-click a slider to reset it": {
+    "Approximate preview · saved on this Mac · double-click a slider to reset it": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xem trước gần đúng · chỉ trong phiên này · nhấp đúp vào thanh trượt để đặt lại"
+            "value": "Xem trước gần đúng · lưu trên máy Mac này · nhấp đúp vào thanh trượt để đặt lại"
           }
         }
       }

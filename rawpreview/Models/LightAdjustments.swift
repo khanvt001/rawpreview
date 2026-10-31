@@ -10,8 +10,8 @@ import Foundation
 ///
 /// Rendered after the applied preset (see `DevelopPreset.combining`),
 /// through the same `PresetLook` tone curve presets use.
-nonisolated struct LightAdjustments: Hashable, Sendable {
-    enum Slider: CaseIterable, Identifiable {
+nonisolated struct LightAdjustments: Hashable, Sendable, Codable {
+    enum Slider: String, CaseIterable, Identifiable {
         case exposure, contrast, highlights, shadows, whites, blacks
 
         var id: Self { self }
@@ -56,6 +56,21 @@ nonisolated struct LightAdjustments: Hashable, Sendable {
 
     /// Only non-zero sliders, so two untouched photos compare equal.
     private var values: [Slider: Double] = [:]
+
+    init() {}
+
+    // A plain `{"exposure": 0.5}` object; unknown sliders are skipped.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode([String: Double].self)
+        for (key, value) in raw {
+            if let slider = Slider(rawValue: key) { self[slider] = value }
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(Dictionary(uniqueKeysWithValues: values.map { ($0.key.rawValue, $0.value) }))
+    }
 
     subscript(slider: Slider) -> Double {
         get { values[slider] ?? 0 }
