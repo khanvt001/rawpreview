@@ -55,6 +55,11 @@ struct LibraryContentView: View {
         .onChange(of: library.isSearchFocused) { _, focused in
             if !focused { hasKeyFocus = true }
         }
+        // Opening or switching the sidebar can hand key focus to one of its
+        // controls; take it back so arrows keep moving between photos.
+        .onChange(of: library.showsInspector) { reclaimKeyFocus() }
+        .onChange(of: library.inspectorTab) { reclaimKeyFocus() }
+        .onChange(of: library.keyFocusRequest) { hasKeyFocus = true }
         .onChange(of: library.viewMode) {
             // Re-assert after the swapped-in view is installed; setting true
             // while it already reads true would be a no-op.
@@ -86,6 +91,11 @@ struct LibraryContentView: View {
                 .help("Share the selected photo, or all marked photos if it is marked")
             }
         }
+    }
+
+    private func reclaimKeyFocus() {
+        guard !library.isSearchFocused else { return }
+        Task { @MainActor in hasKeyFocus = true }
     }
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {

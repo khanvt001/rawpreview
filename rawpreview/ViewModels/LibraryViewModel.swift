@@ -129,6 +129,13 @@ final class LibraryViewModel {
     /// While the search box has the keyboard, filtering must not pull key
     /// focus back to the grid.
     var isSearchFocused = false
+    /// Bumped to hand the keyboard back to the photos (`LibraryContentView`
+    /// watches it), e.g. when a sidebar control was given focus unasked.
+    private(set) var keyFocusRequest = 0
+
+    func returnKeyFocusToPhotos() {
+        keyFocusRequest += 1
+    }
 
     var viewMode: ViewMode = .grid
 

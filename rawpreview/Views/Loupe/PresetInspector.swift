@@ -350,6 +350,9 @@ private struct CurrentPresetCard: View {
                     Text("Amount")
                     Slider(value: $store.amount, in: 0...1)
                         .controlSize(.small)
+                        // A focused slider takes ← → for itself, which
+                        // stops them moving between photos.
+                        .focusable(false)
                     Text("\(Int((store.amount * 100).rounded()))%")
                         .monospacedDigit()
                         .frame(width: 38, alignment: .trailing)
@@ -357,7 +360,6 @@ private struct CurrentPresetCard: View {
                 .font(.callout)
                 .padding(.vertical, 2)
                 .disabled(!store.isEnabled)
-                .focusable(false)
                 .help("How strongly the preset is applied, mixed with the photo as shot. Edits are not affected.")
 
                 if let summary = preset.summary {
@@ -437,10 +439,18 @@ private struct PresetMenuItems: View {
 
 /// Like the grid's file-name search: Esc clears, Return hands the keyboard
 /// back to the photos, and shortcuts pause while it's focused.
+///
+/// Takes the keyboard only when clicked. AppKit hands focus to the first
+/// text field when the sidebar appears, which silently stopped the arrow
+/// keys moving between photos.
 private struct PresetSearchField: View {
     @Environment(LibraryViewModel.self) private var library
     @Binding var query: String
     @FocusState private var isFocused: Bool
+    /// The pointer is over the field, so focus arriving now is a click.
+    @State private var isHovered = false
+    /// Unasked focus was already handed back since the field appeared.
+    @State private var hasDeflected = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -455,6 +465,15 @@ private struct PresetSearchField: View {
                 }
                 .onSubmit { isFocused = false }
                 .onChange(of: isFocused) { _, focused in
+                    // Only focus the photos, which also takes it from here:
+                    // clearing `isFocused` as well made two competing moves,
+                    // and AppKit handed focus straight back, forever. Once
+                    // per appearance, so it can never ping-pong.
+                    if focused, !isHovered, !hasDeflected {
+                        hasDeflected = true
+                        library.returnKeyFocusToPhotos()
+                        return
+                    }
                     library.isSearchFocused = focused
                 }
             if !query.isEmpty {
@@ -469,6 +488,8 @@ private struct PresetSearchField: View {
                 .help("Clear search")
             }
         }
+        .onHover { isHovered = $0 }
+        .onAppear { hasDeflected = false }
         .font(.callout)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
