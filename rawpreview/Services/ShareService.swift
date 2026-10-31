@@ -11,14 +11,19 @@ import Foundation
 ///
 /// - Decoded from the RAW's embedded preview (`ImageDecoder`), so it's fast
 ///   and matches what the camera showed.
-/// - Long edge 2048 px, quality 0.85; orientation baked in.
+/// - Long edge 2048 px by default (Settings), quality 0.85; orientation baked in.
 /// - Optionally with a preset and Edit adjustments applied (`ExportLook`).
 /// - Camera EXIF (exposure, lens, date) is kept; GPS is removed, so a shared
 ///   photo doesn't reveal where it was taken.
 /// - Written under a per-share folder in the temporary directory; old
 ///   folders are purged at launch.
 nonisolated enum ShareService {
-    static let maxPixelSize = 2048
+    static let maxPixelSizeKey = "shareLongEdge"
+    static let maxPixelSizeChoices = [1024, 2048, 3072, 4096]
+    static var maxPixelSize: Int {
+        let stored = UserDefaults.standard.integer(forKey: maxPixelSizeKey)
+        return stored > 0 ? stored : 2048
+    }
     static let quality = 0.85
 
     enum ShareError: LocalizedError {

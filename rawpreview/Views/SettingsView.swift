@@ -8,10 +8,33 @@ import SwiftUI
 /// The app's Settings window (⌘,).
 struct SettingsView: View {
     @AppStorage(Analytics.enabledKey) private var sharesUsage = true
+    @AppStorage(LibraryViewModel.cardDeleteErasesKey) private var cardDeleteErases = true
+    @AppStorage(ShareService.maxPixelSizeKey) private var shareLongEdge = 2048
+    @AppStorage("gridShowsInfo") private var gridShowsInfo = true
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Form {
+            Section {
+                Picker("Delete on memory cards", selection: $cardDeleteErases) {
+                    Text("Erase at once").tag(true)
+                    Text("Move to Trash").tag(false)
+                }
+            } footer: {
+                Text("Erasing frees the card's space straight away. Files moved to a card's Trash only go once you empty the Trash in Finder. On other drives, deleted files always go to the Trash.")
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                Picker("Quick share size", selection: $shareLongEdge) {
+                    ForEach(ShareService.maxPixelSizeChoices, id: \.self) { pixels in
+                        Text("\(pixels) px long edge").tag(pixels)
+                    }
+                }
+                Toggle("Show file name and exposure on thumbnails", isOn: $gridShowsInfo)
+            } footer: {
+                Text("Quick share is Share as JPEGs and AirDrop as JPEGs. Export lets you choose the size each time.")
+                    .foregroundStyle(.secondary)
+            }
             Section {
                 Toggle("Share anonymous usage statistics", isOn: $sharesUsage)
             } footer: {
@@ -25,7 +48,8 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420)
+        .frame(width: 460)
+        .fixedSize(horizontal: false, vertical: true)
         .onChange(of: sharesUsage) { _, on in
             if on { Analytics.start() }
         }

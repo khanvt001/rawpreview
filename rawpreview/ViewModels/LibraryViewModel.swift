@@ -568,11 +568,14 @@ final class LibraryViewModel {
     }
 
     /// Cards are erased so their space is freed at once (a card's Trash only
-    /// empties from Finder); anywhere else files go to the Trash and can be
-    /// put back.
+    /// empties from Finder), unless Settings says otherwise; anywhere else
+    /// files go to the Trash and can be put back.
     var deletesPermanently: Bool {
-        volumes.first { $0.id == selectedVolumeID }?.isRemovable ?? false
+        let onCard = volumes.first { $0.id == selectedVolumeID }?.isRemovable ?? false
+        return onCard && (UserDefaults.standard.object(forKey: Self.cardDeleteErasesKey) as? Bool ?? true)
     }
+
+    static let cardDeleteErasesKey = "cardDeleteErases"
 
     /// Delete sheet's button: the targets plus, when ticked, their pairs.
     func confirmDeletion() {

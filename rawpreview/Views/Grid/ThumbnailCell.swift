@@ -46,8 +46,10 @@ struct ThumbnailCell: View {
         _exif = State(initialValue: MetadataService.shared.cachedExif(for: item.url))
     }
 
-    /// Small tiles drop the text overlays to keep the grid readable.
-    private var showsDetails: Bool { side >= 120 }
+    /// Small tiles drop the text overlays to keep the grid readable; Settings
+    /// can turn them off everywhere.
+    private var showsDetails: Bool { side >= 120 && showsInfoOverlay }
+    @AppStorage("gridShowsInfo") private var showsInfoOverlay = true
 
     var body: some View {
         ZStack {

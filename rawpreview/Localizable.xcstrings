@@ -1261,6 +1261,16 @@
         }
       }
     },
+    "Delete on memory cards": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá trên thẻ nhớ"
+          }
+        }
+      }
+    },
     "Delete…": {
       "localizations": {
         "vi": {
@@ -1357,6 +1367,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bạn thấy RawPreview hữu ích?"
+          }
+        }
+      }
+    },
+    "Erase at once": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá hẳn ngay"
+          }
+        }
+      }
+    },
+    "Erasing frees the card's space straight away. Files moved to a card's Trash only go once you empty the Trash in Finder. On other drives, deleted files always go to the Trash.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá hẳn giải phóng dung lượng thẻ ngay. Tệp chuyển vào Thùng rác của thẻ chỉ mất khi bạn dọn Thùng rác trong Finder. Trên các ổ khác, tệp bị xoá luôn được chuyển vào Thùng rác."
           }
         }
       }
@@ -1857,22 +1887,22 @@
         }
       }
     },
-    "Makes 2048 px JPEG copies (GPS removed) and opens the share sheet": {
+    "Makes %lld px JPEG copies (GPS removed) and opens the share sheet": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo bản JPEG 2048 px (đã bỏ GPS) và mở bảng chia sẻ"
+            "value": "Tạo bản JPEG %lld px (đã bỏ GPS) và mở bảng chia sẻ"
           }
         }
       }
     },
-    "Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet": {
+    "Makes %lld px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tạo bản JPEG 2048 px có áp dụng preset và chỉnh sửa của từng ảnh (đã bỏ GPS) và mở bảng chia sẻ"
+            "value": "Tạo bản JPEG %lld px có áp dụng preset và chỉnh sửa của từng ảnh (đã bỏ GPS) và mở bảng chia sẻ"
           }
         }
       }
@@ -2337,6 +2367,26 @@
         }
       }
     },
+    "Quick share is Share as JPEGs and AirDrop as JPEGs. Export lets you choose the size each time.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chia sẻ nhanh gồm Chia sẻ dạng JPEG và AirDrop dạng JPEG. Xuất ảnh cho phép chọn kích thước mỗi lần."
+          }
+        }
+      }
+    },
+    "Quick share size": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kích thước chia sẻ nhanh"
+          }
+        }
+      }
+    },
     "RAW files are exported from the camera's full-size embedded preview.": {
       "localizations": {
         "vi": {
@@ -2739,6 +2789,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hiện tất cả tệp"
+          }
+        }
+      }
+    },
+    "Show file name and exposure on thumbnails": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện tên tệp và thông số chụp trên thumbnail"
           }
         }
       }

@@ -171,26 +171,26 @@ private struct SourceSidebar: View {
     }
 }
 
-/// Support link and app version, pinned under the volumes.
+/// App version and a quiet support link on one line, pinned under the
+/// volumes; the support window is also in the app menu and Settings.
 private struct SidebarFooter: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Button {
-                openWindow(id: SupportView.windowID)
-            } label: {
-                Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
-            }
-            .buttonStyle(.borderless)
-            .help("Support RawPreview")
-
+        HStack(spacing: 8) {
             Button("Version \(AppInfo.version)") { AppInfo.showAboutPanel() }
                 .buttonStyle(.plain)
-                .font(.caption)
-                .foregroundStyle(.tertiary)
                 .help("About RawPreview")
+            Spacer()
+            Button("Buy Me a Coffee", systemImage: "cup.and.saucer") {
+                openWindow(id: SupportView.windowID)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .help("Support RawPreview")
         }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
         .padding(.vertical, 10)

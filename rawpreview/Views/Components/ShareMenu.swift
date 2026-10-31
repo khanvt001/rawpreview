@@ -33,7 +33,7 @@ struct ShareMenuItems: View {
             Button("Share as \(shots) JPEGs…", systemImage: "photo") {
                 SharingController.shareJPEGs(of: images)
             }
-            .help("Makes 2048 px JPEG copies (GPS removed) and opens the share sheet")
+            .help("Makes \(ShareService.maxPixelSize) px JPEG copies (GPS removed) and opens the share sheet")
             Button("AirDrop as \(shots) JPEGs", systemImage: "dot.radiowaves.left.and.right") {
                 SharingController.airDropJPEGs(of: images)
             }
@@ -44,7 +44,7 @@ struct ShareMenuItems: View {
                     Button("Share as \(shots) JPEGs…", systemImage: "photo") {
                         SharingController.shareJPEGs(of: images, look: look)
                     }
-                    .help("Makes 2048 px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
+                    .help("Makes \(ShareService.maxPixelSize) px JPEG copies with the preset and each photo's edits applied (GPS removed) and opens the share sheet")
                     Button("AirDrop as \(shots) JPEGs", systemImage: "dot.radiowaves.left.and.right") {
                         SharingController.airDropJPEGs(of: images, look: look)
                     }
