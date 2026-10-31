@@ -129,9 +129,25 @@ final class PresetStore {
         return preset
     }
 
-    /// What the loupe should apply right now.
+    /// A preset tile the pointer is resting on: the loupe previews it
+    /// without choosing it.
+    var hoveredID: String?
+
+    @ObservationIgnored private var hovered: (id: String, amount: Double, preset: DevelopPreset)?
+
+    /// What the loupe should apply right now: a hovered preset first.
     var activePreset: DevelopPreset? {
-        isEnabled ? appliedPreset : nil
+        if let hoveredID, let preset = preset(id: hoveredID) {
+            if let hovered, hovered.id == hoveredID, hovered.amount == amount { return hovered.preset }
+            let scaled = preset.atAmount(amount)
+            hovered = (hoveredID, amount, scaled)
+            return scaled
+        }
+        return isEnabled ? appliedPreset : nil
+    }
+
+    func preset(id: String) -> DevelopPreset? {
+        builtInByID[id] ?? presets.first { $0.id == id }
     }
 
     static let folder = URL.applicationSupportDirectory

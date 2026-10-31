@@ -2325,6 +2325,16 @@
         }
       }
     },
+    "Preview Thumbnails": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ảnh xem trước"
+          }
+        }
+      }
+    },
     "Previewing preset “%@” (approximate) · \\ shows before / after": {
       "localizations": {
         "vi": {
@@ -2825,6 +2835,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chỉ hiện tệp đã đánh dấu"
+          }
+        }
+      }
+    },
+    "Show the photo through each preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện ảnh qua từng preset"
           }
         }
       }

@@ -11,8 +11,13 @@ import SwiftUI
 /// collapsible categories. Preset files or folders dropped on it are imported.
 struct PresetInspector: View {
     @Environment(PresetStore.self) private var store
+    @Environment(LibraryViewModel.self) private var library
     @State private var query = ""
     @State private var isDropTargeted = false
+    /// Tiles show the focused photo through each preset.
+    @AppStorage("presetPreviews") private var showsPreviews = true
+    /// The focused photo, small, for the tiles to render from.
+    @State private var source: PresetTile.Source?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +30,18 @@ struct PresetInspector: View {
             Divider()
             bottomBar
         }
+        .task(id: showsPreviews ? library.focusedID : nil) {
+            guard showsPreviews, let item = library.focusedItem, item.kind.isImage else {
+                source = nil
+                return
+            }
+            if let image = await ThumbnailService.shared.thumbnail(for: item.url, pixelSize: PresetTile.sourcePixelSize),
+               !Task.isCancelled {
+                source = PresetTile.Source(image: image, url: item.url)
+            }
+        }
+        // Never leave the loupe stuck on a hovered preset.
+        .onDisappear { store.hoveredID = nil }
         .dropDestination(for: URL.self) { urls, _ in
             store.importPresets(from: urls)
             return true
@@ -133,7 +150,9 @@ struct PresetInspector: View {
     private func tile(_ preset: DevelopPreset?) -> some View {
         PresetTile(
             preset: preset,
-            isSelected: store.selectedID == preset?.id
+            isSelected: store.selectedID == preset?.id,
+            source: showsPreviews ? source : nil,
+            amount: store.amount
         ) {
             store.selectedID = preset?.id
         }
@@ -150,6 +169,11 @@ struct PresetInspector: View {
             .disabled(store.selectedPreset.map(store.isBuiltIn) ?? true)
             .help("Move the selected imported preset to the Trash")
             Spacer()
+            Toggle(isOn: $showsPreviews) {
+                Label("Preview Thumbnails", systemImage: "photo")
+            }
+            .toggleStyle(.button)
+            .help("Show the photo through each preset")
             Button("Show Presets Folder", systemImage: "folder") { store.revealFolder() }
                 .help("Show imported presets in Finder")
         }
@@ -203,16 +227,106 @@ private struct ImportTile: View {
     }
 }
 
-/// One preset's name as a selectable cell (or "None", for `nil`).
+/// One preset as a selectable cell (or "None", for `nil`): the focused photo
+/// through it, when previews are on, above its name. Resting the pointer on
+/// it previews it on the photo.
 private struct PresetTile: View {
+    struct Source: Equatable {
+        let image: CGImage
+        let url: URL
+    }
+
+    static let sourcePixelSize = 240
+
     let preset: DevelopPreset?
     let isSelected: Bool
+    let source: Source?
+    let amount: Double
     let select: () -> Void
 
+    @Environment(PresetStore.self) private var store
     @State private var isHovered = false
+    @State private var thumbnail: CGImage?
+    @State private var hoverTask: Task<Void, Never>?
+
+    private struct RenderKey: Equatable {
+        let source: Source?
+        let preset: UUID?
+        let amount: Double
+    }
 
     var body: some View {
         Button(action: select) {
+            VStack(alignment: .leading, spacing: 4) {
+                if source != nil {
+                    thumbnailView
+                }
+                label
+            }
+            .padding(source == nil ? 0 : 4)
+            .background {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(background)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover { hovering in
+            isHovered = hovering
+            hover(hovering)
+        }
+        .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? String(localized: "The photo as shot"))
+        .task(id: RenderKey(source: source, preset: preset?.revision, amount: amount)) {
+            await render()
+        }
+    }
+
+    private var thumbnailView: some View {
+        Color.black.opacity(0.2)
+            .aspectRatio(3 / 2, contentMode: .fit)
+            .overlay {
+                if let thumbnail {
+                    Image(decorative: thumbnail, scale: 1)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private func render() async {
+        guard let source else {
+            thumbnail = nil
+            return
+        }
+        guard let preset else {
+            thumbnail = source.image
+            return
+        }
+        let scaled = preset.atAmount(amount)
+        let rendered = await Task.detached(priority: .utility) {
+            PresetRenderer.render(source.image, preset: scaled, url: source.url)
+        }.value
+        if !Task.isCancelled { thumbnail = rendered }
+    }
+
+    /// Waits a moment so sweeping across the grid doesn't flash every preset.
+    private func hover(_ hovering: Bool) {
+        hoverTask?.cancel()
+        guard let id = preset?.id else { return }
+        if hovering {
+            hoverTask = Task {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+                store.hoveredID = id
+            }
+        } else if store.hoveredID == id {
+            store.hoveredID = nil
+        }
+    }
+
+    private var label: some View {
             HStack(spacing: 4) {
                 Text(preset?.title ?? String(localized: "None"))
                     .font(.caption)
@@ -231,18 +345,8 @@ private struct PresetTile: View {
                 }
             }
             .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
-            .padding(.horizontal, 8)
-            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-            .background {
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(background)
-            }
-            .contentShape(RoundedRectangle(cornerRadius: 7))
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .onHover { isHovered = $0 }
-        .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? String(localized: "The photo as shot"))
+            .padding(.horizontal, source == nil ? 8 : 4)
+            .frame(maxWidth: .infinity, minHeight: source == nil ? 36 : 28, alignment: .leading)
     }
 
     private var background: AnyShapeStyle {
