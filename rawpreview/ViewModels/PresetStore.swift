@@ -5,6 +5,7 @@
 
 import AppKit
 import Observation
+import UniformTypeIdentifiers
 
 /// Develop presets (built-in and imported), and which one the loupe previews.
 ///
@@ -144,9 +145,27 @@ final class PresetStore {
         if !failures.isEmpty { loadError = failures.joined(separator: "\n") }
     }
 
-    /// Validates each file, copies the readable ones in and selects the last.
+    /// Asks for preset files or folders of them (a downloaded preset pack),
+    /// then imports them. Used by the sidebar, the title menu and File menu.
+    func chooseAndImport() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = true
+        panel.allowedContentTypes = DevelopPreset.fileExtensions.compactMap { UTType(filenameExtension: $0) }
+        panel.prompt = "Import"
+        panel.message = "Choose Lightroom presets (.lrtemplate or .xmp), or folders containing them."
+        guard panel.runModal() == .OK else { return }
+        importPresets(from: panel.urls)
+    }
+
+    /// Validates each file (folders are searched, subfolders included),
+    /// copies the readable ones in and selects the last.
     func importPresets(from urls: [URL]) {
         var failures: [String] = []
+        /// Files found inside folders that aren't presets (camera profiles,
+        /// read-me files…): counted, not listed one by one.
+        var skippedInFolders = 0
         var lastImported: String?
         do {
             try FileManager.default.createDirectory(at: Self.folder, withIntermediateDirectories: true)
@@ -155,7 +174,16 @@ final class PresetStore {
             return
         }
 
+        var files: [(url: URL, fromFolder: Bool)] = []
         for url in urls {
+            if (try? url.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true {
+                files += Self.presetFiles(in: url).map { ($0, true) }
+            } else {
+                files.append((url, false))
+            }
+        }
+
+        for (url, fromFolder) in files {
             let accessing = url.startAccessingSecurityScopedResource()
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             do {
@@ -167,13 +195,35 @@ final class PresetStore {
                 try FileManager.default.copyItem(at: url, to: destination)
                 lastImported = destination.lastPathComponent
             } catch {
-                failures.append(error.localizedDescription)
+                if fromFolder {
+                    skippedInFolders += 1
+                } else {
+                    failures.append(error.localizedDescription)
+                }
             }
         }
 
         reload()
         if let lastImported { selectedID = lastImported }
+        if lastImported == nil, failures.isEmpty {
+            failures.append("No Lightroom develop presets were found.")
+        }
+        if skippedInFolders > 0, !failures.isEmpty || lastImported == nil {
+            failures.append("\(skippedInFolders) other file\(skippedInFolders == 1 ? "" : "s") in the folders weren't develop presets.")
+        }
         if !failures.isEmpty { loadError = failures.joined(separator: "\n") }
+    }
+
+    private static func presetFiles(in folder: URL) -> [URL] {
+        guard let enumerator = FileManager.default.enumerator(
+            at: folder,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else { return [] }
+        return enumerator
+            .compactMap { $0 as? URL }
+            .filter { DevelopPreset.fileExtensions.contains($0.pathExtension.lowercased()) }
+            .sorted { $0.path(percentEncoded: false).localizedStandardCompare($1.path(percentEncoded: false)) == .orderedAscending }
     }
 
     func remove(_ preset: DevelopPreset) {

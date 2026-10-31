@@ -24,6 +24,10 @@ import Foundation
 ///   one (e.g. Lightroom edits) it is kept and only the rating is merged in;
 ///   the rating is also written when the card itself couldn't take a sidecar
 ///   (write-locked card).
+/// - With a develop preset, each shot is instead exported as a full-size
+///   JPEG with the preset applied (`render`): one per RAW+JPEG pair, from the
+///   same image the loupe shows, star rating embedded. A JPEG already at the
+///   destination is never overwritten or skipped; the export gets a suffix.
 nonisolated struct CopyService: Sendable {
     struct Progress: Sendable, Equatable {
         var completedFiles = 0
@@ -71,10 +75,20 @@ nonisolated struct CopyService: Sendable {
     }
 
     static let maxConcurrentCopies = 3
+    /// Each render holds a decoded and a rendered full-size image (~200 MB
+    /// for 24 MP), and keeps the GPU and a core busy; two overlap file reads
+    /// with rendering without letting memory run away.
+    static let maxConcurrentRenders = 2
+    static let exportQuality = 0.92
 
     /// One file's copy plan.
     struct Plan: Sendable {
-        enum Action: Sendable { case copy, skipExisting }
+        enum Action: Sendable {
+            case copy
+            case skipExisting
+            /// Export a JPEG with this preset applied.
+            case render(DevelopPreset)
+        }
 
         let source: URL
         let destination: URL
@@ -90,7 +104,13 @@ nonisolated struct CopyService: Sendable {
     /// Works out every destination name and checks free space. Throws before
     /// anything is written if the copy can't succeed.
     @concurrent
-    func plan(_ items: [PhotoItem], to folder: URL, from sourceRoot: URL?, intoDateFolders: Bool = false) async throws -> [Plan] {
+    func plan(
+        _ items: [PhotoItem],
+        to folder: URL,
+        from sourceRoot: URL?,
+        intoDateFolders: Bool = false,
+        preset: DevelopPreset? = nil
+    ) async throws -> [Plan] {
         if let sourceRoot, folder.isContained(in: sourceRoot) {
             throw CopyError.destinationInsideSource
         }
@@ -102,6 +122,7 @@ nonisolated struct CopyService: Sendable {
             ? Dictionary(items.compactMap { item in item.creationDate.map { (item.sidecarURL, $0) } }, uniquingKeysWith: min)
             : [:]
 
+        let items = preset == nil ? items : Self.oneImagePerShot(items)
         var reserved = Set<String>()
         var createdFolders: Set<URL> = [folder]
         var plans: [Plan] = []
@@ -112,6 +133,18 @@ nonisolated struct CopyService: Sendable {
                 if createdFolders.insert(itemFolder).inserted {
                     try fileManager.createDirectory(at: itemFolder, withIntermediateDirectories: true)
                 }
+            }
+            if let preset {
+                let destination = Self.resolveExportDestination(for: item, in: itemFolder, reserved: &reserved)
+                plans.append(Plan(
+                    source: item.url,
+                    destination: destination,
+                    size: item.fileSize,
+                    action: .render(preset),
+                    isRaw: false,
+                    sourceSidecar: nil
+                ))
+                continue
             }
             let (destination, action) = Self.resolveDestination(for: item, in: itemFolder, reserved: &reserved)
             let sidecar = item.kind == .raw && fileManager.fileExists(atPath: item.sidecarURL.path(percentEncoded: false))
@@ -126,13 +159,49 @@ nonisolated struct CopyService: Sendable {
             ))
         }
 
-        let needed = plans.filter { $0.action == .copy }.reduce(Int64(0)) { $0 + $1.size }
+        // A rendered JPEG is smaller than the RAW or camera JPEG it comes from,
+        // so the source size is a safe upper bound for it too.
+        let needed = plans.filter { $0.action.writesFile }.reduce(Int64(0)) { $0 + $1.size }
         if let available = try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
             .volumeAvailableCapacityForImportantUsage,
            needed > available {
             throw CopyError.notEnoughSpace(needed: needed, available: available)
         }
         return plans
+    }
+
+    /// Images only; a RAW+JPEG pair is one shot, exported once from the RAW
+    /// (whose embedded preview is the same picture, at least as large).
+    private static func oneImagePerShot(_ items: [PhotoItem]) -> [PhotoItem] {
+        var byShot: [URL: PhotoItem] = [:]
+        var order: [URL] = []
+        for item in items where item.kind.isImage {
+            let shot = item.sidecarURL
+            if let existing = byShot[shot] {
+                if existing.kind != .raw, item.kind == .raw { byShot[shot] = item }
+            } else {
+                byShot[shot] = item
+                order.append(shot)
+            }
+        }
+        return order.compactMap { byShot[$0] }
+    }
+
+    /// `DSC_0001.jpg`, or `DSC_0001-1.jpg`… when a file of that name is
+    /// already there: it may be the camera's own JPEG, copied earlier.
+    private static func resolveExportDestination(for item: PhotoItem, in folder: URL, reserved: inout Set<String>) -> URL {
+        var suffix = 0
+        while true {
+            let name = suffix == 0 ? "\(item.baseName).jpg" : "\(item.baseName)-\(suffix).jpg"
+            let candidate = folder.appending(path: name)
+            suffix += 1
+            let key = candidate.path(percentEncoded: false).lowercased()
+            guard !reserved.contains(key),
+                  !FileManager.default.fileExists(atPath: candidate.path(percentEncoded: false))
+            else { continue }
+            reserved.insert(key)
+            return candidate
+        }
     }
 
     /// `2026-10-31` in the Mac's time zone (the day the photographer saw),
@@ -207,7 +276,9 @@ nonisolated struct CopyService: Sendable {
                 }
             }
 
-            for _ in 0..<min(Self.maxConcurrentCopies, plans.count) { startNext() }
+            let rendering = plans.contains { if case .render = $0.action { true } else { false } }
+            let concurrency = rendering ? Self.maxConcurrentRenders : Self.maxConcurrentCopies
+            for _ in 0..<min(concurrency, plans.count) { startNext() }
 
             while let (index, outcome) = await group.next() {
                 let plan = plans[index]
@@ -215,7 +286,9 @@ nonisolated struct CopyService: Sendable {
                 case .copied(let bytes):
                     report.copied += 1
                     report.copiedBytes += bytes
-                    if plan.destination.lastPathComponent != plan.source.lastPathComponent { report.renamed += 1 }
+                    // Base names: an export changes the extension, not the name.
+                    if plan.destination.deletingPathExtension().lastPathComponent
+                        != plan.source.deletingPathExtension().lastPathComponent { report.renamed += 1 }
                 case .skipped:
                     report.skipped += 1
                 case .failed(let reason):
@@ -239,8 +312,11 @@ nonisolated struct CopyService: Sendable {
         guard !Task.isCancelled else { return .failed("Cancelled") }
         let fileManager = FileManager.default
         do {
+            if case .render(let preset) = plan.action {
+                return .copied(try await render(plan, preset: preset, rating: rating))
+            }
             var outcome = Outcome.skipped
-            if plan.action == .copy {
+            if case .copy = plan.action {
                 let partial = plan.destination.appendingPathExtension("partial")
                 try? fileManager.removeItem(at: partial)
                 do {
@@ -261,6 +337,48 @@ nonisolated struct CopyService: Sendable {
         }
     }
 
+    /// Decodes, applies the preset and writes the JPEG; returns its size.
+    /// Off the cooperative pool's threads: one takes several hundred ms.
+    private static func render(_ plan: Plan, preset: DevelopPreset, rating: Rating?) async throws -> Int64 {
+        try await Task.detached(priority: .userInitiated) {
+            try Task.checkCancellation()
+            let name = plan.source.lastPathComponent
+            // The same picture the loupe shows: for a RAW, the camera's
+            // full-size embedded preview. sRGB-tagged, not the screen's space.
+            guard let image = ImageDecoder.decode(plan.source, maxPixelSize: nil, forDisplay: false) else {
+                throw ExportError.decodeFailed(name)
+            }
+            try Task.checkCancellation()
+            guard let rendered = PresetRenderer.export(image, preset: preset) else {
+                throw CancellationError()
+            }
+            let partial = plan.destination.appendingPathExtension("partial")
+            try? FileManager.default.removeItem(at: partial)
+            do {
+                try JPEGWriter.write(
+                    rendered, to: partial, original: plan.source,
+                    quality: exportQuality, keepsLocation: true, rating: rating
+                )
+                try FileManager.default.moveItem(at: partial, to: plan.destination)
+            } catch {
+                try? FileManager.default.removeItem(at: partial)
+                throw error
+            }
+            let size = try FileManager.default.attributesOfItem(atPath: plan.destination.path(percentEncoded: false))[.size] as? Int64
+            return size ?? 0
+        }.value
+    }
+
+    enum ExportError: LocalizedError {
+        case decodeFailed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .decodeFailed(let name): "Couldn't read \(name)."
+            }
+        }
+    }
+
     /// Sidecar named after the destination file (which may have a `-1` suffix).
     private static func copySidecar(for plan: Plan, rating: Rating?) async throws {
         guard plan.isRaw else { return }
@@ -273,5 +391,13 @@ nonisolated struct CopyService: Sendable {
         if let rating, rating.isRated {
             try await XMPService.shared.setRating(rating, sidecar: destination)
         }
+    }
+}
+
+nonisolated extension CopyService.Plan.Action {
+    /// Copies or renders (not a skip).
+    var writesFile: Bool {
+        if case .skipExisting = self { return false }
+        return true
     }
 }

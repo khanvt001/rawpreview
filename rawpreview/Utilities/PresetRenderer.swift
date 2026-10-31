@@ -62,6 +62,13 @@ nonisolated enum PresetRenderer {
         }.value
     }
 
+    /// For files written out (copy / share): renders on the current thread
+    /// and keeps nothing in the cache, so a batch export doesn't push the
+    /// loupe's renders out. `image` itself when the preset changes nothing.
+    static func export(_ image: CGImage, preset: DevelopPreset) -> CGImage? {
+        preset.isNoOp ? image : apply(preset, to: image)
+    }
+
     private static func apply(_ preset: DevelopPreset, to image: CGImage) -> CGImage? {
         let look = preset.look
         let input = CIImage(cgImage: image)
@@ -94,14 +101,16 @@ nonisolated enum PresetRenderer {
         // an image that renders lazily, the first time it is drawn: on the
         // main thread, hundreds of ms for a full-resolution photo.
         // Same colour space and layout as `ImageDecoder.prepareForDisplay`,
-        // so it still needs no conversion on screen.
+        // so it still needs no conversion on screen. A grey source (B&W
+        // JPEG) comes out in sRGB: a preset may tint it.
+        let space = image.colorSpace.flatMap { $0.model == .rgb ? $0 : nil } ?? sRGB
         guard let bitmap = CGContext(
             data: nil,
             width: image.width,
             height: image.height,
             bitsPerComponent: 8,
             bytesPerRow: 0,
-            space: image.colorSpace ?? DisplayColorSpace.target,
+            space: space,
             bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let data = bitmap.data
         else { return nil }

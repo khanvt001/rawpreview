@@ -9,6 +9,7 @@ import SwiftUI
 /// Share actions for one or more photos, used in the grid / filmstrip context
 /// menus and the toolbar's Share menu.
 struct ShareMenuItems: View {
+    @Environment(PresetStore.self) private var presets
     let items: [PhotoItem]
 
     var body: some View {
@@ -32,6 +33,17 @@ struct ShareMenuItems: View {
             Button("AirDrop as \(noun)", systemImage: "dot.radiowaves.left.and.right") {
                 SharingController.airDropJPEGs(of: images)
             }
+
+            if let preset = presets.selectedPreset {
+                Divider()
+                Button("Share as \(noun) with “\(preset.title)”…", systemImage: "camera.filters") {
+                    SharingController.shareJPEGs(of: images, preset: preset)
+                }
+                .help("Makes 2048 px JPEG copies with the preset applied (GPS removed) and opens the share sheet")
+                Button("AirDrop as \(noun) with “\(preset.title)”", systemImage: "dot.radiowaves.left.and.right") {
+                    SharingController.airDropJPEGs(of: images, preset: preset)
+                }
+            }
         }
     }
 }
@@ -39,13 +51,13 @@ struct ShareMenuItems: View {
 /// Generates temporary JPEGs and hands them to AppKit sharing.
 @MainActor
 enum SharingController {
-    static func shareJPEGs(of items: [PhotoItem]) {
+    static func shareJPEGs(of items: [PhotoItem], preset: DevelopPreset? = nil) {
         // Remember where the click happened; the picker is anchored there once
         // the JPEGs are ready.
         let window = NSApp.keyWindow
         let mouse = window?.mouseLocationOutsideOfEventStream
         Task {
-            guard let urls = await makeJPEGs(items),
+            guard let urls = await makeJPEGs(items, preset: preset),
                   let window, let mouse, let view = window.contentView
             else { return }
             let point = view.convert(mouse, from: nil)
@@ -54,9 +66,9 @@ enum SharingController {
         }
     }
 
-    static func airDropJPEGs(of items: [PhotoItem]) {
+    static func airDropJPEGs(of items: [PhotoItem], preset: DevelopPreset? = nil) {
         Task {
-            guard let urls = await makeJPEGs(items) else { return }
+            guard let urls = await makeJPEGs(items, preset: preset) else { return }
             guard let airDrop = NSSharingService(named: .sendViaAirDrop), airDrop.canPerform(withItems: urls) else {
                 showError("AirDrop isn't available. Check that Wi-Fi and Bluetooth are on.")
                 return
@@ -65,9 +77,9 @@ enum SharingController {
         }
     }
 
-    private static func makeJPEGs(_ items: [PhotoItem]) async -> [URL]? {
+    private static func makeJPEGs(_ items: [PhotoItem], preset: DevelopPreset?) async -> [URL]? {
         do {
-            return try await ShareService.makeJPEGs(for: items)
+            return try await ShareService.makeJPEGs(for: items, preset: preset)
         } catch {
             showError(error.localizedDescription)
             return nil

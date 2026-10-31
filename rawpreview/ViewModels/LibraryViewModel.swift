@@ -112,6 +112,9 @@ final class LibraryViewModel {
         didSet { UserDefaults.standard.set(copiesIntoDateFolders, forKey: "copiesIntoDateFolders") }
     }
     private(set) var copyState: CopyState = .idle
+    /// The preset the current / last copy exported JPEGs with; `nil` when it
+    /// copied the original files.
+    private(set) var copyPreset: DevelopPreset?
     /// Why the last copy stopped early, when it wasn't the user's Cancel.
     private(set) var copyInterruption: String?
     /// Volume currently being ejected (for the sidebar spinner).
@@ -506,8 +509,9 @@ final class LibraryViewModel {
     }
 
     /// ⌘Return: copies every marked file (including ones hidden by the filter,
-    /// matching the "N marked" count) to the destination.
-    func startCopy() {
+    /// matching the "N marked" count) to the destination. With a preset, each
+    /// marked shot is exported as a JPEG with it applied instead.
+    func startCopy(applying preset: DevelopPreset? = nil) {
         guard !isCopying else { return }
         guard !checkedIDs.isEmpty else {
             NSSound.beep()
@@ -522,6 +526,7 @@ final class LibraryViewModel {
         let pendingRatingWrite = lastSidecarWrite
         let sourceRoot = sourceURL
         let intoDateFolders = copiesIntoDateFolders
+        copyPreset = preset
         copyState = .running(CopyService.Progress(totalFiles: marked.count))
 
         copyTask = Task {
@@ -529,7 +534,10 @@ final class LibraryViewModel {
             // sidecars carry the latest stars.
             await pendingRatingWrite?.value
             do {
-                let plans = try await copier.plan(marked, to: destination, from: sourceRoot, intoDateFolders: intoDateFolders)
+                let plans = try await copier.plan(
+                    marked, to: destination, from: sourceRoot,
+                    intoDateFolders: intoDateFolders, preset: preset
+                )
                 let report = await copier.copy(plans, to: destination, ratings: ratings) { progress in
                     Task { @MainActor [weak self] in
                         // A late progress update must not overwrite the result.

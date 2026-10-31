@@ -30,6 +30,10 @@ struct RawPreviewApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             ZoomCommands(library: library)
+            CommandGroup(replacing: .importExport) {
+                Button("Import Presets…") { presets.chooseAndImport() }
+                    .keyboardShortcut("i", modifiers: [.command, .shift])
+            }
         }
     }
 }

@@ -5,8 +5,6 @@
 
 import CoreGraphics
 import Foundation
-import ImageIO
-import UniformTypeIdentifiers
 
 /// Makes lightweight JPEG copies for sharing (AirDrop, Messages, Mail…), so a
 /// 25 MB RAW goes out as a ~1 MB JPEG the other side can open.
@@ -14,6 +12,7 @@ import UniformTypeIdentifiers
 /// - Decoded from the RAW's embedded preview (`ImageDecoder`), so it's fast
 ///   and matches what the camera showed.
 /// - Long edge 2048 px, quality 0.85; orientation baked in.
+/// - Optionally with a develop preset applied (`PresetRenderer.export`).
 /// - Camera EXIF (exposure, lens, date) is kept; GPS is removed, so a shared
 ///   photo doesn't reveal where it was taken.
 /// - Written under a per-share folder in the temporary directory; old
@@ -39,9 +38,9 @@ nonisolated enum ShareService {
     }
 
     /// One JPEG per shot, in input order, named after the original
-    /// (`DSC_6260.NEF` → `DSC_6260.jpg`).
+    /// (`DSC_6260.NEF` → `DSC_6260.jpg`), with `preset` applied if given.
     @concurrent
-    static func makeJPEGs(for items: [PhotoItem]) async throws -> [URL] {
+    static func makeJPEGs(for items: [PhotoItem], preset: DevelopPreset? = nil) async throws -> [URL] {
         let folder = exportRoot.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let jobs = uniqueJobs(for: items)
@@ -49,7 +48,7 @@ nonisolated enum ShareService {
         return try await withThrowingTaskGroup(of: (Int, URL).self) { group in
             for (index, job) in jobs.enumerated() {
                 group.addTask {
-                    (index, try makeJPEG(for: job.item, named: job.name, in: folder))
+                    (index, try makeJPEG(for: job.item, named: job.name, preset: preset, in: folder))
                 }
             }
             var results = [URL?](repeating: nil, count: jobs.count)
@@ -90,43 +89,23 @@ nonisolated enum ShareService {
         }
     }
 
-    private static func makeJPEG(for item: PhotoItem, named name: String, in folder: URL) throws -> URL {
+    private static func makeJPEG(for item: PhotoItem, named name: String, preset: DevelopPreset?, in folder: URL) throws -> URL {
         try Task.checkCancellation()
         // sRGB, not the screen's colour space: the JPEG goes to other devices.
-        guard let image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize, forDisplay: false) else {
+        guard var image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize, forDisplay: false) else {
             throw ShareError.decodeFailed(item.fileName)
+        }
+        if let preset {
+            try Task.checkCancellation()
+            guard let rendered = PresetRenderer.export(image, preset: preset) else {
+                throw ShareError.writeFailed(item.fileName)
+            }
+            image = rendered
         }
 
         let destinationURL = folder.appending(path: name)
-        guard let destination = CGImageDestinationCreateWithURL(
-            destinationURL as CFURL, UTType.jpeg.identifier as CFString, 1, nil
-        ) else { throw ShareError.writeFailed(item.fileName) }
-
-        var properties: [CFString: Any] = [
-            kCGImageDestinationLossyCompressionQuality: quality,
-            // The pixels are already rotated upright by the decoder.
-            kCGImagePropertyOrientation: 1,
-        ]
-        if let source = CGImageSourceCreateWithURL(item.url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary),
-           let original = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any] {
-            if let exif = original[kCGImagePropertyExifDictionary] as? [CFString: Any] {
-                var exif = exif
-                // Describe the new image, not the sensor.
-                exif[kCGImagePropertyExifPixelXDimension] = image.width
-                exif[kCGImagePropertyExifPixelYDimension] = image.height
-                properties[kCGImagePropertyExifDictionary] = exif
-            }
-            if var tiff = original[kCGImagePropertyTIFFDictionary] as? [CFString: Any] {
-                tiff[kCGImagePropertyTIFFOrientation] = 1
-                properties[kCGImagePropertyTIFFDictionary] = tiff
-            }
-            // GPS deliberately not copied.
-        }
-
-        CGImageDestinationAddImage(destination, image, properties as CFDictionary)
-        guard CGImageDestinationFinalize(destination) else {
-            throw ShareError.writeFailed(item.fileName)
-        }
+        // GPS deliberately not copied.
+        try JPEGWriter.write(image, to: destinationURL, original: item.url, quality: quality, keepsLocation: false)
         return destinationURL
     }
 

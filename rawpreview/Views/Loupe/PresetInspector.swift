@@ -4,16 +4,15 @@
 //
 
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// The sidebar's Presets page: the applied preset (its name opens a menu of
 /// every preset) with a before / after switch, a search box, then a grid of
 /// preset names, imported ones first and the built-in collection in
-/// collapsible categories.
+/// collapsible categories. Preset files or folders dropped on it are imported.
 struct PresetInspector: View {
     @Environment(PresetStore.self) private var store
     @State private var query = ""
-    @State private var isImporting = false
+    @State private var isDropTargeted = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,14 +25,16 @@ struct PresetInspector: View {
             Divider()
             bottomBar
         }
-        .fileImporter(
-            isPresented: $isImporting,
-            allowedContentTypes: DevelopPreset.fileExtensions.compactMap { UTType(filenameExtension: $0) },
-            allowsMultipleSelection: true
-        ) { result in
-            switch result {
-            case .success(let urls): store.importPresets(from: urls)
-            case .failure(let error): store.loadError = error.localizedDescription
+        .dropDestination(for: URL.self) { urls, _ in
+            store.importPresets(from: urls)
+            return true
+        } isTargeted: { isDropTargeted = $0 }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.accentColor, lineWidth: 2)
+                    .padding(4)
+                    .allowsHitTesting(false)
             }
         }
         .alert(
@@ -65,6 +66,9 @@ struct PresetInspector: View {
                         Section {
                             tile(nil)
                             ForEach(imported) { tile($0) }
+                            if imported.isEmpty {
+                                ImportTile { store.chooseAndImport() }
+                            }
                         } header: {
                             if !imported.isEmpty {
                                 GridHeader(title: "Imported", count: imported.count)
@@ -138,8 +142,8 @@ struct PresetInspector: View {
 
     private var bottomBar: some View {
         HStack(spacing: 12) {
-            Button("Import Presets…", systemImage: "plus") { isImporting = true }
-                .help("Import Lightroom presets (.lrtemplate / .xmp)")
+            Button("Import Presets…", systemImage: "plus") { store.chooseAndImport() }
+                .help("Import Lightroom presets (.lrtemplate / .xmp), or folders of them. You can also drop them here.")
             Button("Remove Preset", systemImage: "minus") {
                 if let preset = store.selectedPreset { store.remove(preset) }
             }
@@ -170,6 +174,32 @@ struct PresetInspector: View {
                 store.expandedCategories.insert(category)
             }
         }
+    }
+}
+
+/// "Import…" in the grid until there are imported presets: the bar's +
+/// button is easy to miss.
+private struct ImportTile: View {
+    let action: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: action) {
+            Label("Import…", systemImage: "plus")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                .background {
+                    RoundedRectangle(cornerRadius: 7)
+                        .strokeBorder(isHovered ? AnyShapeStyle(.secondary) : AnyShapeStyle(.tertiary), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                }
+                .contentShape(RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover { isHovered = $0 }
+        .help("Import Lightroom presets (.lrtemplate / .xmp), or folders of them. You can also drop them on this sidebar.")
     }
 }
 
@@ -372,6 +402,8 @@ private struct PresetMenuItems: View {
                 }
             }
         }
+        Divider()
+        Button("Import Presets…") { store.chooseAndImport() }
     }
 
     private func selection(_ id: String?) -> Binding<Bool> {
