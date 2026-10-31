@@ -55,6 +55,12 @@ struct PhotoCommands: Commands {
                 .disabled(item == nil || library.isSearchFocused)
         }
 
+        CommandGroup(after: .pasteboard) {
+            Divider()
+            Button("Find File Names") { library.focusSearch() }
+                .keyboardShortcut("f", modifiers: .command)
+        }
+
         CommandGroup(before: .toolbar) {
             Section {
                 Button(library.viewMode == .grid ? "Show Single Image" : "Show Grid") {

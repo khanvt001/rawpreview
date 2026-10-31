@@ -1515,12 +1515,12 @@
         }
       }
     },
-    "Filter by file type": {
+    "Filter by mark, rating or file type": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lọc theo loại tệp"
+            "value": "Lọc theo đánh dấu, số sao hoặc loại tệp"
           }
         }
       }
@@ -1535,12 +1535,12 @@
         }
       }
     },
-    "Find": {
+    "Find File Names": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tìm"
+            "value": "Tìm tên tệp"
           }
         }
       }

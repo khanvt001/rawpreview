@@ -5,8 +5,9 @@
 
 import SwiftUI
 
-/// One toggle chip per file extension found in the source, e.g. "NEF 481",
-/// a sort menu, and a file-name search box (⌘F).
+/// Marked and rating filters, one toggle chip per file extension found in the
+/// source (e.g. "NEF 481") and a sort menu. Accent fill always means "this
+/// filter is narrowing the grid". The file-name search lives in the toolbar.
 struct FilterBar: View {
     @Environment(LibraryViewModel.self) private var library
 
@@ -14,7 +15,7 @@ struct FilterBar: View {
         HStack(spacing: 6) {
             Image(systemName: "line.3.horizontal.decrease")
                 .foregroundStyle(.secondary)
-                .help("Filter by file type")
+                .help("Filter by mark, rating or file type")
 
             MarkedFilterChip()
             RatingFilterChip()
@@ -45,7 +46,6 @@ struct FilterBar: View {
             }
 
             SortMenu()
-            SearchField()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -85,7 +85,8 @@ private struct SortMenu: View {
     }
 }
 
-private struct SearchField: View {
+/// File-name search for the grid's toolbar (⌘F).
+struct SearchField: View {
     @Environment(LibraryViewModel.self) private var library
     @FocusState private var isFocused: Bool
 
@@ -122,20 +123,18 @@ private struct SearchField: View {
         .font(.callout)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
-        .frame(width: 200)
+        .frame(width: 180)
         .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
         .overlay {
             if isFocused {
                 RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 1)
             }
         }
-        .background {
-            // Invisible ⌘F target.
-            Button("Find") { isFocused = true }
-                .keyboardShortcut("f", modifiers: .command)
-                .opacity(0)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+        // Edit ▸ Find (⌘F) asks for the keyboard, possibly from Single Image.
+        .onChange(of: library.wantsSearchFocus, initial: true) { _, wants in
+            guard wants else { return }
+            library.wantsSearchFocus = false
+            Task { @MainActor in isFocused = true }
         }
         .help("Search file names (⌘F)")
     }
@@ -170,6 +169,8 @@ private struct MarkedFilterChip: View {
         }
         .buttonStyle(.plain)
         .focusable(false)
+        // Nothing to show until something is marked.
+        .disabled(!isOn && library.checkedIDs.isEmpty)
         .help(isOn ? "Show all files" : "Show only marked files")
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
@@ -242,16 +243,20 @@ private struct FilterChip: View {
                 Text(title)
                     .fontWeight(.semibold)
                 Text(count, format: .number)
-                    .foregroundStyle(isOn ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(.secondary)
             }
             .font(.callout.monospacedDigit())
             .padding(.horizontal, 10)
             .padding(.vertical, 3)
-            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
-            .background(
-                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.fill.tertiary),
-                in: Capsule()
-            )
+            // Shown types look like the other idle chips; a hidden type is
+            // the one narrowing the grid, so it's the one that stands out.
+            .foregroundStyle(isOn ? AnyShapeStyle(.primary) : AnyShapeStyle(.tertiary))
+            .background(isOn ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.clear), in: Capsule())
+            .overlay {
+                if !isOn {
+                    Capsule().strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                }
+            }
             .strikethrough(!isOn)
             .contentShape(Capsule())
         }

@@ -125,6 +125,9 @@ struct PhotoGridView: View {
                 .focusable(false)
                 .help("Thumbnail size")
             }
+            ToolbarItem {
+                SearchField()
+            }
         }
     }
 

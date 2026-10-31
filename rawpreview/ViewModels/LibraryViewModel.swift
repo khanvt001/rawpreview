@@ -140,6 +140,16 @@ final class LibraryViewModel {
         keyFocusRequest += 1
     }
 
+    /// Set by Find (⌘F); the grid's search field takes the keyboard once it
+    /// is on screen, then clears it.
+    var wantsSearchFocus = false
+
+    func focusSearch() {
+        guard sourceURL != nil, !items.isEmpty else { return }
+        viewMode = .grid
+        wantsSearchFocus = true
+    }
+
     var viewMode: ViewMode = .grid
 
     /// Single Image mode's sidebar; remembered across launches.
