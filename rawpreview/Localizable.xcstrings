@@ -347,6 +347,16 @@
         }
       }
     },
+    "About RawPreview": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giới thiệu RawPreview"
+          }
+        }
+      }
+    },
     "About half the size of a JPEG at the same quality; best for Apple devices. %@": {
       "localizations": {
         "vi": {
@@ -587,6 +597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Có sẵn"
+          }
+        }
+      }
+    },
+    "Buy Me a Coffee": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mời mình ly cà phê"
           }
         }
       }
@@ -1705,6 +1725,16 @@
         }
       }
     },
+    "Made by %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phát triển bởi %@"
+          }
+        }
+      }
+    },
     "Makes 2048 px JPEG copies (GPS removed) and opens the share sheet": {
       "localizations": {
         "vi": {
@@ -2785,6 +2815,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chưa xếp hạng"
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phiên bản %@"
           }
         }
       }

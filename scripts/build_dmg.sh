@@ -1,12 +1,12 @@
 #!/bin/bash
-# Builds a Release rawpreview.app (Apple Silicon + Intel) and packs it into a
-# drag-to-install DMG at build/rawpreview-<version>.dmg.
+# Builds a Release RawPreview.app (Apple Silicon + Intel) and packs it into a
+# drag-to-install DMG at build/RawPreview-<version>.dmg.
 #
 #     scripts/build_dmg.sh
 #
 # Without a paid Apple Developer account the app is ad-hoc signed. Friends
 # must allow it once: open it, then System Settings → Privacy & Security →
-# Open Anyway (or `xattr -dr com.apple.quarantine /Applications/rawpreview.app`).
+# Open Anyway (or `xattr -dr com.apple.quarantine /Applications/RawPreview.app`).
 #
 # With a paid account, sign with Developer ID and notarize so it opens
 # without warnings:
@@ -18,7 +18,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_NAME="rawpreview"
+PROJECT="rawpreview"
+APP_NAME="RawPreview"
 BUILD_DIR="$ROOT/build"
 DERIVED="$BUILD_DIR/DerivedData"
 STAGING="$BUILD_DIR/dmg-staging"
@@ -40,8 +41,8 @@ fi
 echo "==> Building $APP_NAME (Release, universal)"
 rm -rf "$DERIVED"
 xcodebuild \
-    -project "$ROOT/$APP_NAME.xcodeproj" \
-    -scheme "$APP_NAME" \
+    -project "$ROOT/$PROJECT.xcodeproj" \
+    -scheme "$PROJECT" \
     -configuration Release \
     -destination "generic/platform=macOS" \
     -derivedDataPath "$DERIVED" \

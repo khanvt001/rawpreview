@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "0F7693203094CC1600C95388"
-               BuildableName = "rawpreview.app"
+               BuildableName = "RawPreview.app"
                BlueprintName = "rawpreview"
                ReferencedContainer = "container:rawpreview.xcodeproj">
             </BuildableReference>
@@ -46,7 +46,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0F7693203094CC1600C95388"
-            BuildableName = "rawpreview.app"
+            BuildableName = "RawPreview.app"
             BlueprintName = "rawpreview"
             ReferencedContainer = "container:rawpreview.xcodeproj">
          </BuildableReference>
@@ -63,7 +63,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "0F7693203094CC1600C95388"
-            BuildableName = "rawpreview.app"
+            BuildableName = "RawPreview.app"
             BlueprintName = "rawpreview"
             ReferencedContainer = "container:rawpreview.xcodeproj">
          </BuildableReference>

@@ -138,6 +138,33 @@ private struct SourceSidebar: View {
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom) { SidebarFooter() }
+    }
+}
+
+/// Support link and app version, pinned under the volumes.
+private struct SidebarFooter: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                openWindow(id: SupportView.windowID)
+            } label: {
+                Label("Buy Me a Coffee", systemImage: "cup.and.saucer.fill")
+            }
+            .buttonStyle(.borderless)
+            .help("Support RawPreview")
+
+            Button("Version \(AppInfo.version)") { AppInfo.showAboutPanel() }
+                .buttonStyle(.plain)
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .help("About RawPreview")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 }
 
