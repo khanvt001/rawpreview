@@ -27,7 +27,13 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     let unsupportedSettings: [String]
     /// Changes every time the preset is loaded, so rendered images cached for
     /// an older version of the same file name are never reused.
-    let revision = UUID()
+    private(set) var revision = UUID()
+    /// 0…1: how much of the preset is applied, mixed with the photo as shot
+    /// (the Presets sidebar's Amount).
+    private(set) var amount = 1.0
+    /// The photo's Edit adjustments, applied after the preset at `amount`
+    /// (see `combining`).
+    private(set) var adjustments: PresetLook?
 
     enum LoadError: LocalizedError {
         case unreadable(String)
@@ -68,21 +74,31 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         unsupportedSettings = Self.unsupported(in: settings)
     }
 
-    /// `preset` with `light` added to its Basic tone values (or `light` alone
-    /// when there is no preset), as one preset the renderer can apply.
+    /// This preset applied at `amount` (0…1). A new revision, so renders
+    /// of other amounts aren't reused.
+    func atAmount(_ amount: Double) -> DevelopPreset {
+        var preset = self
+        preset.amount = min(max(amount, 0), 1)
+        preset.revision = UUID()
+        return preset
+    }
+
+    /// `preset` (at its amount) followed by `light`, as one preset the
+    /// renderer can apply; `light` alone when there is no preset. The edits
+    /// come after the preset rather than being added to its settings, so the
+    /// preset's Amount doesn't scale them too.
     static func combining(_ preset: DevelopPreset?, with light: LightAdjustments) -> DevelopPreset? {
         guard !light.isZero else { return preset }
-        var settings = preset?.settings ?? [:]
+        var settings: [String: PresetValue] = [:]
         for slider in LightAdjustments.Slider.allCases where light[slider] != 0 {
-            let total = (settings[slider.settingsKey]?.number ?? 0) + light[slider]
-            settings[slider.settingsKey] = .number(min(max(total, slider.range.lowerBound), slider.range.upperBound))
+            settings[slider.settingsKey] = .number(light[slider])
         }
-        return DevelopPreset(
-            id: preset?.id ?? "edit",
-            title: preset?.title ?? "Edit",
-            summary: preset?.summary,
-            settings: settings
-        )
+        guard var combined = preset else {
+            return DevelopPreset(id: "edit", title: "Edit", settings: settings)
+        }
+        combined.adjustments = PresetLook(settings: settings)
+        combined.revision = UUID()
+        return combined
     }
 
     var isMonochrome: Bool {
@@ -91,7 +107,44 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
 
     /// Nothing to apply: rendering can be skipped.
     var isNoOp: Bool {
-        look.isIdentity
+        (amount == 0 || look.isIdentity) && (adjustments?.isIdentity ?? true)
+    }
+
+    // MARK: - Rendering
+
+    /// One colour through the preset at `amount`, then the edits: what the
+    /// renderer's lookup table holds.
+    func apply(_ color: SIMD3<Double>) -> SIMD3<Double> {
+        var result = color
+        if amount > 0, !look.isIdentity {
+            let full = look.apply(color)
+            result = amount >= 1 ? full : color + (full - color) * amount
+        }
+        return adjustments?.apply(result) ?? result
+    }
+
+    /// RGBA float cube of `apply` for `CIColorCubeWithColorSpace`.
+    func cubeData(dimension: Int) -> Data {
+        PresetLook.cubeData(dimension: dimension, apply)
+    }
+
+    /// The preset's local contrast, vignette and grain, scaled by `amount`.
+    var clarity: Double { look.clarity * amount }
+    var texture: Double { look.texture * amount }
+
+    var vignette: PresetLook.Vignette? {
+        guard amount > 0, let vignette = look.vignette else { return nil }
+        return PresetLook.Vignette(amount: vignette.amount * amount, midpoint: vignette.midpoint, feather: vignette.feather)
+    }
+
+    var grain: PresetLook.Grain? {
+        guard amount > 0, let grain = look.grain else { return nil }
+        return PresetLook.Grain(amount: grain.amount * amount, size: grain.size)
+    }
+
+    /// "Kodak Gold", or "Kodak Gold 50%" below full strength.
+    var titleWithAmount: String {
+        amount < 1 ? "\(title) \(Int((amount * 100).rounded()))%" : title
     }
 
     /// Lightroom's built-in presets use `$$$/Key=Default text`.

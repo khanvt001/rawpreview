@@ -262,6 +262,11 @@ nonisolated struct PresetLook: Sendable {
 
     /// RGBA float cube for `CIColorCubeWithColorSpace`, red varying fastest.
     func cubeData(dimension: Int) -> Data {
+        Self.cubeData(dimension: dimension, apply)
+    }
+
+    /// The cube for any colour-to-colour function.
+    static func cubeData(dimension: Int, _ apply: (SIMD3<Double>) -> SIMD3<Double>) -> Data {
         var values: [Float] = []
         values.reserveCapacity(dimension * dimension * dimension * 4)
         let scale = 1 / Double(dimension - 1)

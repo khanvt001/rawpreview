@@ -24,11 +24,12 @@ import Foundation
 ///   one (e.g. Lightroom edits) it is kept and only the rating is merged in;
 ///   the rating is also written when the card itself couldn't take a sidecar
 ///   (write-locked card).
-/// - With an `ExportLook` (a preset and / or Edit adjustments), each shot is
-///   instead exported as a full-size JPEG with its look applied (`render`):
-///   one per RAW+JPEG pair, from the same image the loupe shows, star rating
-///   embedded. A shot the look doesn't change is exported as shot. A JPEG already at the
-///   destination is never overwritten or skipped; the export gets a suffix.
+/// - Exporting (`Export`), each shot is instead written as a JPEG, HEIF or
+///   PNG in the chosen size, with its `ExportLook` (preset and / or Edit
+///   adjustments) applied (`render`): one per RAW+JPEG pair, from the same
+///   image the loupe shows, star rating embedded. A shot the look doesn't
+///   change is exported as shot. A file already at the destination is never
+///   overwritten or skipped; the export gets a suffix.
 nonisolated struct CopyService: Sendable {
     struct Progress: Sendable, Equatable {
         var completedFiles = 0
@@ -54,6 +55,8 @@ nonisolated struct CopyService: Sendable {
         var renamed = 0
         var failures: [Failure] = []
         var copiedBytes: Int64 = 0
+        /// Files an export wrote, in plan order, for sharing them afterwards.
+        var exported: [URL] = []
         var duration: Duration = .zero
         var wasCancelled = false
     }
@@ -80,15 +83,29 @@ nonisolated struct CopyService: Sendable {
     /// for 24 MP), and keeps the GPU and a core busy; two overlap file reads
     /// with rendering without letting memory run away.
     static let maxConcurrentRenders = 2
-    static let exportQuality = 0.92
+
+    /// Write each shot as an image file instead of copying the originals.
+    struct Export: Sendable {
+        /// `nil`, or ignored when `settings.appliesLook` is off: as shot.
+        let look: ExportLook?
+        let settings: ExportSettings
+
+        /// What the progress and summary say, e.g. "PNG with Edits applied".
+        var title: String {
+            if let look, settings.appliesLook {
+                return "\(settings.format.title) with \(look.title) applied"
+            }
+            return settings.format.title
+        }
+    }
 
     /// One file's copy plan.
     struct Plan: Sendable {
         enum Action: Sendable {
             case copy
             case skipExisting
-            /// Export a JPEG with this preset applied (`nil`: as shot).
-            case render(DevelopPreset?)
+            /// Export an image file with this preset applied (`nil`: as shot).
+            case render(DevelopPreset?, ExportSettings)
         }
 
         let source: URL
@@ -110,7 +127,7 @@ nonisolated struct CopyService: Sendable {
         to folder: URL,
         from sourceRoot: URL?,
         intoDateFolders: Bool = false,
-        look: ExportLook? = nil
+        export: Export? = nil
     ) async throws -> [Plan] {
         if let sourceRoot, folder.isContained(in: sourceRoot) {
             throw CopyError.destinationInsideSource
@@ -123,7 +140,7 @@ nonisolated struct CopyService: Sendable {
             ? Dictionary(items.compactMap { item in item.creationDate.map { (item.sidecarURL, $0) } }, uniquingKeysWith: min)
             : [:]
 
-        let items = look == nil ? items : Self.oneImagePerShot(items)
+        let items = export == nil ? items : Self.oneImagePerShot(items)
         var reserved = Set<String>()
         var createdFolders: Set<URL> = [folder]
         var plans: [Plan] = []
@@ -135,13 +152,16 @@ nonisolated struct CopyService: Sendable {
                     try fileManager.createDirectory(at: itemFolder, withIntermediateDirectories: true)
                 }
             }
-            if let look {
-                let destination = Self.resolveExportDestination(for: item, in: itemFolder, reserved: &reserved)
+            if let export {
+                let destination = Self.resolveExportDestination(
+                    for: item, extension: export.settings.format.fileExtension, in: itemFolder, reserved: &reserved
+                )
+                let preset = export.settings.appliesLook ? export.look?.preset(for: item) : nil
                 plans.append(Plan(
                     source: item.url,
                     destination: destination,
                     size: item.fileSize,
-                    action: .render(look.preset(for: item)),
+                    action: .render(preset, export.settings),
                     isRaw: false,
                     sourceSidecar: nil
                 ))
@@ -160,9 +180,11 @@ nonisolated struct CopyService: Sendable {
             ))
         }
 
-        // A rendered JPEG is smaller than the RAW or camera JPEG it comes from,
-        // so the source size is a safe upper bound for it too.
-        let needed = plans.filter { $0.action.writesFile }.reduce(Int64(0)) { $0 + $1.size }
+        // A rendered JPEG is smaller than the RAW or camera JPEG it comes
+        // from, so the source size is a safe upper bound for it; a PNG can be
+        // several times larger (`sizeFactor`).
+        let factor = export?.settings.sizeFactor ?? 1
+        let needed = plans.filter { $0.action.writesFile }.reduce(Int64(0)) { $0 + Int64(Double($1.size) * factor) }
         if let available = try? folder.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
             .volumeAvailableCapacityForImportantUsage,
            needed > available {
@@ -190,10 +212,15 @@ nonisolated struct CopyService: Sendable {
 
     /// `DSC_0001.jpg`, or `DSC_0001-1.jpg`… when a file of that name is
     /// already there: it may be the camera's own JPEG, copied earlier.
-    private static func resolveExportDestination(for item: PhotoItem, in folder: URL, reserved: inout Set<String>) -> URL {
+    private static func resolveExportDestination(
+        for item: PhotoItem,
+        extension ext: String,
+        in folder: URL,
+        reserved: inout Set<String>
+    ) -> URL {
         var suffix = 0
         while true {
-            let name = suffix == 0 ? "\(item.baseName).jpg" : "\(item.baseName)-\(suffix).jpg"
+            let name = suffix == 0 ? "\(item.baseName).\(ext)" : "\(item.baseName)-\(suffix).\(ext)"
             let candidate = folder.appending(path: name)
             suffix += 1
             let key = candidate.path(percentEncoded: false).lowercased()
@@ -265,6 +292,7 @@ nonisolated struct CopyService: Sendable {
         var progress = Progress(totalFiles: plans.count, totalBytes: plans.reduce(0) { $0 + $1.size })
         onProgress(progress)
 
+        var exported: [Int: URL] = [:]
         await withTaskGroup(of: (Int, Outcome).self) { group in
             var next = 0
             func startNext() {
@@ -287,6 +315,7 @@ nonisolated struct CopyService: Sendable {
                 case .copied(let bytes):
                     report.copied += 1
                     report.copiedBytes += bytes
+                    if case .render = plan.action { exported[index] = plan.destination }
                     // Base names: an export changes the extension, not the name.
                     if plan.destination.deletingPathExtension().lastPathComponent
                         != plan.source.deletingPathExtension().lastPathComponent { report.renamed += 1 }
@@ -303,6 +332,7 @@ nonisolated struct CopyService: Sendable {
             }
         }
 
+        report.exported = exported.keys.sorted().compactMap { exported[$0] }
         report.wasCancelled = Task.isCancelled && progress.completedFiles < plans.count
         report.duration = ContinuousClock.now - start
         let withPreset = plans.contains { if case .render = $0.action { true } else { false } }
@@ -315,8 +345,8 @@ nonisolated struct CopyService: Sendable {
         guard !Task.isCancelled else { return .failed("Cancelled") }
         let fileManager = FileManager.default
         do {
-            if case .render(let preset) = plan.action {
-                return .copied(try await render(plan, preset: preset, rating: rating))
+            if case let .render(preset, settings) = plan.action {
+                return .copied(try await render(plan, preset: preset, settings: settings, rating: rating))
             }
             var outcome = Outcome.skipped
             if case .copy = plan.action {
@@ -340,27 +370,28 @@ nonisolated struct CopyService: Sendable {
         }
     }
 
-    /// Decodes, applies the preset (if any) and writes the JPEG; returns its
-    /// size. Off the cooperative pool's threads: one takes several hundred ms.
-    private static func render(_ plan: Plan, preset: DevelopPreset?, rating: Rating?) async throws -> Int64 {
+    /// Decodes at the chosen size, applies the preset (if any) and writes the
+    /// file; returns its size. Off the cooperative pool's threads: one takes
+    /// several hundred ms.
+    private static func render(_ plan: Plan, preset: DevelopPreset?, settings: ExportSettings, rating: Rating?) async throws -> Int64 {
         try await Task.detached(priority: .userInitiated) {
             try Task.checkCancellation()
             let name = plan.source.lastPathComponent
             // The same picture the loupe shows: for a RAW, the camera's
             // full-size embedded preview. sRGB-tagged, not the screen's space.
-            guard let image = ImageDecoder.decode(plan.source, maxPixelSize: nil, forDisplay: false) else {
+            guard let image = ImageDecoder.decode(plan.source, maxPixelSize: settings.longEdge, forDisplay: false) else {
                 throw ExportError.decodeFailed(name)
             }
             try Task.checkCancellation()
-            guard let rendered = preset.map({ PresetRenderer.export(image, preset: $0) }) ?? image else {
+            guard let rendered = preset.map({ PresetRenderer.export(image, preset: $0, sixteenBit: settings.writes16Bit) }) ?? image else {
                 throw CancellationError()
             }
             let partial = plan.destination.appendingPathExtension("partial")
             try? FileManager.default.removeItem(at: partial)
             do {
-                try JPEGWriter.write(
-                    rendered, to: partial, original: plan.source,
-                    quality: exportQuality, keepsLocation: true, rating: rating
+                try ImageWriter.write(
+                    rendered, to: partial, type: settings.format.type, original: plan.source,
+                    quality: settings.quality, keepsLocation: settings.keepsLocation, rating: rating
                 )
                 try FileManager.default.moveItem(at: partial, to: plan.destination)
             } catch {

@@ -346,6 +346,20 @@ private struct CurrentPresetCard: View {
             }
 
             if let preset = store.selectedPreset {
+                HStack(spacing: 8) {
+                    Text("Amount")
+                    Slider(value: $store.amount, in: 0...1)
+                        .controlSize(.small)
+                    Text("\(Int((store.amount * 100).rounded()))%")
+                        .monospacedDigit()
+                        .frame(width: 38, alignment: .trailing)
+                }
+                .font(.callout)
+                .padding(.vertical, 2)
+                .disabled(!store.isEnabled)
+                .focusable(false)
+                .help("How strongly the preset is applied, mixed with the photo as shot. Edits are not affected.")
+
                 if let summary = preset.summary {
                     Text(summary)
                         .font(.caption)

@@ -77,11 +77,11 @@ nonisolated enum AutoTone {
 
         /// Output luma of each input grey level with `light` applied.
         func curve(_ light: LightAdjustments) -> [Double] {
-            guard let look = DevelopPreset.combining(preset, with: light)?.look else {
+            guard let combined = DevelopPreset.combining(preset, with: light) else {
                 return (0..<256).map { Double($0) / 255 }
             }
             return (0..<256).map { level in
-                let output = look.apply(SIMD3(repeating: Double(level) / 255))
+                let output = combined.apply(SIMD3(repeating: Double(level) / 255))
                 return 0.299 * output.x + 0.587 * output.y + 0.114 * output.z
             }
         }

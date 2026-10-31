@@ -8,9 +8,8 @@ import Foundation
 /// The Edit sidebar's Light sliders for one photo, in Lightroom's units:
 /// Exposure in stops, the rest -100…100.
 ///
-/// Rendered by adding them to the applied preset's own Basic values (see
-/// `DevelopPreset.combining`), so they go through the same `PresetLook` tone
-/// curve as presets do.
+/// Rendered after the applied preset (see `DevelopPreset.combining`),
+/// through the same `PresetLook` tone curve presets use.
 nonisolated struct LightAdjustments: Hashable, Sendable {
     enum Slider: CaseIterable, Identifiable {
         case exposure, contrast, highlights, shadows, whites, blacks

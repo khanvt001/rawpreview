@@ -21,6 +21,8 @@ final class LibraryViewModel {
 
     enum CopyState: Equatable {
         case idle
+        /// The Export dialog is open.
+        case configuringExport
         case running(CopyService.Progress)
         case finished(CopyService.Report)
         case failed(String)
@@ -113,9 +115,22 @@ final class LibraryViewModel {
         didSet { UserDefaults.standard.set(copiesIntoDateFolders, forKey: "copiesIntoDateFolders") }
     }
     private(set) var copyState: CopyState = .idle
-    /// The look the current / last copy exported JPEGs with; `nil` when it
-    /// copied the original files.
-    private(set) var copyLook: ExportLook?
+    /// How the current / last copy exported images; `nil` when it copied
+    /// the original files.
+    private(set) var copyExport: CopyService.Export?
+    /// The look the Export dialog offers to apply.
+    private(set) var pendingExportLook: ExportLook?
+    /// The photos the Export dialog exports: the marked ones from the Copy
+    /// button, or a menu's targets from Export & Share.
+    private(set) var exportItems: [PhotoItem] = []
+    /// The current / last copy was of the marked photos (so the summary can
+    /// offer to unmark them).
+    private(set) var copiedMarkedPhotos = true
+    /// The Export dialog's choices; remembered across launches.
+    var exportSettings: ExportSettings = UserDefaults.standard.data(forKey: "exportSettings")
+        .flatMap { try? JSONDecoder().decode(ExportSettings.self, from: $0) } ?? ExportSettings() {
+        didSet { UserDefaults.standard.set(try? JSONEncoder().encode(exportSettings), forKey: "exportSettings") }
+    }
     /// Why the last copy stopped early, when it wasn't the user's Cancel.
     private(set) var copyInterruption: String?
     /// Volume currently being ejected (for the sidebar spinner).
@@ -509,25 +524,51 @@ final class LibraryViewModel {
         return true
     }
 
-    /// ⌘Return: copies every marked file (including ones hidden by the filter,
-    /// matching the "N marked" count) to the destination. With a look, each
-    /// marked shot is exported as a JPEG with it applied instead.
-    func startCopy(applying look: ExportLook? = nil) {
+    /// Opens the Export dialog for `photos`, offering `look`.
+    func showExportOptions(for photos: [PhotoItem], look: ExportLook?) {
         guard !isCopying else { return }
-        guard !checkedIDs.isEmpty else {
+        guard photos.contains(where: \.kind.isImage) else {
             NSSound.beep()
             return
         }
-        if copyDestination == nil, !chooseCopyDestination() { return }
-        guard let destination = copyDestination else { return }
+        exportItems = photos
+        pendingExportLook = look
+        copyState = .configuringExport
+    }
 
-        let marked = items.filter { checkedIDs.contains($0.id) }
+    /// ⌘Return: copies every marked file (including ones hidden by the filter,
+    /// matching the "N marked" count) to the destination. With `export`, each
+    /// shot of the Export dialog's photos (`exportItems`) is written as an
+    /// image file with its look applied instead.
+    /// - Parameter shareAnchor: Export into a temporary folder instead of
+    ///   the destination, then open the share picker there for the files
+    ///   (export only). If any file fails, the summary shows instead, with
+    ///   its own Share button.
+    func startCopy(export: CopyService.Export? = nil, sharingFrom shareAnchor: SharingController.Anchor? = nil) {
+        guard !isCopying else { return }
+        let marked = export == nil ? items.filter { checkedIDs.contains($0.id) } : exportItems
+        guard !marked.isEmpty else {
+            NSSound.beep()
+            return
+        }
+        let sharing = export != nil && shareAnchor != nil
+        let destination: URL
+        if sharing {
+            // Purged a day later with the share menu's JPEGs.
+            destination = ShareService.exportRoot.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        } else {
+            if copyDestination == nil, !chooseCopyDestination() { return }
+            guard let copyDestination else { return }
+            destination = copyDestination
+        }
+
+        copiedMarkedPhotos = Set(marked.map(\.id)) == checkedIDs
         copyInterruption = nil
         let ratings = ratings
         let pendingRatingWrite = lastSidecarWrite
         let sourceRoot = sourceURL
-        let intoDateFolders = copiesIntoDateFolders
-        copyLook = look
+        let intoDateFolders = copiesIntoDateFolders && !sharing
+        copyExport = export
         copyState = .running(CopyService.Progress(totalFiles: marked.count))
 
         copyTask = Task {
@@ -537,7 +578,7 @@ final class LibraryViewModel {
             do {
                 let plans = try await copier.plan(
                     marked, to: destination, from: sourceRoot,
-                    intoDateFolders: intoDateFolders, look: look
+                    intoDateFolders: intoDateFolders, export: export
                 )
                 let report = await copier.copy(plans, to: destination, ratings: ratings) { progress in
                     Task { @MainActor [weak self] in
@@ -546,7 +587,12 @@ final class LibraryViewModel {
                         self.copyState = .running(progress)
                     }
                 }
-                copyState = .finished(report)
+                if sharing, report.failures.isEmpty, !report.wasCancelled {
+                    copyState = .idle
+                    SharingController.share(report.exported, from: shareAnchor)
+                } else {
+                    copyState = .finished(report)
+                }
             } catch {
                 copyState = .failed(error.localizedDescription)
             }

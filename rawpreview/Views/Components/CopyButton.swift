@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// "Copy 12 to Shoot ⌘⏎" plus a menu to export them with the chosen preset and their edits,
+/// "Copy 12 to Shoot ⌘⏎" plus a menu to export them (format, size, preset and edits),
 /// change the destination, sort into date folders, or share the marked files. Shown in the grid's status bar
 /// and over the Single Image view.
 struct CopyButton: View {
@@ -21,19 +21,17 @@ struct CopyButton: View {
 
         Menu {
             Button("Copy \(count) Marked Files") { library.startCopy() }
-            if let look = edits.exportLook(preset: presets.selectedPreset, for: marked) {
-                // One JPEG per shot: a RAW+JPEG pair is exported once; videos are left out.
-                let shots = Set(marked.filter(\.kind.isImage).map(\.sidecarURL)).count
-                Button("Export \(shots == 1 ? "1 JPEG" : "\(shots) JPEGs") with \(look.title)") {
-                    library.startCopy(applying: look)
-                }
-                .disabled(shots == 0)
-                .help("Full-size JPEGs with the preset and each photo's edits applied, one per shot, into the same destination. Shots without either are exported as shot.")
+            // One file per shot: a RAW+JPEG pair is exported once; videos are left out.
+            let shots = Set(marked.filter(\.kind.isImage).map(\.sidecarURL)).count
+            Button("Export \(shots == 1 ? "1 Photo" : "\(shots) Photos")…") {
+                library.showExportOptions(for: marked, look: edits.exportLook(preset: presets.appliedPreset, for: marked))
             }
+            .disabled(shots == 0)
+            .help("JPEG, HEIF or PNG files in the size you choose, with the preset and each photo's edits applied")
             Button("Change Destination…") { library.chooseCopyDestination() }
             Toggle("Sort into Date Folders", isOn: $library.copiesIntoDateFolders)
             Divider()
-            ShareMenuItems(items: marked)
+            ShareMenuItems(items: marked, offersExport: false)
             Divider()
             Button("Clear Marks") { library.clearChecked() }
         } label: {

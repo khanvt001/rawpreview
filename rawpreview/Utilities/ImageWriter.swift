@@ -1,5 +1,5 @@
 //
-//  JPEGWriter.swift
+//  ImageWriter.swift
 //  rawpreview
 //
 
@@ -8,20 +8,23 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Writes a decoded (already upright) image as a JPEG carrying the original
-/// file's camera metadata.
-nonisolated enum JPEGWriter {
+/// Writes a decoded (already upright) image as a JPEG, HEIF or PNG carrying
+/// the original file's camera metadata.
+nonisolated enum ImageWriter {
     enum WriteError: LocalizedError {
-        case failed(String)
+        case failed(String, UTType)
 
         var errorDescription: String? {
             switch self {
-            case .failed(let name): "Couldn't create a JPEG for \(name)."
+            case let .failed(name, type):
+                "Couldn't create a \(type.preferredFilenameExtension?.uppercased() ?? "file") for \(name)."
             }
         }
     }
 
     /// - Parameters:
+    ///   - type: `.jpeg`, `.heic` or `.png`.
+    ///   - quality: Compression quality, 0…1; ignored for PNG.
     ///   - original: The file the image came from; its EXIF (exposure, lens,
     ///     date) is copied, with the pixel size updated.
     ///   - keepsLocation: Copy GPS too. Off for files that leave the Mac.
@@ -29,6 +32,7 @@ nonisolated enum JPEGWriter {
     static func write(
         _ image: CGImage,
         to destinationURL: URL,
+        type: UTType = .jpeg,
         original: URL,
         quality: Double,
         keepsLocation: Bool,
@@ -36,8 +40,8 @@ nonisolated enum JPEGWriter {
     ) throws {
         let name = original.lastPathComponent
         guard let destination = CGImageDestinationCreateWithURL(
-            destinationURL as CFURL, UTType.jpeg.identifier as CFString, 1, nil
-        ) else { throw WriteError.failed(name) }
+            destinationURL as CFURL, type.identifier as CFString, 1, nil
+        ) else { throw WriteError.failed(name, type) }
 
         var properties: [CFString: Any] = [
             kCGImageDestinationLossyCompressionQuality: quality,
@@ -67,7 +71,7 @@ nonisolated enum JPEGWriter {
 
         CGImageDestinationAddImage(destination, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else {
-            throw WriteError.failed(name)
+            throw WriteError.failed(name, type)
         }
     }
 }

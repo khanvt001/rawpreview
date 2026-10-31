@@ -268,7 +268,7 @@ private struct LoupeInfoBar: View {
             }
             if let preset {
                 Divider().frame(height: 12)
-                Label(preset.title, systemImage: preset.unsupportedSettings.isEmpty ? "camera.filters" : "exclamationmark.triangle")
+                Label(preset.titleWithAmount, systemImage: preset.unsupportedSettings.isEmpty ? "camera.filters" : "exclamationmark.triangle")
                     .foregroundStyle(.secondary)
                     .help(presetHelp(preset))
             }

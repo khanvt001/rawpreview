@@ -105,7 +105,7 @@ nonisolated enum ShareService {
 
         let destinationURL = folder.appending(path: name)
         // GPS deliberately not copied.
-        try JPEGWriter.write(image, to: destinationURL, original: item.url, quality: quality, keepsLocation: false)
+        try ImageWriter.write(image, to: destinationURL, original: item.url, quality: quality, keepsLocation: false)
         return destinationURL
     }
 

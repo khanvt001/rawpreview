@@ -107,9 +107,31 @@ final class PresetStore {
         }
     }
 
+    /// How strongly the chosen preset is applied, 0…1, mixed with the photo
+    /// as shot; remembered across launches.
+    var amount: Double = UserDefaults.standard.object(forKey: "presetAmount") as? Double ?? 0.5 {
+        didSet { UserDefaults.standard.set(amount, forKey: "presetAmount") }
+    }
+
+    @ObservationIgnored private var applied: (id: UUID, amount: Double, preset: DevelopPreset)?
+
+    /// The chosen preset at `amount`, for previews and exports. The same
+    /// instance while neither changes, so its revision (the render cache
+    /// key) stays put.
+    var appliedPreset: DevelopPreset? {
+        guard let selected = selectedPreset else { return nil }
+        let amount = amount
+        if let applied, applied.id == selected.revision, applied.amount == amount {
+            return applied.preset
+        }
+        let preset = selected.atAmount(amount)
+        applied = (selected.revision, amount, preset)
+        return preset
+    }
+
     /// What the loupe should apply right now.
     var activePreset: DevelopPreset? {
-        isEnabled ? selectedPreset : nil
+        isEnabled ? appliedPreset : nil
     }
 
     static let folder = URL.applicationSupportDirectory

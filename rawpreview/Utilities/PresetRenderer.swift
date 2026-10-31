@@ -38,6 +38,13 @@ nonisolated enum PresetRenderer {
         .workingFormat: CIFormat.RGBA8,
         .cacheIntermediates: false,
     ])
+    /// Exports work in half-float: 8-bit intermediates round every step,
+    /// which shows as banding in skies once a tone curve stretches them.
+    /// Rendering in bands keeps the larger buffers affordable.
+    private static let exportContext = CIContext(options: [
+        .workingFormat: CIFormat.RGBAh,
+        .cacheIntermediates: false,
+    ])
     /// Above this many pixels an image renders in bands of `bandHeight` rows
     /// (see `apply`), and Core Image's buffers are released afterwards.
     private static let largeImagePixels = 4_000_000
@@ -80,14 +87,21 @@ nonisolated enum PresetRenderer {
     }
 
     /// For files written out (copy / share): renders on the current thread
-    /// and keeps nothing in the cache, so a batch export doesn't push the
-    /// loupe's renders out. `image` itself when the preset changes nothing.
-    static func export(_ image: CGImage, preset: DevelopPreset) -> CGImage? {
-        preset.isNoOp ? image : apply(preset, to: image)
+    /// in half-float, and keeps nothing in the cache, so a batch export
+    /// doesn't push the loupe's renders out. `image` itself when the preset
+    /// changes nothing.
+    /// - Parameter sixteenBit: Return 16 bits per channel (for a 16-bit PNG)
+    ///   rather than 8.
+    static func export(_ image: CGImage, preset: DevelopPreset, sixteenBit: Bool = false) -> CGImage? {
+        preset.isNoOp ? image : apply(preset, to: image, context: exportContext, sixteenBit: sixteenBit)
     }
 
-    private static func apply(_ preset: DevelopPreset, to image: CGImage) -> CGImage? {
-        let look = preset.look
+    private static func apply(
+        _ preset: DevelopPreset,
+        to image: CGImage,
+        context: CIContext = context,
+        sixteenBit: Bool = false
+    ) -> CGImage? {
         let input = CIImage(cgImage: image)
         let extent = input.extent
         // Sizes are relative to the image, so a 1024 px preview and the full
@@ -95,8 +109,8 @@ nonisolated enum PresetRenderer {
         let longSide = max(extent.width, extent.height)
 
         var output = input
-        output = localContrast(output, source: image, amount: look.texture * 0.6, radius: longSide * 0.004)
-        output = localContrast(output, source: image, amount: look.clarity * 0.8, radius: longSide * 0.02)
+        output = localContrast(output, source: image, amount: preset.texture * 0.6, radius: longSide * 0.004)
+        output = localContrast(output, source: image, amount: preset.clarity * 0.8, radius: longSide * 0.02)
 
         let cube = CIFilter.colorCubeWithColorSpace()
         cube.inputImage = output
@@ -106,10 +120,10 @@ nonisolated enum PresetRenderer {
         cube.colorSpace = sRGB
         output = cube.outputImage ?? output
 
-        if let vignette = look.vignette {
+        if let vignette = preset.vignette {
             output = applyVignette(vignette, to: output, extent: extent)
         }
-        if let grain = look.grain {
+        if let grain = preset.grain {
             output = applyGrain(grain, to: output, longSide: longSide)
         }
 
@@ -125,10 +139,12 @@ nonisolated enum PresetRenderer {
             data: nil,
             width: image.width,
             height: image.height,
-            bitsPerComponent: 8,
+            bitsPerComponent: sixteenBit ? 16 : 8,
             bytesPerRow: 0,
             space: space,
-            bitmapInfo: CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
+            bitmapInfo: sixteenBit
+                ? CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder16Little.rawValue
+                : CGImageAlphaInfo.noneSkipFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         ), let data = bitmap.data
         else { return nil }
         // In horizontal bands, so Core Image's working buffers are the size of
@@ -148,7 +164,7 @@ nonisolated enum PresetRenderer {
                 toBitmap: data.advanced(by: top * rowBytes),
                 rowBytes: rowBytes,
                 bounds: band,
-                format: .BGRA8,
+                format: sixteenBit ? .RGBA16 : .BGRA8,
                 colorSpace: bitmap.colorSpace
             )
             top += rows
@@ -162,7 +178,7 @@ nonisolated enum PresetRenderer {
     private static func cubeData(for preset: DevelopPreset) -> Data {
         let id = preset.revision
         if let data = cubes.withLock({ $0.tables[id] }) { return data }
-        let data = preset.look.cubeData(dimension: cubeDimension)
+        let data = preset.cubeData(dimension: cubeDimension)
         cubes.withLock { state in
             if state.tables.updateValue(data, forKey: id) == nil {
                 state.order.append(id)

@@ -25,12 +25,12 @@ nonisolated struct ExportLook: Sendable {
         DevelopPreset.combining(preset, with: adjustments[item.sidecarURL] ?? LightAdjustments())
     }
 
-    /// For "Export 3 JPEGs with …": "“Kodak Gold”", "Edits" or
-    /// "“Kodak Gold” + Edits".
+    /// For "Share as JPEG with …": "“Kodak Gold 50%”", "Edits" or
+    /// "“Kodak Gold 50%” + Edits".
     var title: String {
         switch (preset, adjustments.isEmpty) {
-        case (let preset?, true): "“\(preset.title)”"
-        case (let preset?, false): "“\(preset.title)” + Edits"
+        case (let preset?, true): "“\(preset.titleWithAmount)”"
+        case (let preset?, false): "“\(preset.titleWithAmount)” + Edits"
         case (nil, _): "Edits"
         }
     }
