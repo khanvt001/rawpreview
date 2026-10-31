@@ -4,7 +4,7 @@
 //
 
 import CoreGraphics
-import Synchronization
+import os
 
 /// The colour space of the screen the window is on, which decoded images are
 /// converted into (`ImageDecoder.prepareForDisplay`).
@@ -15,7 +15,7 @@ import Synchronization
 /// for a 20 MP photo on an external monitor, enough to stall the filmstrip
 /// on every arrow press. Pre-converted, the same swap takes under 1 ms.
 nonisolated enum DisplayColorSpace {
-    private static let current = Mutex<CGColorSpace>(CGColorSpace(name: CGColorSpace.sRGB)!)
+    private static let current = OSAllocatedUnfairLock<CGColorSpace>(initialState: CGColorSpace(name: CGColorSpace.sRGB)!)
 
     static var target: CGColorSpace {
         current.withLock { $0 }

@@ -16,7 +16,7 @@ struct PhotoGridView: View {
     /// scrolling, and storing them in `@State` would re-render the grid each time.
     @State private var visibility = VisibilityTracker()
 
-    private final class VisibilityTracker {
+    fileprivate final class VisibilityTracker {
         var ids: [PhotoItem.ID] = []
     }
 
@@ -52,14 +52,7 @@ struct PhotoGridView: View {
             }
             // The grid adapts to any width, so never let it dictate one.
             .frame(minWidth: 200, maxWidth: .infinity)
-            .onScrollTargetVisibilityChange(idType: PhotoItem.ID.self) { ids in
-                visibility.ids = ids
-            }
-            // Warm the next rows once scrolling settles (not during a fling,
-            // where it would compete with the rows actually on screen).
-            .onScrollPhaseChange { _, phase in
-                if phase == .idle { prefetch(pixelSize: pixelSize) }
-            }
+            .modifier(ScrollPrefetch(visibility: visibility) { prefetch(pixelSize: pixelSize) })
             .overlay {
                 if library.visibleItems.isEmpty, !library.items.isEmpty, !library.searchText.isEmpty {
                     ContentUnavailableView {
@@ -167,6 +160,29 @@ struct PhotoGridView: View {
         }
         .scrollTargetLayout()
         .padding(padding)
+    }
+}
+
+/// Tracks which tiles are on screen and warms the next rows once scrolling
+/// settles (not during a fling, where it would compete with the rows actually
+/// on screen). The scroll APIs need macOS 15; on 14 thumbnails simply load as
+/// tiles appear.
+private struct ScrollPrefetch: ViewModifier {
+    let visibility: PhotoGridView.VisibilityTracker
+    let prefetch: () -> Void
+
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content
+                .onScrollTargetVisibilityChange(idType: PhotoItem.ID.self) { ids in
+                    visibility.ids = ids
+                }
+                .onScrollPhaseChange { _, phase in
+                    if phase == .idle { prefetch() }
+                }
+        } else {
+            content
+        }
     }
 }
 
