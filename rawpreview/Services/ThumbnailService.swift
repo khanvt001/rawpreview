@@ -16,6 +16,9 @@ nonisolated final class ThumbnailService: Sendable {
     static let sizeBuckets = [256, 512, 1024]
 
     private let loader = ImageLoader(cache: ImageCache(name: "thumbnails", totalCostLimitMB: 512))
+    /// Each decode reads a whole file off the card, so only a couple run at once
+    /// (see `AsyncLimiter`). Embedded-thumbnail reads are tiny and skip it.
+    private let cardReads = AsyncLimiter(limit: 2)
 
     static func bucket(for pixelSize: Int) -> Int {
         sizeBuckets.first { $0 >= pixelSize } ?? sizeBuckets[sizeBuckets.count - 1]
@@ -36,18 +39,38 @@ nonisolated final class ThumbnailService: Sendable {
         Self.sizeBuckets.reversed().lazy.compactMap { self.loader.cached(Self.key(url, $0)) }.first
     }
 
+    /// Synchronous peek at the low-res stand-in from `quickThumbnail(for:)`.
+    func cachedQuickThumbnail(for url: URL) -> CGImage? {
+        loader.cached(Self.quickKey(url))
+    }
+
+    /// The file's embedded EXIF thumbnail: blurry, but on screen in a few ms
+    /// while the real thumbnail waits its turn to read the card. `nil` for RAW.
+    func quickThumbnail(for url: URL) async -> CGImage? {
+        await loader.load(Self.quickKey(url)) {
+            guard !Task.isCancelled else { return nil }
+            return ImageDecoder.embeddedThumbnail(url)
+        }
+    }
+
     func thumbnail(for url: URL, pixelSize: Int) async -> CGImage? {
         let bucket = Self.bucket(for: pixelSize)
+        let cardReads = cardReads
         return await loader.load(Self.key(url, bucket)) {
-            guard !Task.isCancelled else { return nil }
-            return ImageDecoder.decode(url, maxPixelSize: bucket)
+            await cardReads.run(.high) {
+                guard !Task.isCancelled else { return nil }
+                return ImageDecoder.decode(url, maxPixelSize: bucket)
+            }
         }
     }
 
     func prefetch(_ urls: [URL], pixelSize: Int) {
         let bucket = Self.bucket(for: pixelSize)
+        let cardReads = cardReads
         for url in urls {
-            loader.prefetch(Self.key(url, bucket)) { ImageDecoder.decode(url, maxPixelSize: bucket) }
+            loader.prefetch(Self.key(url, bucket)) {
+                await cardReads.run(.low) { ImageDecoder.decode(url, maxPixelSize: bucket) }
+            }
         }
     }
 
@@ -57,5 +80,9 @@ nonisolated final class ThumbnailService: Sendable {
 
     private static func key(_ url: URL, _ size: Int) -> String {
         "\(size)|\(url.path(percentEncoded: false))"
+    }
+
+    private static func quickKey(_ url: URL) -> String {
+        "exif|\(url.path(percentEncoded: false))"
     }
 }

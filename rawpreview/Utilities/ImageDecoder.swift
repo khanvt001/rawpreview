@@ -34,6 +34,57 @@ nonisolated enum ImageDecoder {
         return forDisplay ? prepareForDisplay(image) : image
     }
 
+    /// The tiny preview a camera embeds in a JPEG/HEIF's EXIF (Nikon: 160×120),
+    /// read from the file header without touching the image data: ~20 ms even
+    /// from a slow card, against ~90 ms to read a whole 8 MB JPEG. Blurry at
+    /// grid size, so it only stands in until `decode` finishes. `nil` for RAW
+    /// files (ImageIO would hand back their large preview, which is no faster)
+    /// and for files without one.
+    static func embeddedThumbnail(_ url: URL) -> CGImage? {
+        guard MediaKind(fileExtension: url.pathExtension) != .raw else { return nil }
+        let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, sourceOptions) else { return nil }
+
+        // Neither `FromImage…` flag: ImageIO returns the embedded thumbnail or
+        // nothing. A max size is still required, or it returns the full image.
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: 512,
+        ]
+        guard let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let cropped = cropLetterbox(thumbnail, toAspectOf: source) ?? thumbnail
+        return prepareForDisplay(cropped)
+    }
+
+    /// EXIF thumbnails are always 4:3, so cameras pad 3:2 photos with black
+    /// bars. Center-crops them away so the tile doesn't jump when the real
+    /// thumbnail replaces this one.
+    private static func cropLetterbox(_ thumbnail: CGImage, toAspectOf source: CGImageSource) -> CGImage? {
+        guard let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+              var width = properties[kCGImagePropertyPixelWidth] as? Int,
+              var height = properties[kCGImagePropertyPixelHeight] as? Int,
+              width > 0, height > 0
+        else { return nil }
+        // Orientations 5–8 rotate by 90°; the thumbnail already has that baked in.
+        if let orientation = properties[kCGImagePropertyOrientation] as? Int, (5...8).contains(orientation) {
+            swap(&width, &height)
+        }
+
+        let sourceAspect = Double(width) / Double(height)
+        let thumbWidth = Double(thumbnail.width), thumbHeight = Double(thumbnail.height)
+        // Rounds inward: a leftover row of a bar shows, a lost row of photo doesn't.
+        var rect = CGRect(x: 0, y: 0, width: thumbWidth, height: thumbHeight)
+        if thumbWidth / thumbHeight < sourceAspect {
+            rect.size.height = (thumbWidth / sourceAspect).rounded(.down)
+            rect.origin.y = ((thumbHeight - rect.height) / 2).rounded(.up)
+        } else {
+            rect.size.width = (thumbHeight * sourceAspect).rounded(.down)
+            rect.origin.x = ((thumbWidth - rect.width) / 2).rounded(.up)
+        }
+        return thumbnail.cropping(to: rect)
+    }
+
     /// Redraws `image` in the screen's colour space with the 32-bit BGRA layout
     /// Core Animation uses natively, so it is uploaded as-is instead of being
     /// colour-matched on the main thread when it first appears (measured ~80 ms

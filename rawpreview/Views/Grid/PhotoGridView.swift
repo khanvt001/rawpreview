@@ -16,7 +16,7 @@ struct PhotoGridView: View {
     /// scrolling, and storing them in `@State` would re-render the grid each time.
     @State private var visibility = VisibilityTracker()
 
-    private final class VisibilityTracker {
+    fileprivate final class VisibilityTracker {
         var ids: [PhotoItem.ID] = []
     }
 
@@ -52,16 +52,33 @@ struct PhotoGridView: View {
             }
             // The grid adapts to any width, so never let it dictate one.
             .frame(minWidth: 200, maxWidth: .infinity)
-            .onScrollTargetVisibilityChange(idType: PhotoItem.ID.self) { ids in
-                visibility.ids = ids
-            }
-            // Warm the next rows once scrolling settles (not during a fling,
-            // where it would compete with the rows actually on screen).
-            .onScrollPhaseChange { _, phase in
-                if phase == .idle { prefetch(pixelSize: pixelSize) }
-            }
+            .modifier(ScrollPrefetch(visibility: visibility) { prefetch(pixelSize: pixelSize) })
             .overlay {
-                if library.visibleItems.isEmpty {
+                if library.visibleItems.isEmpty, !library.items.isEmpty, !library.searchText.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Matches", systemImage: "magnifyingglass")
+                    } description: {
+                        Text("No file names contain “\(library.searchText)”.")
+                    } actions: {
+                        Button("Clear Search") { library.searchText = "" }
+                    }
+                } else if library.visibleItems.isEmpty, !library.items.isEmpty, library.showsOnlyChecked {
+                    ContentUnavailableView {
+                        Label("No Marked Files", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("Press Return or S on a photo to mark it.")
+                    } actions: {
+                        Button("Show All Files") { library.showsOnlyChecked = false }
+                    }
+                } else if library.visibleItems.isEmpty, !library.items.isEmpty, library.ratingFilter != nil {
+                    ContentUnavailableView {
+                        Label("No Matching Ratings", systemImage: "star")
+                    } description: {
+                        Text("No files match the star filter.")
+                    } actions: {
+                        Button("Any Rating") { library.ratingFilter = nil }
+                    }
+                } else if library.visibleItems.isEmpty {
                     ContentUnavailableView {
                         Label("All Files Hidden", systemImage: "line.3.horizontal.decrease.circle")
                     } description: {
@@ -103,8 +120,13 @@ struct PhotoGridView: View {
                     Image(systemName: "photo").imageScale(.large)
                 }
                 .frame(width: 160)
+                // Keep the end icons off the toolbar item's rounded edges.
+                .padding(.horizontal, 8)
                 .focusable(false)
                 .help("Thumbnail size")
+            }
+            ToolbarItem {
+                SearchField()
             }
         }
     }
@@ -135,7 +157,11 @@ struct PhotoGridView: View {
                 // Simultaneous so a single click focuses immediately instead
                 // of waiting out the double-click interval.
                 .simultaneousGesture(TapGesture().onEnded {
-                    library.focusedID = item.id
+                    if NSEvent.modifierFlags.contains(.shift) {
+                        library.markRange(to: item.id)
+                    } else {
+                        library.focusedID = item.id
+                    }
                 })
             }
         }
@@ -144,34 +170,26 @@ struct PhotoGridView: View {
     }
 }
 
-/// "Copy 12 to Shoot ⏎" plus a menu to change the destination.
-private struct CopyButton: View {
-    @Environment(LibraryViewModel.self) private var library
+/// Tracks which tiles are on screen and warms the next rows once scrolling
+/// settles (not during a fling, where it would compete with the rows actually
+/// on screen). The scroll APIs need macOS 15; on 14 thumbnails simply load as
+/// tiles appear.
+private struct ScrollPrefetch: ViewModifier {
+    let visibility: PhotoGridView.VisibilityTracker
+    let prefetch: () -> Void
 
-    var body: some View {
-        let count = library.checkedIDs.count
-        let folder = library.copyDestination?.lastPathComponent
-
-        Menu {
-            Button("Copy \(count) Marked Files") { library.startCopy() }
-            Button("Change Destination…") { library.chooseCopyDestination() }
-            Divider()
-            Button("Clear Marks") { library.clearChecked() }
-        } label: {
-            Label(
-                folder.map { "Copy \(count) to \($0)  ⏎" } ?? "Copy \(count) marked…  ⏎",
-                systemImage: "checkmark.circle.fill"
-            )
-        } primaryAction: {
-            library.startCopy()
+    func body(content: Content) -> some View {
+        if #available(macOS 15, *) {
+            content
+                .onScrollTargetVisibilityChange(idType: PhotoItem.ID.self) { ids in
+                    visibility.ids = ids
+                }
+                .onScrollPhaseChange { _, phase in
+                    if phase == .idle { prefetch() }
+                }
+        } else {
+            content
         }
-        .menuStyle(.button)
-        .buttonStyle(.borderedProminent)
-        .controlSize(.small)
-        .fixedSize()
-        .focusable(false)
-        .disabled(library.isCopying)
-        .help(library.copyDestination.map { "Copy marked files to \($0.path(percentEncoded: false)) (Return)" } ?? "Choose a folder and copy marked files (Return)")
     }
 }
 
@@ -182,6 +200,9 @@ private struct GridStatusBar: View {
         HStack(spacing: 12) {
             Text("\(library.visibleItems.count) of \(library.items.count) files")
             if !library.checkedIDs.isEmpty {
+                Text("\(library.checkedIDs.count) marked · \(library.checkedBytes.formatted(.byteCount(style: .file)))")
+                    .foregroundStyle(.secondary)
+                    .help("⇧-click a photo to mark every photo up to it")
                 CopyButton()
             }
             Spacer()

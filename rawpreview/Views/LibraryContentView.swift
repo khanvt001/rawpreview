@@ -12,21 +12,36 @@ import SwiftUI
 /// | ← → ↑ ↓    | Move focus (↑↓ jump a row in the grid)  |
 /// | Space      | Toggle Grid ⇄ Single Image              |
 /// | Esc        | Back to Grid                            |
-/// | S          | Mark / unmark for copy                  |
+/// | Return, S  | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
-/// | Return     | Copy marked files to the destination    |
+/// | ⌘Return    | Copy marked files to the destination    |
+/// | ⌘⌫         | Delete after confirming: erased on cards, Trash elsewhere (all marked if focused one is marked) |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
+/// | E          | Single Image: show / hide edit          |
+/// | P          | Single Image: show / hide presets       |
+/// | H          | Single Image: hide / show the overlays  |
+/// | [ ]        | Single Image: previous / next preset    |
+/// | \          | Single Image: preset before / after     |
+/// | ⌘F         | Grid: search file names (Esc clears)    |
+/// | ?          | Keyboard Shortcuts window               |
+///
+/// ⌘Return and ⌘⌫ live in the Photo menu (`PhotoCommands`).
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
+    @Environment(PresetStore.self) private var presets
+    @Environment(\.openWindow) private var openWindow
     @FocusState private var hasKeyFocus: Bool
 
     var body: some View {
         @Bindable var library = library
 
-        Group {
+        // A ZStack, not a Group: Group would hand `.focusable()` to each mode's
+        // view separately, so swapping modes dropped key focus onto a view
+        // that was never focused while `hasKeyFocus` still read true.
+        ZStack {
             switch library.viewMode {
             case .grid: PhotoGridView()
             case .loupe: LoupeView()
@@ -39,8 +54,24 @@ struct LibraryContentView: View {
         // Take key focus back from the sidebar / toolbar whenever the user
         // interacts with the photos.
         .simultaneousGesture(TapGesture().onEnded { hasKeyFocus = true })
-        .onChange(of: library.focusedID) { hasKeyFocus = true }
-        .onChange(of: library.viewMode) { hasKeyFocus = true }
+        .onChange(of: library.focusedID) {
+            if !library.isSearchFocused { hasKeyFocus = true }
+        }
+        // Leaving the search box (Return / Esc) hands the keyboard back.
+        .onChange(of: library.isSearchFocused) { _, focused in
+            if !focused { hasKeyFocus = true }
+        }
+        // Opening or switching the sidebar can hand key focus to one of its
+        // controls; take it back so arrows keep moving between photos.
+        .onChange(of: library.showsInspector) { reclaimKeyFocus() }
+        .onChange(of: library.inspectorTab) { reclaimKeyFocus() }
+        .onChange(of: library.keyFocusRequest) { hasKeyFocus = true }
+        .onChange(of: library.viewMode) {
+            // Re-assert after the swapped-in view is installed; setting true
+            // while it already reads true would be a no-op.
+            hasKeyFocus = false
+            Task { @MainActor in hasKeyFocus = true }
+        }
         .onAppear { hasKeyFocus = true }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -68,7 +99,16 @@ struct LibraryContentView: View {
         }
     }
 
+    private func reclaimKeyFocus() {
+        guard !library.isSearchFocused else { return }
+        Task { @MainActor in hasKeyFocus = true }
+    }
+
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
+        // The search box sits inside this view, so its keystrokes pass through
+        // here first; let it have them (digits, S, Space, arrows…) as text.
+        guard !library.isSearchFocused else { return .ignored }
+
         // ⌘+ is typed as ⌘⇧= on most layouts, which the View menu's ⌘= item
         // doesn't match, so catch it here.
         if press.modifiers.contains(.command), press.characters == "+", library.viewMode == .loupe {
@@ -100,7 +140,7 @@ struct LibraryContentView: View {
             library.viewMode = .grid
             return .handled
         case .return:
-            library.startCopy()
+            library.toggleCheckedForFocused()
             return .handled
         default:
             break
@@ -111,11 +151,32 @@ struct LibraryContentView: View {
         case "s":
             library.toggleCheckedForFocused()
             return .handled
+        case "?":
+            openWindow(id: KeyboardShortcutsView.windowID)
+            return .handled
         case "z" where library.viewMode == .loupe:
             library.requestZoom(.toggle)
             return .handled
         case "i" where library.viewMode == .loupe:
-            library.showsInspector.toggle()
+            library.toggleInspector(.info)
+            return .handled
+        case "e" where library.viewMode == .loupe:
+            library.toggleInspector(.edit)
+            return .handled
+        case "h" where library.viewMode == .loupe:
+            library.showsLoupeOverlays.toggle()
+            return .handled
+        case "p" where library.viewMode == .loupe:
+            library.toggleInspector(.presets)
+            return .handled
+        case "\\" where library.viewMode == .loupe && presets.selectedPreset != nil:
+            presets.isEnabled.toggle()
+            return .handled
+        case "[" where library.viewMode == .loupe:
+            presets.selectAdjacent(-1)
+            return .handled
+        case "]" where library.viewMode == .loupe:
+            presets.selectAdjacent(1)
             return .handled
         default:
             break

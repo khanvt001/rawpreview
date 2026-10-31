@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// One grid tile: thumbnail, check badge, rating and a mini EXIF line.
+/// One grid tile: thumbnail, check badge, rating, file name and a mini EXIF line.
 ///
 /// Takes plain values rather than reading the view model, so a cell's body only
 /// re-runs when its own state changes.
@@ -41,12 +41,15 @@ struct ThumbnailCell: View {
         self.rating = rating
         self.onToggleCheck = onToggleCheck
         // Seed from cache so scrolling back paints on the first frame, no flash.
-        _image = State(initialValue: ThumbnailService.shared.cachedThumbnail(for: item.url, pixelSize: pixelSize))
+        _image = State(initialValue: ThumbnailService.shared.cachedThumbnail(for: item.url, pixelSize: pixelSize)
+            ?? ThumbnailService.shared.cachedQuickThumbnail(for: item.url))
         _exif = State(initialValue: MetadataService.shared.cachedExif(for: item.url))
     }
 
-    /// Small tiles drop the text overlays to keep the grid readable.
-    private var showsDetails: Bool { side >= 120 }
+    /// Small tiles drop the text overlays to keep the grid readable; Settings
+    /// can turn them off everywhere.
+    private var showsDetails: Bool { side >= 120 && showsInfoOverlay }
+    @AppStorage("gridShowsInfo") private var showsInfoOverlay = true
 
     var body: some View {
         ZStack {
@@ -70,14 +73,37 @@ struct ThumbnailCell: View {
             }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.accentColor, lineWidth: isFocused ? 3 : 0)
+            // An outline with a light inner edge, so the focused tile reads
+            // differently from a marked one (accent tint and check badge).
+            if isFocused {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+                RoundedRectangle(cornerRadius: 6)
+                    .inset(by: 3)
+                    .strokeBorder(.white.opacity(0.7), lineWidth: 1)
+            }
         }
         .contentShape(RoundedRectangle(cornerRadius: 6))
+        // One element for VoiceOver: name, state and the mark action.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(item.fileName)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityAddTraits(isFocused ? [.isImage, .isSelected] : .isImage)
+        .accessibilityAction(named: isChecked ? Text("Unmark for Copy") : Text("Mark for Copy"), onToggleCheck)
         .onHover { isHovering = $0 }
         .task(id: LoadKey(url: item.url, bucket: ThumbnailService.bucket(for: pixelSize))) {
             await load()
         }
+    }
+
+    /// "Marked, 3 of 5 stars, f/2.8 1/250 ISO 200".
+    private var accessibilityValue: String {
+        var parts: [String] = []
+        if isChecked { parts.append(String(localized: "Marked")) }
+        if rating.isRated { parts.append(String(localized: "\(rating.rawValue) of \(Rating.maxStars) stars")) }
+        if isUnreadable { parts.append(String(localized: "Can't read this file")) }
+        if let summary = exif?.summaryLine, !summary.isEmpty { parts.append(summary) }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Parts
@@ -131,28 +157,32 @@ struct ThumbnailCell: View {
     @ViewBuilder
     private var infoBar: some View {
         let summary = exif?.summaryLine ?? ""
-        if rating.isRated || !summary.isEmpty {
-            VStack(spacing: 2) {
-                if rating.isRated {
-                    RatingStarsView(rating: rating)
-                }
-                if !summary.isEmpty {
-                    Text(summary)
-                        .font(.system(size: 10, weight: .medium).monospacedDigit())
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .foregroundStyle(.white)
-                }
+        VStack(spacing: 2) {
+            if rating.isRated {
+                RatingStarsView(rating: rating)
             }
-            .padding(.horizontal, 6)
-            .padding(.top, 10)
-            .padding(.bottom, 5)
-            .frame(maxWidth: .infinity)
-            .background(
-                LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
-            )
-            .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 6, bottomTrailingRadius: 6))
+            Text(item.fileName)
+                .font(.system(size: 11, weight: .semibold))
+                .lineLimit(1)
+                // Camera names differ at the end (DSC_6248), so keep that visible.
+                .truncationMode(.middle)
+                .foregroundStyle(.white)
+            if !summary.isEmpty {
+                Text(summary)
+                    .font(.system(size: 10, weight: .medium).monospacedDigit())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .foregroundStyle(.white)
+            }
         }
+        .padding(.horizontal, 6)
+        .padding(.top, 10)
+        .padding(.bottom, 5)
+        .frame(maxWidth: .infinity)
+        .background(
+            LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
+        )
+        .clipShape(UnevenRoundedRectangle(bottomLeadingRadius: 6, bottomTrailingRadius: 6))
     }
 
     // MARK: - Loading
@@ -166,9 +196,15 @@ struct ThumbnailCell: View {
     private func load() async {
         guard item.kind.isImage else { return }
         let url = item.url
+        // Queue the real thumbnail first so cells take their card-read turns
+        // in layout order (top-left first) …
         async let thumbnail = ThumbnailService.shared.thumbnail(for: url, pixelSize: pixelSize)
         async let metadata = MetadataService.shared.exif(for: url)
 
+        // … and show the embedded EXIF thumbnail while waiting for it.
+        if image == nil, let quick = await ThumbnailService.shared.quickThumbnail(for: url) {
+            image = quick
+        }
         if let thumbnail = await thumbnail {
             image = thumbnail
         } else if !Task.isCancelled, image == nil {

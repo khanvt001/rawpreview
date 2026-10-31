@@ -5,7 +5,7 @@
 
 import Foundation
 import ImageIO
-import Synchronization
+import os
 
 /// A titled group of metadata rows for the loupe's EXIF sidebar.
 nonisolated struct MetadataSection: Identifiable, Hashable, Sendable {
@@ -24,7 +24,7 @@ nonisolated struct MetadataSection: Identifiable, Hashable, Sendable {
 nonisolated final class MetadataService: Sendable {
     static let shared = MetadataService()
 
-    private let cache = Mutex<[URL: ExifInfo]>([:])
+    private let cache = OSAllocatedUnfairLock<[URL: ExifInfo]>(initialState: [:])
 
     func cachedExif(for url: URL) -> ExifInfo? {
         cache.withLock { $0[url] }

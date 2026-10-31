@@ -16,6 +16,8 @@ struct CopySheet: View {
             switch library.copyState {
             case .idle:
                 EmptyView()
+            case .configuringExport:
+                ExportOptionsView()
             case .running(let progress):
                 running(progress)
             case .finished(let report):
@@ -34,7 +36,9 @@ struct CopySheet: View {
     private func running(_ progress: CopyService.Progress) -> some View {
         Group {
             Label {
-                Text("Copying \(progress.completedFiles) of \(progress.totalFiles)")
+                Text(library.copyExport == nil
+                     ? "Copying \(progress.completedFiles) of \(progress.totalFiles)"
+                     : "Exporting \(progress.completedFiles) of \(progress.totalFiles)")
                     .font(.headline)
             } icon: {
                 Image(systemName: "doc.on.doc")
@@ -51,6 +55,12 @@ struct CopySheet: View {
             }
             .font(.callout.monospacedDigit())
             .foregroundStyle(.secondary)
+
+            if let export = library.copyExport {
+                Text(export.title)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             if let destination = library.copyDestination {
                 Text("To \(destination.path(percentEncoded: false))")
@@ -76,7 +86,7 @@ struct CopySheet: View {
         let seconds = Double(progress.totalBytes - progress.completedBytes) / rate
         let speed = Int64(rate).formatted(.byteCount(style: .file))
         let left = Duration.seconds(seconds).formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
-        return "\(speed)/s · \(left) left"
+        return String(localized: "\(speed)/s · \(left) left")
     }
 
     // MARK: - Finished
@@ -102,7 +112,7 @@ struct CopySheet: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
-                summaryRow("\(report.copied) copied", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
+                summaryRow(library.copyExport == nil ? "\(report.copied) copied" : "\(report.copied) exported", detail: "\(report.copiedBytes.formatted(.byteCount(style: .file))) in \(report.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated, maximumUnitCount: 2)))")
                 if report.skipped > 0 {
                     summaryRow("\(report.skipped) already there", detail: "skipped (same name and size)")
                 }
@@ -132,10 +142,16 @@ struct CopySheet: View {
 
             HStack {
                 Button("Show in Finder") {
-                    NSWorkspace.shared.activateFileViewerSelecting([report.destination])
+                    NSWorkspace.shared.activateFileViewerSelecting(report.exported.isEmpty ? [report.destination] : report.exported)
+                }
+                if !report.exported.isEmpty {
+                    Button("Share…") {
+                        SharingController.share(report.exported, from: .pointer())
+                    }
+                    .help("Share or AirDrop the \(report.exported.count) exported files")
                 }
                 Spacer()
-                if report.failures.isEmpty && !report.wasCancelled {
+                if report.failures.isEmpty && !report.wasCancelled && library.copiedMarkedPhotos {
                     Button("Clear Marks") {
                         library.clearChecked()
                         library.dismissCopyResult()
@@ -148,7 +164,7 @@ struct CopySheet: View {
         }
     }
 
-    private func summaryRow(_ title: String, detail: String?) -> some View {
+    private func summaryRow(_ title: LocalizedStringKey, detail: LocalizedStringKey?) -> some View {
         HStack(spacing: 6) {
             Text(title).fontWeight(.medium)
             if let detail {
@@ -173,7 +189,7 @@ struct CopySheet: View {
                 Button("Choose Another Folder…") {
                     library.dismissCopyResult()
                     if library.chooseCopyDestination() {
-                        library.startCopy()
+                        library.startCopy(export: library.copyExport)
                     }
                 }
                 Spacer()

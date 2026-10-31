@@ -14,10 +14,19 @@ struct RootView: View {
                 .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
         } detail: {
             detail
+                // On the detail column, not next to the copy sheet: two
+                // `.sheet`s on one view fight over presentation.
+                .sheet(isPresented: Binding(
+                    get: { library.pendingDeletion != nil },
+                    set: { if !$0 { library.pendingDeletion = nil } }
+                )) {
+                    DeleteSheet()
+                        .environment(library)
+                }
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Open Folder…", systemImage: "folder.badge.plus") {
+                Button("Open Folder…", systemImage: "folder") {
                     library.chooseFolder()
                 }
                 .keyboardShortcut("o", modifiers: .command)
@@ -46,6 +55,17 @@ struct RootView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(library.ejectError ?? "")
+        }
+        .alert(
+            "Couldn't Delete",
+            isPresented: Binding(
+                get: { library.deleteError != nil },
+                set: { if !$0 { library.deleteError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(library.deleteError ?? "")
         }
         .alert(
             "Rating Not Saved",
@@ -81,11 +101,13 @@ struct RootView: View {
             .navigationTitle(sourceURL.lastPathComponent)
             .navigationSubtitle(sourceURL.path(percentEncoded: false))
         } else {
-            ContentUnavailableView(
-                "No Source Selected",
-                systemImage: "sdcard",
-                description: Text("Insert an SD card or choose a folder to start previewing.")
-            )
+            ContentUnavailableView {
+                Label("No Source Selected", systemImage: "sdcard")
+            } description: {
+                Text("Insert an SD card or choose a folder to start previewing.")
+            } actions: {
+                Button("Open Folder…") { library.chooseFolder() }
+            }
             .navigationTitle("RawPreview")
         }
     }
@@ -95,9 +117,21 @@ private struct SourceSidebar: View {
     @Environment(LibraryViewModel.self) private var library
 
     var body: some View {
-        let selection = Binding(
-            get: { library.selectedVolumeID },
-            set: { library.selectVolume(id: $0) }
+        let recents = library.availableRecentFolders
+        // Volume and recent-folder rows are both tagged by URL.
+        let selection = Binding<URL?>(
+            get: {
+                if let source = library.sourceURL, recents.contains(source) { return source }
+                return library.selectedVolumeID
+            },
+            set: { url in
+                guard let url else { return }
+                if recents.contains(url) {
+                    library.openRecentFolder(url)
+                } else {
+                    library.selectVolume(id: url)
+                }
+            }
         )
         let cards = library.volumes.filter(\.isRemovable)
         let others = library.volumes.filter { !$0.isRemovable }
@@ -116,8 +150,50 @@ private struct SourceSidebar: View {
             Section("Volumes") {
                 ForEach(others) { VolumeRow(volume: $0) }
             }
+            if !recents.isEmpty {
+                Section("Recent Folders") {
+                    ForEach(recents, id: \.self) { url in
+                        Label(url.lastPathComponent, systemImage: "folder")
+                            .help(url.path(percentEncoded: false))
+                            .tag(url)
+                            .contextMenu {
+                                Button("Show in Finder") {
+                                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                                }
+                                Button("Remove from Recents") { library.removeRecentFolder(url) }
+                            }
+                    }
+                }
+            }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .bottom) { SidebarFooter() }
+    }
+}
+
+/// App version and a quiet support link on one line, pinned under the
+/// volumes; the support window is also in the app menu and Settings.
+private struct SidebarFooter: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button("Version \(AppInfo.version)") { AppInfo.showAboutPanel() }
+                .buttonStyle(.plain)
+                .help("About RawPreview")
+            Spacer()
+            Button("Buy Me a Coffee", systemImage: "cup.and.saucer") {
+                openWindow(id: SupportView.windowID)
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.plain)
+            .help("Support RawPreview")
+        }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 }
 
@@ -163,4 +239,6 @@ private struct VolumeRow: View {
 #Preview {
     RootView()
         .environment(LibraryViewModel())
+        .environment(PresetStore())
+        .environment(EditStore())
 }
