@@ -1189,12 +1189,12 @@
         }
       }
     },
-    "Delete this photo permanently, or all marked photos if it is marked (⌘⌫)": {
+    "Delete this photo, or all marked photos if it is marked (⌘⌫)": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Xoá vĩnh viễn ảnh này, hoặc tất cả ảnh đã đánh dấu nếu ảnh này được đánh dấu (⌘⌫)"
+            "value": "Xoá ảnh này, hoặc tất cả ảnh đã đánh dấu nếu ảnh này được đánh dấu (⌘⌫)"
           }
         }
       }
@@ -1785,12 +1785,52 @@
         }
       }
     },
+    "Move %lld Files to Trash": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển %lld tệp vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move %lld files to the Trash?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển %lld tệp vào Thùng rác?"
+          }
+        }
+      }
+    },
     "Move the selected imported preset to the Trash": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Chuyển preset đã nhập đang chọn vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move to Trash": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển vào Thùng rác"
+          }
+        }
+      }
+    },
+    "Move “%@” to the Trash?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển “%@” vào Thùng rác?"
           }
         }
       }
@@ -2669,6 +2709,16 @@
         }
       }
     },
+    "The files are moved to the Trash, where they can be put back from Finder.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Các tệp được chuyển vào Thùng rác, có thể khôi phục lại từ Finder."
+          }
+        }
+      }
+    },
     "The photo as shot": {
       "localizations": {
         "vi": {
@@ -2679,12 +2729,12 @@
         }
       }
     },
-    "This can’t be undone: the files are erased, not moved to the Trash.": {
+    "This can’t be undone: files on a memory card are erased, not moved to the Trash, so their space is freed at once.": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Không thể hoàn tác: tệp bị xoá hẳn, không chuyển vào Thùng rác."
+            "value": "Không thể hoàn tác: tệp trên thẻ nhớ bị xoá hẳn, không chuyển vào Thùng rác, để giải phóng dung lượng ngay."
           }
         }
       }

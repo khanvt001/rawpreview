@@ -67,7 +67,7 @@ struct LoupeView: View {
                 }
                 .focusable(false)
                 .disabled(library.focusedItem == nil)
-                .help("Delete this photo permanently, or all marked photos if it is marked (⌘⌫)")
+                .help("Delete this photo, or all marked photos if it is marked (⌘⌫)")
             }
             ToolbarItem {
                 Button("Edit", systemImage: "slider.horizontal.3") {

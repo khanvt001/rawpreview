@@ -486,14 +486,22 @@ final class LibraryViewModel {
         return items.filter { !ids.contains($0.id) && shots.contains($0.sidecarURL) }
     }
 
+    /// Cards are erased so their space is freed at once (a card's Trash only
+    /// empties from Finder); anywhere else files go to the Trash and can be
+    /// put back.
+    var deletesPermanently: Bool {
+        volumes.first { $0.id == selectedVolumeID }?.isRemovable ?? false
+    }
+
     /// Delete sheet's button: the targets plus, when ticked, their pairs.
     func confirmDeletion() {
         guard let targets = pendingDeletion else { return }
         delete(deletesPairedFiles ? targets + pairedFiles(of: targets) : targets)
     }
 
-    /// Permanently deletes `targets` (no Trash, so the card's space is freed
-    /// at once). A RAW's sidecar goes too once no file of that shot is left.
+    /// Deletes `targets`, erased or moved to the Trash per
+    /// `deletesPermanently`. A RAW's sidecar goes too once no file of that
+    /// shot is left.
     func delete(_ targets: [PhotoItem]) {
         pendingDeletion = nil
         let doomed = Set(targets.map(\.id))
@@ -501,7 +509,7 @@ final class LibraryViewModel {
         let orphanedSidecars = Set(targets.map(\.sidecarURL)).subtracting(remainingSidecars)
 
         Task {
-            let failures = await Self.removeFiles(targets.map(\.url), sidecars: Array(orphanedSidecars))
+            let failures = await Self.removeFiles(targets.map(\.url), sidecars: Array(orphanedSidecars), permanently: deletesPermanently)
             let deleted = doomed.subtracting(failures.map(\.url))
 
             // Land on the nearest surviving neighbour, not the top of the grid.
@@ -528,12 +536,19 @@ final class LibraryViewModel {
     }
 
     @concurrent
-    private static func removeFiles(_ urls: [URL], sidecars: [URL]) async -> [(url: URL, reason: String)] {
+    private static func removeFiles(_ urls: [URL], sidecars: [URL], permanently: Bool) async -> [(url: URL, reason: String)] {
         let fileManager = FileManager.default
+        func remove(_ url: URL) throws {
+            if permanently {
+                try fileManager.removeItem(at: url)
+            } else {
+                try fileManager.trashItem(at: url, resultingItemURL: nil)
+            }
+        }
         var failures: [(url: URL, reason: String)] = []
         for url in urls {
             do {
-                try fileManager.removeItem(at: url)
+                try remove(url)
             } catch {
                 failures.append((url, error.localizedDescription))
             }
@@ -542,7 +557,7 @@ final class LibraryViewModel {
         let keptSidecars = Set(failures.map { PhotoItem.sidecarURL(for: $0.url) })
         for sidecar in sidecars where !keptSidecars.contains(sidecar)
             && fileManager.fileExists(atPath: sidecar.path(percentEncoded: false)) {
-            try? fileManager.removeItem(at: sidecar)
+            try? remove(sidecar)
         }
         return failures
     }

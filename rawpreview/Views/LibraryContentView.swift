@@ -15,7 +15,7 @@ import SwiftUI
 /// | Return, S  | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
 /// | ⌘Return    | Copy marked files to the destination    |
-/// | ⌘⌫         | Delete permanently, after confirming (all marked if focused one is marked) |
+/// | ⌘⌫         | Delete after confirming: erased on cards, Trash elsewhere (all marked if focused one is marked) |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
