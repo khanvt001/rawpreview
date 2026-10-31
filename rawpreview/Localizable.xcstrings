@@ -3119,26 +3119,6 @@
         }
       }
     },
-    "Video": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Video"
-          }
-        }
-      }
-    },
-    "Videos can't be previewed yet.": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chưa hỗ trợ xem trước video."
-          }
-        }
-      }
-    },
     "View Mode": {
       "localizations": {
         "vi": {

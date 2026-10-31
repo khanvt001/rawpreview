@@ -3,6 +3,7 @@
 //  rawpreview
 //
 
+import AVKit
 import SwiftUI
 
 /// Single Image mode: zoomable image, filmstrip below, Info / Edit / Presets sidebar on the right.
@@ -115,8 +116,8 @@ struct LoupeView: View {
                     description: Text(library.focusedItem.map { String(localized: "\($0.fileName) may be damaged or in an unsupported format.") }
                                       ?? String(localized: "This file may be damaged or in an unsupported format."))
                 )
-            } else if library.focusedItem?.kind == .video {
-                ContentUnavailableView("Video", systemImage: "film", description: Text("Videos can't be previewed yet."))
+            } else if let item = library.focusedItem, item.kind == .video {
+                LoupeVideoPlayer(url: item.url)
             } else {
                 ProgressView()
             }
@@ -223,6 +224,24 @@ struct LoupeView: View {
 
     /// Longest side of the image shown while moving between photos.
     private static let navigationPixelSize = 1024
+}
+
+/// Plays the focused video with the standard controls; paused when another
+/// photo is focused or the view goes away.
+private struct LoupeVideoPlayer: View {
+    let url: URL
+    @State private var player: AVPlayer?
+
+    var body: some View {
+        VideoPlayer(player: player)
+            // Room for the info bar under the controls.
+            .padding(.bottom, 52)
+            .task(id: url) {
+                player?.pause()
+                player = AVPlayer(url: url)
+            }
+            .onDisappear { player?.pause() }
+    }
 }
 
 private struct LoupeInfoBar: View {
