@@ -11,7 +11,8 @@ import SwiftUI
 /// Shows only the photos around the current one (`radius` each side), not the
 /// whole card: SwiftUI re-lays-out the strip on every photo change, and with
 /// hundreds of items that work showed up as dropped frames while holding an
-/// arrow key. The rest of the card is a keypress or the grid away.
+/// arrow key. Scrolling the strip by hand towards either end grows it by
+/// another `radius` photos at a time; the next focus change shrinks it back.
 struct FilmstripView: View {
     @Environment(LibraryViewModel.self) private var library
     @Environment(\.displayScale) private var displayScale
@@ -22,8 +23,16 @@ struct FilmstripView: View {
     /// layout and the jump is lost, leaving the strip at the first photo.
     @State private var scrolledID: PhotoItem.ID?
 
+    /// Photos added beyond `radius` by scrolling, before / after the focused one.
+    @State private var extraBefore = 0
+    @State private var extraAfter = 0
+
     private let side: CGFloat = 76
     private static let radius = 40
+    /// Grow once the scroll position is this close to an end of the strip:
+    /// more than a strip's width, so the new photos are laid out before
+    /// they're reached.
+    private static let growMargin = 30
 
     /// When focus last changed, to tell a held arrow key from a single step.
     /// A plain reference box so updating it doesn't re-render the strip.
@@ -35,10 +44,11 @@ struct FilmstripView: View {
 
     var body: some View {
         let pixelSize = Int(side * displayScale)
+        let items = library.filmstripItems(radius: Self.radius, extraBefore: extraBefore, extraAfter: extraAfter)
 
         ScrollView(.horizontal) {
             LazyHStack(spacing: 6) {
-                ForEach(library.filmstripItems(radius: Self.radius)) { item in
+                ForEach(items) { item in
                     ThumbnailCell(
                         item: item,
                         side: side,
@@ -68,7 +78,23 @@ struct FilmstripView: View {
         .onAppear {
             scrolledID = library.focusedID
         }
+        // Scrolled by hand (focus unchanged) near an end: add photos there.
+        // The binding keeps the photo at the scroll position in place while
+        // the earlier ones are inserted, so the strip doesn't jump.
+        .onChange(of: scrolledID) { _, id in
+            guard let id, id != library.focusedID,
+                  let position = items.firstIndex(where: { $0.id == id })
+            else { return }
+            if position - items.startIndex < Self.growMargin, items.startIndex > 0 {
+                extraBefore += Self.radius
+            }
+            if items.endIndex - position <= Self.growMargin, items.endIndex < library.visibleItems.count {
+                extraAfter += Self.radius
+            }
+        }
         .onChange(of: library.focusedID) { _, id in
+            extraBefore = 0
+            extraAfter = 0
             // Single steps glide; a held arrow key (repeats ~30×/s) snaps, as
             // restarting an animation on every repeat looks jittery.
             let isRepeating = Date.now.timeIntervalSince(focusClock.lastChange) < 0.2

@@ -313,10 +313,12 @@ final class LibraryViewModel {
 
     /// The photos around the focused one, for the loupe's filmstrip. Bounded
     /// so the strip's layout cost doesn't grow with the size of the card.
-    func filmstripItems(radius: Int) -> ArraySlice<PhotoItem> {
-        guard let index = focusedIndex else { return visibleItems.prefix(radius * 2 + 1) }
-        let lower = max(0, index - radius)
-        let upper = min(visibleItems.count, index + radius + 1)
+    /// `radius` photos either side of the focused one, plus `extraBefore` /
+    /// `extraAfter` more once the strip has been scrolled towards an end.
+    func filmstripItems(radius: Int, extraBefore: Int = 0, extraAfter: Int = 0) -> ArraySlice<PhotoItem> {
+        guard let index = focusedIndex else { return visibleItems.prefix(radius * 2 + 1 + extraAfter) }
+        let lower = max(0, index - radius - extraBefore)
+        let upper = min(visibleItems.count, index + radius + 1 + extraAfter)
         return visibleItems[lower..<upper]
     }
 
