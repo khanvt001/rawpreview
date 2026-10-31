@@ -6,7 +6,7 @@
 import SwiftUI
 
 /// One toggle chip per file extension found in the source, e.g. "NEF 481",
-/// plus a file-name search box (⌘F).
+/// a sort menu, and a file-name search box (⌘F).
 struct FilterBar: View {
     @Environment(LibraryViewModel.self) private var library
 
@@ -44,12 +44,44 @@ struct FilterBar: View {
                 .font(.callout)
             }
 
+            SortMenu()
             SearchField()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
+    }
+}
+
+/// "↑↓ Capture Date": sort by capture date, file name or file size, either way.
+private struct SortMenu: View {
+    @Environment(LibraryViewModel.self) private var library
+
+    var body: some View {
+        @Bindable var library = library
+
+        Menu {
+            Picker("Sort By", selection: $library.sortOrder) {
+                ForEach(LibraryViewModel.SortOrder.allCases) { order in
+                    Text(order.title).tag(order)
+                }
+            }
+            .pickerStyle(.inline)
+            Picker("Order", selection: $library.sortsAscending) {
+                Text(library.sortOrder.directionTitle(ascending: true)).tag(true)
+                Text(library.sortOrder.directionTitle(ascending: false)).tag(false)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label(library.sortOrder.title, systemImage: library.sortsAscending ? "arrow.up" : "arrow.down")
+                .labelStyle(.titleAndIcon)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .font(.callout)
+        .focusable(false)
+        .help("Sort by \(library.sortOrder.title.lowercased()), \(library.sortOrder.directionTitle(ascending: library.sortsAscending).lowercased())")
     }
 }
 

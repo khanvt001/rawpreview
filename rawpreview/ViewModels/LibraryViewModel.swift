@@ -41,6 +41,33 @@ final class LibraryViewModel {
         }
     }
 
+    /// Grid and filmstrip order.
+    enum SortOrder: String, CaseIterable, Identifiable {
+        /// The file's creation date, which cameras set to the moment of
+        /// capture: reading EXIF for every file would slow scanning.
+        case captureDate
+        case name
+        case fileSize
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .captureDate: "Capture Date"
+            case .name: "File Name"
+            case .fileSize: "File Size"
+            }
+        }
+
+        func directionTitle(ascending: Bool) -> String {
+            switch self {
+            case .captureDate: ascending ? "Oldest First" : "Newest First"
+            case .name: ascending ? "A to Z" : "Z to A"
+            case .fileSize: ascending ? "Smallest First" : "Largest First"
+            }
+        }
+    }
+
     /// Where a photo's rating is kept.
     enum RatingStorage: Equatable {
         /// Written to this sidecar, which Lightroom / Capture One read.
@@ -60,7 +87,23 @@ final class LibraryViewModel {
     }
 
     private(set) var items: [PhotoItem] = [] {
-        didSet { updateVisibleItems() }
+        didSet { resort() }
+    }
+    /// `items` in `sortOrder`, before filtering.
+    private var sortedItems: [PhotoItem] = []
+    /// Remembered across launches.
+    var sortOrder: SortOrder = UserDefaults.standard.string(forKey: "sortOrder").flatMap(SortOrder.init) ?? .captureDate {
+        didSet {
+            UserDefaults.standard.set(sortOrder.rawValue, forKey: "sortOrder")
+            resort()
+        }
+    }
+    /// Remembered across launches.
+    var sortsAscending: Bool = UserDefaults.standard.object(forKey: "sortsAscending") as? Bool ?? true {
+        didSet {
+            UserDefaults.standard.set(sortsAscending, forKey: "sortsAscending")
+            resort()
+        }
     }
     private(set) var isScanning = false
     private(set) var scanError: String?
@@ -616,8 +659,44 @@ final class LibraryViewModel {
         if let focusedID { setRating(rating, for: focusedID) }
     }
 
+    private func resort() {
+        sortedItems = Self.sorted(items, by: sortOrder, ascending: sortsAscending)
+        updateVisibleItems()
+    }
+
+    /// A RAW+JPEG pair stays side by side whatever the order, sorted by its
+    /// earliest date or largest file: it's one shot. Ties go by name.
+    private static func sorted(_ items: [PhotoItem], by order: SortOrder, ascending: Bool) -> [PhotoItem] {
+        func byName(_ lhs: PhotoItem, _ rhs: PhotoItem) -> Bool {
+            lhs.fileName.localizedStandardCompare(rhs.fileName) == .orderedAscending
+        }
+        let sorted: [PhotoItem]
+        switch order {
+        case .name:
+            sorted = items.sorted(by: byName)
+        case .captureDate:
+            let dates = Dictionary(items.compactMap { item in item.creationDate.map { (item.sidecarURL, $0) } }, uniquingKeysWith: min)
+            sorted = items.sorted { lhs, rhs in
+                switch (dates[lhs.sidecarURL], dates[rhs.sidecarURL]) {
+                case let (l?, r?) where l != r: l < r
+                case (nil, _?): false
+                case (_?, nil): true
+                default: byName(lhs, rhs)
+                }
+            }
+        case .fileSize:
+            let sizes = Dictionary(items.map { ($0.sidecarURL, $0.fileSize) }, uniquingKeysWith: max)
+            sorted = items.sorted { lhs, rhs in
+                let l = sizes[lhs.sidecarURL] ?? 0, r = sizes[rhs.sidecarURL] ?? 0
+                return l != r ? l < r : byName(lhs, rhs)
+            }
+        }
+        return ascending ? sorted : sorted.reversed()
+    }
+
     private func updateVisibleItems() {
         let isFiltering = showsOnlyChecked || ratingFilter != nil || !hiddenExtensions.isEmpty || !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+        let items = sortedItems
         visibleItems = isFiltering ? items.filter(isVisible) : items
 
         guard !visibleItems.isEmpty else {
