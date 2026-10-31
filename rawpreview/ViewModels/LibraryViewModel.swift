@@ -152,6 +152,12 @@ final class LibraryViewModel {
 
     var viewMode: ViewMode = .grid
 
+    /// Single Image's info bar and Copy button over the photo (H hides them
+    /// for an unobstructed look); remembered across launches.
+    var showsLoupeOverlays: Bool = UserDefaults.standard.object(forKey: "showsLoupeOverlays") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(showsLoupeOverlays, forKey: "showsLoupeOverlays") }
+    }
+
     /// Single Image mode's sidebar; remembered across launches.
     var showsInspector: Bool = UserDefaults.standard.object(forKey: "showsInspector") as? Bool ?? true {
         didSet { UserDefaults.standard.set(showsInspector, forKey: "showsInspector") }

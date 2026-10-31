@@ -115,6 +115,7 @@ struct KeyboardShortcutsView: View {
             ("I  E  P", "Info / Edit / Presets sidebar"),
             ("[  ]", "Previous / next preset"),
             ("\\", "Preset before / after"),
+            ("H", "Hide / show the overlays"),
         ]),
         ShortcutGroup(title: "Edit", rows: [
             ("Double-click", "Reset a slider"),

@@ -22,6 +22,7 @@ import SwiftUI
 /// | I          | Single Image: show / hide info sidebar  |
 /// | E          | Single Image: show / hide edit          |
 /// | P          | Single Image: show / hide presets       |
+/// | H          | Single Image: hide / show the overlays  |
 /// | [ ]        | Single Image: previous / next preset    |
 /// | \          | Single Image: preset before / after     |
 /// | ⌘F         | Grid: search file names (Esc clears)    |
@@ -161,6 +162,9 @@ struct LibraryContentView: View {
             return .handled
         case "e" where library.viewMode == .loupe:
             library.toggleInspector(.edit)
+            return .handled
+        case "h" where library.viewMode == .loupe:
+            library.showsLoupeOverlays.toggle()
             return .handled
         case "p" where library.viewMode == .loupe:
             library.toggleInspector(.presets)

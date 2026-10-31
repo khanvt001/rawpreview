@@ -26,20 +26,9 @@ struct LoupeView: View {
             Divider()
             FilmstripView()
         }
+        // The toolbar's Info / Edit / Presets toggles pick the page.
         .inspector(isPresented: $library.showsInspector) {
             VStack(spacing: 0) {
-                Picker("Sidebar", selection: $library.inspectorTab) {
-                    Text("Info").tag(LibraryViewModel.InspectorTab.info)
-                    Text("Edit").tag(LibraryViewModel.InspectorTab.edit)
-                    Text("Presets").tag(LibraryViewModel.InspectorTab.presets)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .focusable(false)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                Divider()
-
                 switch library.inspectorTab {
                 case .info:
                     if let item = library.focusedItem {
@@ -60,44 +49,40 @@ struct LoupeView: View {
             }
             .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
         }
+        // Delete stays in the Photo menu, context menu and ⌘⌫, away from
+        // the sidebar buttons it used to sit next to.
         .toolbar {
-            ToolbarItem {
-                Button("Delete", systemImage: "trash") {
-                    library.requestDeleteForFocused()
-                }
-                .focusable(false)
-                .disabled(library.focusedItem == nil)
-                .help("Delete this photo, or all marked photos if it is marked (⌘⌫)")
-            }
-            ToolbarItem {
-                Button("Edit", systemImage: "slider.horizontal.3") {
-                    library.toggleInspector(.edit)
-                }
-                // Tinted while this photo has adjustments.
-                .foregroundStyle(edits.hasAdjustments(library.focusedID) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
-                .focusable(false)
-                .help("Show / hide edit (E)")
-            }
-            ToolbarItem {
-                Button("Presets", systemImage: "camera.filters") {
-                    library.toggleInspector(.presets)
-                }
-                // Tinted while a preset is applied (there is no filled variant).
-                .foregroundStyle(presets.activePreset == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.accentColor))
-                .focusable(false)
-                .help("Show / hide presets (P)")
-            }
-            ToolbarItem {
-                Button("Info", systemImage: "info.circle") {
-                    library.toggleInspector(.info)
-                }
-                .focusable(false)
-                .help("Show / hide info (I)")
+            ToolbarItemGroup {
+                sidebarToggle(.info, "Info", systemImage: "info.circle", help: "Show / hide info (I)")
+                sidebarToggle(.edit, "Edit", systemImage: "slider.horizontal.3", help: "Show / hide edit (E)")
+                    // Tinted while this photo has adjustments.
+                    .foregroundStyle(edits.hasAdjustments(library.focusedID) ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
+                sidebarToggle(.presets, "Presets", systemImage: "camera.filters", help: "Show / hide presets (P)")
+                    // Tinted while a preset is applied (there is no filled variant).
+                    .foregroundStyle(presets.activePreset == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.accentColor))
             }
         }
         .task(id: LoadKey(photo: library.focusedID, preset: renderPreset?.revision)) {
             await load()
         }
+    }
+
+    /// A toolbar button that reads as pressed while the sidebar shows `tab`.
+    private func sidebarToggle(
+        _ tab: LibraryViewModel.InspectorTab,
+        _ title: LocalizedStringKey,
+        systemImage: String,
+        help: LocalizedStringKey
+    ) -> some View {
+        Toggle(isOn: Binding(
+            get: { library.showsInspector && library.inspectorTab == tab },
+            set: { _ in library.toggleInspector(tab) }
+        )) {
+            Label(title, systemImage: systemImage)
+        }
+        .toggleStyle(.button)
+        .focusable(false)
+        .help(help)
     }
 
     /// The applied preset with this photo's Edit adjustments on top.
@@ -137,7 +122,7 @@ struct LoupeView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if let item = library.focusedItem {
+            if library.showsLoupeOverlays, let item = library.focusedItem {
                 LoupeInfoBar(
                     item: item,
                     position: (library.focusedIndex ?? 0) + 1,
@@ -156,12 +141,14 @@ struct LoupeView: View {
                 PhotoContextMenu(item: item)
             }
         }
-        .overlay(alignment: .bottomTrailing) {
-            if !library.checkedIDs.isEmpty {
+        // Top corner, so it never collides with the info bar on a narrow window.
+        .overlay(alignment: .topTrailing) {
+            if library.showsLoupeOverlays, !library.checkedIDs.isEmpty {
                 CopyButton()
                     .padding(12)
             }
         }
+        .animation(.easeOut(duration: 0.15), value: library.showsLoupeOverlays)
     }
 
     /// Full-resolution geometry even while a thumbnail placeholder is shown, so

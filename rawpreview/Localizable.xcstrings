@@ -1269,16 +1269,6 @@
         }
       }
     },
-    "Delete this photo, or all marked photos if it is marked (⌘⌫)": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Xoá ảnh này, hoặc tất cả ảnh đã đánh dấu nếu ảnh này được đánh dấu (⌘⌫)"
-          }
-        }
-      }
-    },
     "Delete…": {
       "localizations": {
         "vi": {
@@ -1631,6 +1621,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ẩn tệp .%@"
+          }
+        }
+      }
+    },
+    "Hide / show the overlays": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ẩn / hiện lớp phủ trên ảnh"
           }
         }
       }
@@ -2795,16 +2795,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tốc độ màn trập"
-          }
-        }
-      }
-    },
-    "Sidebar": {
-      "localizations": {
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Thanh bên"
           }
         }
       }
