@@ -87,9 +87,19 @@ final class LibraryViewModel {
 
     var viewMode: ViewMode = .grid
 
-    /// Single Image mode's EXIF sidebar; remembered across launches.
+    /// Single Image mode's sidebar; remembered across launches.
     var showsInspector: Bool = UserDefaults.standard.object(forKey: "showsInspector") as? Bool ?? true {
         didSet { UserDefaults.standard.set(showsInspector, forKey: "showsInspector") }
+    }
+
+    enum InspectorTab: String {
+        case info
+        case presets
+    }
+
+    /// Which page the sidebar shows; remembered across launches.
+    var inspectorTab: InspectorTab = UserDefaults.standard.string(forKey: "inspectorTab").flatMap(InspectorTab.init) ?? .info {
+        didSet { UserDefaults.standard.set(inspectorTab.rawValue, forKey: "inspectorTab") }
     }
     /// Folder marked files are copied into; remembered across launches.
     private(set) var copyDestination: URL? = UserDefaults.standard.string(forKey: "copyDestination")
@@ -257,6 +267,17 @@ final class LibraryViewModel {
     func toggleViewMode() {
         guard focusedID != nil else { return }
         viewMode = viewMode == .grid ? .loupe : .grid
+    }
+
+    /// I / P and the toolbar buttons: opens the sidebar on `tab`, or closes it
+    /// if it's already showing that tab.
+    func toggleInspector(_ tab: InspectorTab) {
+        if showsInspector, inspectorTab == tab {
+            showsInspector = false
+        } else {
+            inspectorTab = tab
+            showsInspector = true
+        }
     }
 
     func requestZoom(_ command: ZoomRequest.Command) {

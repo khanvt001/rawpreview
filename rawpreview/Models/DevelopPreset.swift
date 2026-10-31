@@ -5,29 +5,26 @@
 
 import Foundation
 
-/// A Lightroom develop preset (`.lrtemplate` or `.xmp`), reduced to what the
-/// preview can apply: its tone curves, baked into one lookup table per channel.
+/// A Lightroom develop preset (`.lrtemplate` or `.xmp`), turned into a
+/// `PresetLook` the preview can apply.
 ///
 /// This is an approximation of Lightroom's rendering, not a reproduction:
-/// Camera Raw applies curves to raw sensor data in its own working space,
-/// while we apply them to the camera's embedded JPEG on screen. For presets
-/// built from curves, as most "look" presets are, the result is close.
-/// Settings with no per-channel equivalent (exposure, HSL, clarity, white
-/// balance…) are listed in `unsupportedSettings` instead of being faked.
+/// Camera Raw works on raw sensor data in its own colour space, while we
+/// start from the camera's embedded JPEG. Settings the preview can't imitate
+/// at all (Calibration, unusual profiles) are listed in
+/// `unsupportedSettings` instead of being faked.
 nonisolated struct DevelopPreset: Identifiable, Sendable {
-    /// File name inside the presets folder.
+    /// File name inside the presets folder, or `builtin/<category>/<name>`.
     let id: String
     let title: String
-    let lut: ToneLUT
-    /// Black & white: `ConvertToGrayscale` (Treatment: Black & White), or
-    /// Saturation at -100. Applied before the curves, as in Lightroom, so
-    /// per-channel curves can still tone the result.
-    let isMonochrome: Bool
+    /// One-line description, for built-in presets.
+    let summary: String?
+    let look: PresetLook
     /// Human-readable names of the adjustments this preset makes that the
-    /// preview leaves out, e.g. `["Exposure", "HSL"]`.
+    /// preview leaves out, e.g. `["Calibration"]`.
     let unsupportedSettings: [String]
-    /// Changes every time the file is loaded, so rendered images cached for an
-    /// older version of the same file name are never reused.
+    /// Changes every time the preset is loaded, so rendered images cached for
+    /// an older version of the same file name are never reused.
     let revision = UUID()
 
     enum LoadError: LocalizedError {
@@ -60,23 +57,21 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         )
     }
 
-    init(id: String, title: String, settings: [String: PresetValue]) {
+    init(id: String, title: String, summary: String? = nil, settings: [String: PresetValue]) {
         self.id = id
         self.title = title
-        lut = ToneLUT(settings: settings)
-        isMonochrome = Self.isMonochrome(settings)
-        unsupportedSettings = Self.unsupported(in: settings, isMonochrome: isMonochrome)
+        self.summary = summary
+        look = PresetLook(settings: settings)
+        unsupportedSettings = Self.unsupported(in: settings)
+    }
+
+    var isMonochrome: Bool {
+        look.isMonochrome
     }
 
     /// Nothing to apply: rendering can be skipped.
     var isNoOp: Bool {
-        lut.isIdentity && !isMonochrome
-    }
-
-    private static func isMonochrome(_ settings: [String: PresetValue]) -> Bool {
-        if case .bool(true) = settings["ConvertToGrayscale"] { return true }
-        if let saturation = settings["Saturation"]?.number, saturation <= -100 { return true }
-        return false
+        look.isIdentity
     }
 
     /// Lightroom's built-in presets use `$$$/Key=Default text`.
@@ -87,59 +82,31 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
 
     // MARK: - Unsupported settings
 
-    /// Adjustments whose default is 0 and that change the look.
+    /// Adjustments whose default is 0 that `PresetLook` doesn't imitate.
     private static let unsupportedByKey: [String: String] = [
-        "Exposure2012": "Exposure", "Contrast2012": "Contrast",
-        "Highlights2012": "Highlights", "Shadows2012": "Shadows",
-        "Whites2012": "Whites", "Blacks2012": "Blacks",
-        "Clarity2012": "Clarity", "Texture": "Texture", "Dehaze": "Dehaze",
-        "Vibrance": "Vibrance", "Saturation": "Saturation",
-        "IncrementalTemperature": "White Balance", "IncrementalTint": "White Balance",
-        "SplitToningShadowSaturation": "Split Toning", "SplitToningHighlightSaturation": "Split Toning",
-        "ColorGradeShadowSat": "Color Grading", "ColorGradeMidtoneSat": "Color Grading",
-        "ColorGradeHighlightSat": "Color Grading", "ColorGradeGlobalSat": "Color Grading",
-        "ColorGradeShadowLum": "Color Grading", "ColorGradeMidtoneLum": "Color Grading",
-        "ColorGradeHighlightLum": "Color Grading", "ColorGradeGlobalLum": "Color Grading",
         "RedHue": "Calibration", "RedSaturation": "Calibration",
         "GreenHue": "Calibration", "GreenSaturation": "Calibration",
         "BlueHue": "Calibration", "BlueSaturation": "Calibration", "ShadowTint": "Calibration",
-        "PostCropVignetteAmount": "Vignette", "GrainAmount": "Grain",
-    ]
-
-    private static let unsupportedPrefixes = [
-        "HueAdjustment": "HSL", "SaturationAdjustment": "HSL", "LuminanceAdjustment": "HSL",
-        "GrayMixer": "B&W Mix",
     ]
 
     /// Profiles the camera's embedded JPEG already roughly looks like, plus
-    /// the plain monochrome ones, which `isMonochrome` covers.
-    private static let embeddedLookProfiles: Set<String> = [
-        "Camera Standard", "Embedded", "Adobe Monochrome", "Camera Monochrome",
+    /// the ones `PresetLook` imitates.
+    private static let supportedProfiles: Set<String> = [
+        "Camera Standard", "Embedded", "Adobe Standard", "Adobe Color", "Adobe Vivid",
+        "Adobe Monochrome", "Camera Monochrome",
     ]
 
-    private static func unsupported(in settings: [String: PresetValue], isMonochrome: Bool) -> [String] {
+    private static func unsupported(in settings: [String: PresetValue]) -> [String] {
         var labels: [String] = []
         func add(_ label: String) {
             if !labels.contains(label) { labels.append(label) }
         }
-        if let profile = settings["CameraProfile"]?.string, !embeddedLookProfiles.contains(profile) {
+        if let profile = settings["CameraProfile"]?.string, !supportedProfiles.contains(profile) {
             add("Profile (\(profile))")
         }
-        if let whiteBalance = settings["WhiteBalance"]?.string, whiteBalance != "As Shot" {
-            add("White Balance")
-        }
         for key in settings.keys.sorted() {
-            guard let value = settings[key]?.number, value != 0 else { continue }
-            // In black & white, colour-only adjustments have no visible effect
-            // beyond the B&W mix (reported separately).
-            if isMonochrome, ["Saturation", "Vibrance"].contains(key) || key.hasPrefix("HueAdjustment") || key.hasPrefix("SaturationAdjustment") {
-                continue
-            }
-            // Lightroom only uses the gray mixer in black & white.
-            if !isMonochrome, key.hasPrefix("GrayMixer") { continue }
-            if let label = unsupportedByKey[key] ?? unsupportedPrefixes.first(where: { key.hasPrefix($0.key) })?.value {
-                add(label)
-            }
+            guard let value = settings[key]?.number, value != 0, let label = unsupportedByKey[key] else { continue }
+            add(label)
         }
         return labels
     }
@@ -192,6 +159,13 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
                 ?? element.elements(forLocalName: "Alt", uri: rdfNamespace).first?.elements(forLocalName: "li", uri: rdfNamespace)
             if key == "Name" {
                 title = items?.first?.stringValue
+            } else if key == "Look" {
+                // Lightroom 7.3+ names the profile in a nested description.
+                let look = element.elements(forLocalName: "Description", uri: rdfNamespace).first
+                if settings["CameraProfile"] == nil,
+                   let profile = look?.attribute(forLocalName: "Name", uri: crsNamespace)?.stringValue {
+                    settings["CameraProfile"] = .string(profile)
+                }
             } else if let items, key.hasPrefix("ToneCurve") {
                 // "x, y" per item → flat [x0, y0, x1, y1, …] like lrtemplates.
                 settings[key] = .list(items.flatMap { item in
@@ -221,8 +195,9 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     }
 }
 
-/// One develop setting, as either preset format stores it.
-nonisolated enum PresetValue: Sendable {
+/// One develop setting, as either preset format (or the built-in preset
+/// file, as plain JSON values) stores it.
+nonisolated enum PresetValue: Sendable, Decodable {
     case string(String)
     case number(Double)
     case bool(Bool)
@@ -236,6 +211,19 @@ nonisolated enum PresetValue: Sendable {
             self = .bool(text == "True")
         } else {
             self = .string(text)
+        }
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let number = try? container.decode(Double.self) {
+            self = .number(number)
+        } else if let bool = try? container.decode(Bool.self) {
+            self = .bool(bool)
+        } else if let list = try? container.decode([Double].self) {
+            self = .list(list)
+        } else {
+            self = .string(try container.decode(String.self))
         }
     }
 

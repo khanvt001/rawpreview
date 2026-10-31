@@ -20,6 +20,8 @@ import SwiftUI
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
+/// | P          | Single Image: show / hide presets       |
+/// | [ ]        | Single Image: previous / next preset    |
 /// | \          | Single Image: preset before / after     |
 /// | ⌘F         | Grid: search file names (Esc clears)    |
 struct LibraryContentView: View {
@@ -145,10 +147,19 @@ struct LibraryContentView: View {
             library.requestZoom(.toggle)
             return .handled
         case "i" where library.viewMode == .loupe:
-            library.showsInspector.toggle()
+            library.toggleInspector(.info)
+            return .handled
+        case "p" where library.viewMode == .loupe:
+            library.toggleInspector(.presets)
             return .handled
         case "\\" where library.viewMode == .loupe && presets.selectedPreset != nil:
             presets.isEnabled.toggle()
+            return .handled
+        case "[" where library.viewMode == .loupe:
+            presets.selectAdjacent(-1)
+            return .handled
+        case "]" where library.viewMode == .loupe:
+            presets.selectAdjacent(1)
             return .handled
         default:
             break

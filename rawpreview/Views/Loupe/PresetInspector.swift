@@ -1,46 +1,31 @@
 //
-//  PresetMenu.swift
+//  PresetInspector.swift
 //  rawpreview
 //
 
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Toolbar menu for choosing, importing and toggling Lightroom presets.
-struct PresetMenu: View {
+/// The sidebar's Presets page: the applied preset (its name opens a menu of
+/// every preset) with a before / after switch, a search box, then a grid of
+/// preset names, imported ones first and the built-in collection in
+/// collapsible categories.
+struct PresetInspector: View {
     @Environment(PresetStore.self) private var store
+    @State private var query = ""
     @State private var isImporting = false
 
     var body: some View {
-        @Bindable var store = store
-
-        Menu {
-            Picker("Preset", selection: $store.selectedID) {
-                Text("None").tag(String?.none)
-                ForEach(store.presets) { preset in
-                    Text(preset.title).tag(Optional(preset.id))
-                }
-            }
-            .pickerStyle(.inline)
-
+        VStack(spacing: 0) {
+            CurrentPresetCard()
+                .padding(12)
             Divider()
-            Toggle("Show Preset (\\)", isOn: $store.isEnabled)
-                .disabled(store.selectedPreset == nil)
-            if let preset = store.selectedPreset, !preset.unsupportedSettings.isEmpty {
-                Text("Not previewed: \(preset.unsupportedSettings.joined(separator: ", "))")
-            }
-
+            PresetSearchField(query: $query)
+                .padding(8)
+            presetGrid
             Divider()
-            Button("Import Presets…") { isImporting = true }
-            if let preset = store.selectedPreset {
-                Button("Remove “\(preset.title)”") { store.remove(preset) }
-            }
-            Button("Show Presets Folder") { store.revealFolder() }
-        } label: {
-            Label("Preset", systemImage: store.activePreset == nil ? "camera.filters" : "camera.filters.fill")
+            bottomBar
         }
-        .focusable(false)
-        .help("Preview a Lightroom preset (.lrtemplate / .xmp) · \\ shows before / after")
         .fileImporter(
             isPresented: $isImporting,
             allowedContentTypes: DevelopPreset.fileExtensions.compactMap { UTType(filenameExtension: $0) },
@@ -61,6 +46,391 @@ struct PresetMenu: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(store.loadError ?? "")
+        }
+    }
+
+    private var presetGrid: some View {
+        let searching = !query.trimmingCharacters(in: .whitespaces).isEmpty
+        let imported = matching(store.presets)
+
+        return ScrollViewReader { proxy in
+            ScrollView {
+                LazyVGrid(
+                    columns: [GridItem(.adaptive(minimum: 120), spacing: 6)],
+                    spacing: 6,
+                    // An open category's name stays at the top while its presets scroll.
+                    pinnedViews: [.sectionHeaders]
+                ) {
+                    if !searching {
+                        Section {
+                            tile(nil)
+                            ForEach(imported) { tile($0) }
+                        } header: {
+                            if !imported.isEmpty {
+                                GridHeader(title: "Imported", count: imported.count)
+                            }
+                        }
+                    } else if !imported.isEmpty {
+                        Section {
+                            ForEach(imported) { tile($0) }
+                        } header: {
+                            GridHeader(title: "Imported", count: imported.count)
+                        }
+                    }
+
+                    ForEach(store.builtInCategories) { category in
+                        let presets = matching(category.presets)
+                        if !presets.isEmpty {
+                            // Searching shows every match; otherwise categories open and close.
+                            let isExpanded = searching || store.expandedCategories.contains(category.name)
+                            Section {
+                                if isExpanded {
+                                    ForEach(presets) { tile($0) }
+                                }
+                            } header: {
+                                GridHeader(
+                                    title: category.name,
+                                    count: presets.count,
+                                    isExpanded: searching ? nil : isExpanded
+                                ) {
+                                    toggle(category.name)
+                                }
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+            }
+            // `.hidden` still shows legacy scroll bars (mouse attached, or
+            // "Always show scroll bars"); `.never` hides them regardless.
+            .scrollIndicators(.never)
+            .overlay {
+                if searching, matching(store.presets + store.builtInCategories.flatMap(\.presets)).isEmpty {
+                    ContentUnavailableView.search(text: query)
+                }
+            }
+            .onAppear {
+                if let category = store.category(of: store.selectedID) {
+                    store.expandedCategories.insert(category.name)
+                }
+                if let id = store.selectedID {
+                    proxy.scrollTo(id, anchor: .center)
+                }
+            }
+            // [ / ] and the title menu can pick a preset that's scrolled away.
+            .onChange(of: store.selectedID) { _, id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id) }
+            }
+        }
+    }
+
+    private func tile(_ preset: DevelopPreset?) -> some View {
+        PresetTile(
+            preset: preset,
+            isSelected: store.selectedID == preset?.id
+        ) {
+            store.selectedID = preset?.id
+        }
+        .id(preset?.id ?? "original")
+    }
+
+    private var bottomBar: some View {
+        HStack(spacing: 12) {
+            Button("Import Presets…", systemImage: "plus") { isImporting = true }
+                .help("Import Lightroom presets (.lrtemplate / .xmp)")
+            Button("Remove Preset", systemImage: "minus") {
+                if let preset = store.selectedPreset { store.remove(preset) }
+            }
+            .disabled(store.selectedPreset.map(store.isBuiltIn) ?? true)
+            .help("Move the selected imported preset to the Trash")
+            Spacer()
+            Button("Show Presets Folder", systemImage: "folder") { store.revealFolder() }
+                .help("Show imported presets in Finder")
+        }
+        .labelStyle(.iconOnly)
+        .buttonStyle(.borderless)
+        .focusable(false)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+    }
+
+    private func matching(_ presets: [DevelopPreset]) -> [DevelopPreset] {
+        let text = query.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else { return presets }
+        return presets.filter { $0.title.localizedStandardContains(text) }
+    }
+
+    private func toggle(_ category: String) {
+        withAnimation(.easeOut(duration: 0.15)) {
+            if store.expandedCategories.contains(category) {
+                store.expandedCategories.remove(category)
+            } else {
+                store.expandedCategories.insert(category)
+            }
+        }
+    }
+}
+
+/// One preset's name as a selectable cell (or "None", for `nil`).
+private struct PresetTile: View {
+    let preset: DevelopPreset?
+    let isSelected: Bool
+    let select: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: select) {
+            HStack(spacing: 4) {
+                Text(preset?.title ?? "None")
+                    .font(.caption)
+                    .fontWeight(isSelected ? .semibold : .regular)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 0)
+                if let preset, !preset.unsupportedSettings.isEmpty {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                } else if preset?.isMonochrome == true {
+                    Text("B&W")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(isSelected ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.tertiary))
+                }
+            }
+            .foregroundStyle(isSelected ? AnyShapeStyle(.white) : AnyShapeStyle(.primary))
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(background)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .onHover { isHovered = $0 }
+        .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? "The photo as shot")
+    }
+
+    private var background: AnyShapeStyle {
+        if isSelected { return AnyShapeStyle(Color.accentColor) }
+        return isHovered ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary)
+    }
+}
+
+private struct GridHeader: View {
+    let title: String
+    let count: Int
+    /// `nil`: not collapsible.
+    var isExpanded: Bool?
+    var toggle: () -> Void = {}
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: toggle) {
+            HStack(spacing: 6) {
+                if let isExpanded {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .frame(width: 10)
+                }
+                Text(title)
+                    .fontWeight(.semibold)
+                Spacer()
+                Text("\(count)")
+                    .monospacedDigit()
+                    .foregroundStyle(.tertiary)
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background {
+                // Only collapsible headers look (and highlight) like a row you can click.
+                if isExpanded != nil {
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(isHovered ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary))
+                }
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 7))
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .disabled(isExpanded == nil)
+        .onHover { isHovered = $0 }
+        .padding(.vertical, 3)
+        // Opaque around the rounded row, so presets scrolling under a pinned
+        // header don't show through.
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// What's applied right now: its name opens a menu of every preset; the
+/// switch shows before / after.
+private struct CurrentPresetCard: View {
+    @Environment(PresetStore.self) private var store
+
+    var body: some View {
+        @Bindable var store = store
+
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Menu {
+                        PresetMenuItems()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(store.selectedPreset?.title ?? "No Preset")
+                                .font(.headline)
+                                .lineLimit(1)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .focusable(false)
+                    .help("Choose a preset")
+
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Toggle("Show Preset", isOn: $store.isEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .labelsHidden()
+                    .disabled(store.selectedPreset == nil)
+                    .focusable(false)
+                    .help("Before / after (\\)")
+            }
+
+            if let preset = store.selectedPreset {
+                if let summary = preset.summary {
+                    Text(summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if !preset.unsupportedSettings.isEmpty {
+                    Label("Not previewed: \(preset.unsupportedSettings.joined(separator: ", "))", systemImage: "exclamationmark.triangle")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                HStack {
+                    Text("Approximate preview · [ ] previous / next")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    Spacer()
+                    Button("Clear") { store.selectedID = nil }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                        .focusable(false)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var subtitle: String {
+        guard let preset = store.selectedPreset else { return "Choose a preset below to preview it" }
+        let source = store.category(of: preset.id)?.name ?? "Imported"
+        return store.isEnabled ? source : "\(source) · showing original"
+    }
+}
+
+/// Every preset as checkmark items: imported ones, then one submenu per category.
+private struct PresetMenuItems: View {
+    @Environment(PresetStore.self) private var store
+
+    var body: some View {
+        Toggle("None", isOn: selection(nil))
+        if !store.presets.isEmpty {
+            Section("Imported") {
+                ForEach(store.presets) { preset in
+                    Toggle(preset.title, isOn: selection(preset.id))
+                }
+            }
+        }
+        Section("Built-in") {
+            ForEach(store.builtInCategories) { category in
+                Menu(category.name) {
+                    ForEach(category.presets) { preset in
+                        Toggle(preset.title, isOn: selection(preset.id))
+                    }
+                }
+            }
+        }
+    }
+
+    private func selection(_ id: String?) -> Binding<Bool> {
+        Binding(
+            get: { store.selectedID == id },
+            set: { isOn in
+                guard isOn else { return }
+                store.selectedID = id
+                // Open its category so the grid can scroll to it.
+                if let category = store.category(of: id) {
+                    store.expandedCategories.insert(category.name)
+                }
+            }
+        )
+    }
+}
+
+/// Like the grid's file-name search: Esc clears, Return hands the keyboard
+/// back to the photos, and shortcuts pause while it's focused.
+private struct PresetSearchField: View {
+    @Environment(LibraryViewModel.self) private var library
+    @Binding var query: String
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search presets", text: $query)
+                .textFieldStyle(.plain)
+                .focused($isFocused)
+                .onExitCommand {
+                    query = ""
+                    isFocused = false
+                }
+                .onSubmit { isFocused = false }
+                .onChange(of: isFocused) { _, focused in
+                    library.isSearchFocused = focused
+                }
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .help("Clear search")
+            }
+        }
+        .font(.callout)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 1)
+            }
         }
     }
 }

@@ -5,7 +5,7 @@
 
 import SwiftUI
 
-/// Single Image mode: zoomable image, filmstrip below, EXIF inspector on the right.
+/// Single Image mode: zoomable image, filmstrip below, Info / Presets sidebar on the right.
 struct LoupeView: View {
     @Environment(LibraryViewModel.self) private var library
     @Environment(PresetStore.self) private var presets
@@ -26,20 +26,37 @@ struct LoupeView: View {
             FilmstripView()
         }
         .inspector(isPresented: $library.showsInspector) {
-            if let item = library.focusedItem {
-                MetadataInspector(
-                    item: item,
-                    isChecked: library.isChecked(item.id),
-                    rating: library.rating(for: item.id),
-                    ratingStorage: library.ratingStorage(for: item.id)
-                )
-                .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
+            VStack(spacing: 0) {
+                Picker("Sidebar", selection: $library.inspectorTab) {
+                    Text("Info").tag(LibraryViewModel.InspectorTab.info)
+                    Text("Presets").tag(LibraryViewModel.InspectorTab.presets)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .focusable(false)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                Divider()
+
+                switch library.inspectorTab {
+                case .info:
+                    if let item = library.focusedItem {
+                        MetadataInspector(
+                            item: item,
+                            isChecked: library.isChecked(item.id),
+                            rating: library.rating(for: item.id),
+                            ratingStorage: library.ratingStorage(for: item.id)
+                        )
+                    } else {
+                        Spacer()
+                    }
+                case .presets:
+                    PresetInspector()
+                }
             }
+            .inspectorColumnWidth(min: 240, ideal: 300, max: 440)
         }
         .toolbar {
-            ToolbarItem {
-                PresetMenu()
-            }
             ToolbarItem {
                 Button("Delete", systemImage: "trash") {
                     library.requestDeleteForFocused()
@@ -49,8 +66,17 @@ struct LoupeView: View {
                 .help("Delete this photo permanently, or all marked photos if it is marked (⌘⌫)")
             }
             ToolbarItem {
+                Button("Presets", systemImage: "camera.filters") {
+                    library.toggleInspector(.presets)
+                }
+                // Tinted while a preset is applied (there is no filled variant).
+                .foregroundStyle(presets.activePreset == nil ? AnyShapeStyle(.primary) : AnyShapeStyle(Color.accentColor))
+                .focusable(false)
+                .help("Show / hide presets (P)")
+            }
+            ToolbarItem {
                 Button("Info", systemImage: "info.circle") {
-                    library.showsInspector.toggle()
+                    library.toggleInspector(.info)
                 }
                 .focusable(false)
                 .help("Show / hide info (I)")
@@ -242,6 +268,9 @@ private struct LoupeInfoBar: View {
 
     private func presetHelp(_ preset: DevelopPreset) -> String {
         var help = "Previewing preset “\(preset.title)” (approximate) · \\ shows before / after"
+        if let summary = preset.summary {
+            help += "\n\(summary)"
+        }
         if !preset.unsupportedSettings.isEmpty {
             help += "\nNot previewed: \(preset.unsupportedSettings.joined(separator: ", "))"
         }
