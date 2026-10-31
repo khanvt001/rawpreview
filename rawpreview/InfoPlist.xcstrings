@@ -1,24 +1,48 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "NSRemovableVolumesUsageDescription": {
-      "comment": "Privacy - Removable Volumes Usage Description",
-      "extractionState": "extracted_with_value",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "new",
-            "value": "RawPreview reads photos from your SD card to preview and copy them."
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "rawpreview"
+          }
+        }
+      }
+    },
+    "NSHumanReadableCopyright" : {
+      "comment" : "Copyright (human-readable)",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : ""
+          }
+        }
+      }
+    },
+    "NSRemovableVolumesUsageDescription" : {
+      "comment" : "Privacy - Removable Volumes Usage Description",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "RawPreview reads photos from your SD card to preview and copy them."
           }
         },
-        "vi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "RawPreview đọc ảnh từ thẻ SD của bạn để xem trước và sao chép."
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RawPreview đọc ảnh từ thẻ SD của bạn để xem trước và sao chép."
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

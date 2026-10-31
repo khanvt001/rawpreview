@@ -34,6 +34,9 @@ struct RawPreviewApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             ZoomCommands(library: library)
+            CommandGroup(after: .appInfo) {
+                SupportMenuButton()
+            }
             CommandGroup(replacing: .importExport) {
                 Button("Import Presets…") { presets.chooseAndImport() }
                     .keyboardShortcut("i", modifiers: [.command, .shift])
@@ -43,5 +46,10 @@ struct RawPreviewApp: App {
         Settings {
             SettingsView()
         }
+
+        Window("Support RawPreview", id: SupportView.windowID) {
+            SupportView()
+        }
+        .windowResizability(.contentSize)
     }
 }

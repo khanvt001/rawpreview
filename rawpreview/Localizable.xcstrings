@@ -591,6 +591,26 @@
         }
       }
     },
+    "Buy Me a Coffee on Ko-fi": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mời mình ly cà phê trên Ko-fi"
+          }
+        }
+      }
+    },
+    "Buy Me a Coffee…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mời mình ly cà phê…"
+          }
+        }
+      }
+    },
     "Camera": {
       "localizations": {
         "vi": {
@@ -667,6 +687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thời điểm chụp"
+          }
+        }
+      }
+    },
+    "Card or PayPal, no account needed.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanh toán bằng thẻ hoặc PayPal, không cần tài khoản."
           }
         }
       }
@@ -821,6 +851,16 @@
         }
       }
     },
+    "Copied": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đã chép"
+          }
+        }
+      }
+    },
     "Copy": {
       "localizations": {
         "vi": {
@@ -935,6 +975,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sao chép bị gián đoạn"
+          }
+        }
+      }
+    },
+    "Copy account number": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chép số tài khoản"
           }
         }
       }
@@ -1205,6 +1255,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tháo “%@”"
+          }
+        }
+      }
+    },
+    "Enjoying RawPreview?": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bạn thấy RawPreview hữu ích?"
           }
         }
       }
@@ -1565,6 +1625,16 @@
         }
       }
     },
+    "It's made by one person in their spare time. If it saves you time, a coffee helps keep it going. Thank you!": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ứng dụng do một người làm trong thời gian rảnh. Nếu nó giúp bạn tiết kiệm thời gian, một ly cà phê sẽ giúp mình duy trì nó. Cảm ơn bạn!"
+          }
+        }
+      }
+    },
     "JPEG, HEIF or PNG files in the size you choose, with the preset and each photo's edits applied": {
       "localizations": {
         "vi": {
@@ -1905,6 +1975,16 @@
         }
       }
     },
+    "Payment Method": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cách thanh toán"
+          }
+        }
+      }
+    },
     "Permanently delete %lld files?": {
       "localizations": {
         "vi": {
@@ -2061,6 +2141,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lưu vào"
+          }
+        }
+      }
+    },
+    "Scan with any Vietnamese banking app and enter any amount.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quét bằng app ngân hàng bất kỳ và nhập số tiền tuỳ ý."
           }
         }
       }
@@ -2495,6 +2585,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dừng sau khi các tệp đang chép xong; không để lại tệp chép dở"
+          }
+        }
+      }
+    },
+    "Support RawPreview": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ủng hộ RawPreview"
+          }
+        }
+      }
+    },
+    "Support RawPreview…": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ủng hộ RawPreview…"
           }
         }
       }
