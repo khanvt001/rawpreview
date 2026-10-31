@@ -61,7 +61,31 @@ struct PhotoGridView: View {
                 if phase == .idle { prefetch(pixelSize: pixelSize) }
             }
             .overlay {
-                if library.visibleItems.isEmpty {
+                if library.visibleItems.isEmpty, !library.items.isEmpty, !library.searchText.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Matches", systemImage: "magnifyingglass")
+                    } description: {
+                        Text("No file names contain “\(library.searchText)”.")
+                    } actions: {
+                        Button("Clear Search") { library.searchText = "" }
+                    }
+                } else if library.visibleItems.isEmpty, !library.items.isEmpty, library.showsOnlyChecked {
+                    ContentUnavailableView {
+                        Label("No Marked Files", systemImage: "checkmark.circle")
+                    } description: {
+                        Text("Press Return or S on a photo to mark it.")
+                    } actions: {
+                        Button("Show All Files") { library.showsOnlyChecked = false }
+                    }
+                } else if library.visibleItems.isEmpty, !library.items.isEmpty, library.ratingFilter != nil {
+                    ContentUnavailableView {
+                        Label("No Matching Ratings", systemImage: "star")
+                    } description: {
+                        Text("No files match the star filter.")
+                    } actions: {
+                        Button("Any Rating") { library.ratingFilter = nil }
+                    }
+                } else if library.visibleItems.isEmpty {
                     ContentUnavailableView {
                         Label("All Files Hidden", systemImage: "line.3.horizontal.decrease.circle")
                     } description: {
@@ -103,6 +127,8 @@ struct PhotoGridView: View {
                     Image(systemName: "photo").imageScale(.large)
                 }
                 .frame(width: 160)
+                // Keep the end icons off the toolbar item's rounded edges.
+                .padding(.horizontal, 8)
                 .focusable(false)
                 .help("Thumbnail size")
             }
@@ -141,37 +167,6 @@ struct PhotoGridView: View {
         }
         .scrollTargetLayout()
         .padding(padding)
-    }
-}
-
-/// "Copy 12 to Shoot ⏎" plus a menu to change the destination.
-private struct CopyButton: View {
-    @Environment(LibraryViewModel.self) private var library
-
-    var body: some View {
-        let count = library.checkedIDs.count
-        let folder = library.copyDestination?.lastPathComponent
-
-        Menu {
-            Button("Copy \(count) Marked Files") { library.startCopy() }
-            Button("Change Destination…") { library.chooseCopyDestination() }
-            Divider()
-            Button("Clear Marks") { library.clearChecked() }
-        } label: {
-            Label(
-                folder.map { "Copy \(count) to \($0)  ⏎" } ?? "Copy \(count) marked…  ⏎",
-                systemImage: "checkmark.circle.fill"
-            )
-        } primaryAction: {
-            library.startCopy()
-        }
-        .menuStyle(.button)
-        .buttonStyle(.borderedProminent)
-        .controlSize(.small)
-        .fixedSize()
-        .focusable(false)
-        .disabled(library.isCopying)
-        .help(library.copyDestination.map { "Copy marked files to \($0.path(percentEncoded: false)) (Return)" } ?? "Choose a folder and copy marked files (Return)")
     }
 }
 

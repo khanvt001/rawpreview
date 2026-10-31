@@ -18,6 +18,8 @@ import Foundation
 ///   card, throughput is the card's read speed (~85–88 MB/s) whether 1, 3 or
 ///   6 files copy at once; the cap keeps cancellation snappy (only the files
 ///   in flight finish) and lets a fast source overlap with a slow destination.
+/// - Optionally each shot lands in a `YYYY-MM-DD` subfolder named after its
+///   capture day; a RAW+JPEG pair always shares one folder.
 /// - A RAW's `.xmp` sidecar travels with it. If the destination already has
 ///   one (e.g. Lightroom edits) it is kept and only the rating is merged in;
 ///   the rating is also written when the card itself couldn't take a sidecar
@@ -88,17 +90,30 @@ nonisolated struct CopyService: Sendable {
     /// Works out every destination name and checks free space. Throws before
     /// anything is written if the copy can't succeed.
     @concurrent
-    func plan(_ items: [PhotoItem], to folder: URL, from sourceRoot: URL?) async throws -> [Plan] {
+    func plan(_ items: [PhotoItem], to folder: URL, from sourceRoot: URL?, intoDateFolders: Bool = false) async throws -> [Plan] {
         if let sourceRoot, folder.isContained(in: sourceRoot) {
             throw CopyError.destinationInsideSource
         }
         let fileManager = FileManager.default
         try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
 
+        // Earliest date per shot, so a pair straddling midnight isn't split.
+        let shotDates = intoDateFolders
+            ? Dictionary(items.compactMap { item in item.creationDate.map { (item.sidecarURL, $0) } }, uniquingKeysWith: min)
+            : [:]
+
         var reserved = Set<String>()
+        var createdFolders: Set<URL> = [folder]
         var plans: [Plan] = []
         for item in items {
-            let (destination, action) = Self.resolveDestination(for: item, in: folder, reserved: &reserved)
+            var itemFolder = folder
+            if intoDateFolders {
+                itemFolder = folder.appending(path: Self.dateFolderName(for: shotDates[item.sidecarURL]), directoryHint: .isDirectory)
+                if createdFolders.insert(itemFolder).inserted {
+                    try fileManager.createDirectory(at: itemFolder, withIntermediateDirectories: true)
+                }
+            }
+            let (destination, action) = Self.resolveDestination(for: item, in: itemFolder, reserved: &reserved)
             let sidecar = item.kind == .raw && fileManager.fileExists(atPath: item.sidecarURL.path(percentEncoded: false))
                 ? item.sidecarURL : nil
             plans.append(Plan(
@@ -120,6 +135,14 @@ nonisolated struct CopyService: Sendable {
         return plans
     }
 
+    /// `2026-10-31` in the Mac's time zone (the day the photographer saw),
+    /// or `Undated` when the file carries no date.
+    private static func dateFolderName(for date: Date?) -> String {
+        guard let date else { return "Undated" }
+        let day = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", day.year ?? 0, day.month ?? 0, day.day ?? 0)
+    }
+
     private static func resolveDestination(
         for item: PhotoItem,
         in folder: URL,
@@ -133,16 +156,17 @@ nonisolated struct CopyService: Sendable {
             let name = suffix == 0 ? "\(base).\(ext)" : "\(base)-\(suffix).\(ext)"
             let candidate = folder.appending(path: name)
             suffix += 1
-            guard !reserved.contains(name.lowercased()) else { continue }
+            let key = candidate.path(percentEncoded: false).lowercased()
+            guard !reserved.contains(key) else { continue }
 
             let path = candidate.path(percentEncoded: false)
             guard fileManager.fileExists(atPath: path) else {
-                reserved.insert(name.lowercased())
+                reserved.insert(key)
                 return (candidate, .copy)
             }
             let existingSize = (try? fileManager.attributesOfItem(atPath: path)[.size] as? Int64) ?? -1
             if existingSize == item.fileSize {
-                reserved.insert(name.lowercased())
+                reserved.insert(key)
                 return (candidate, .skipExisting)
             }
         }

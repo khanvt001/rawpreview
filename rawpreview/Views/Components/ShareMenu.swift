@@ -105,5 +105,10 @@ struct PhotoContextMenu: View {
         Button("Show in Finder") {
             NSWorkspace.shared.activateFileViewerSelecting(targets.map(\.url))
         }
+        Divider()
+        Button(targets.count == 1 ? "Delete…" : "Delete \(targets.count) Files…", role: .destructive) {
+            library.requestDelete(targets)
+        }
+        .keyboardShortcut(.delete, modifiers: .command)
     }
 }

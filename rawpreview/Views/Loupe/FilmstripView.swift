@@ -60,6 +60,11 @@ struct FilmstripView: View {
             .padding(.vertical, 8)
         }
         .scrollPosition(id: $scrolledID, anchor: .center)
+        // The window slides one photo per step with the focused one always in
+        // its middle, so a scrollbar can't show where you are on the card —
+        // and it visibly twitched back then forward on each step (SwiftUI
+        // first holds the old photo in place, then the glide moves on).
+        .scrollIndicators(.never)
         .onAppear {
             scrolledID = library.focusedID
         }

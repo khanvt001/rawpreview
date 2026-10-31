@@ -26,6 +26,19 @@ final class LibraryViewModel {
         case failed(String)
     }
 
+    /// Star filter chip: which ratings `visibleItems` keeps.
+    enum RatingFilter: Hashable {
+        case unrated
+        case atLeast(Rating)
+
+        func matches(_ rating: Rating) -> Bool {
+            switch self {
+            case .unrated: !rating.isRated
+            case .atLeast(let minimum): rating >= minimum
+            }
+        }
+    }
+
     /// Where a photo's rating is kept.
     enum RatingStorage: Equatable {
         /// Written to this sidecar, which Lightroom / Capture One read.
@@ -38,7 +51,9 @@ final class LibraryViewModel {
     private(set) var volumes: [VolumeInfo] = []
     private(set) var sourceURL: URL? {
         didSet {
-            if sourceURL != oldValue { rescan() }
+            guard sourceURL != oldValue else { return }
+            searchText = ""
+            rescan()
         }
     }
 
@@ -48,7 +63,8 @@ final class LibraryViewModel {
     private(set) var isScanning = false
     private(set) var scanError: String?
 
-    /// `items` minus hidden extensions. Stored, not computed, so the grid's
+    /// `items` minus hidden extensions, search misses, and files the Marked or
+    /// star filter excludes. Stored, not computed, so the grid's
     /// `ForEach` doesn't refilter on every body evaluation.
     private(set) var visibleItems: [PhotoItem] = []
     /// Upper-cased extensions (e.g. `"MP4"`) excluded from `visibleItems`.
@@ -59,6 +75,15 @@ final class LibraryViewModel {
             updateVisibleItems()
         }
     }
+    /// Grid search box text; matches file names case- and diacritic-insensitively.
+    var searchText = "" {
+        didSet {
+            if searchText != oldValue { updateVisibleItems() }
+        }
+    }
+    /// While the search box has the keyboard, filtering must not pull key
+    /// focus back to the grid.
+    var isSearchFocused = false
 
     var viewMode: ViewMode = .grid
 
@@ -70,6 +95,11 @@ final class LibraryViewModel {
     private(set) var copyDestination: URL? = UserDefaults.standard.string(forKey: "copyDestination")
         .map { URL(filePath: $0, directoryHint: .isDirectory) } {
         didSet { UserDefaults.standard.set(copyDestination?.path(percentEncoded: false), forKey: "copyDestination") }
+    }
+    /// Copy each shot into a `YYYY-MM-DD` subfolder of the destination;
+    /// remembered across launches.
+    var copiesIntoDateFolders: Bool = UserDefaults.standard.bool(forKey: "copiesIntoDateFolders") {
+        didSet { UserDefaults.standard.set(copiesIntoDateFolders, forKey: "copiesIntoDateFolders") }
     }
     private(set) var copyState: CopyState = .idle
     /// Why the last copy stopped early, when it wasn't the user's Cancel.
@@ -86,11 +116,40 @@ final class LibraryViewModel {
     /// The image the keyboard acts on and the loupe shows.
     var focusedID: PhotoItem.ID?
     /// Files ticked for batch copy.
-    private(set) var checkedIDs: Set<PhotoItem.ID> = []
+    private(set) var checkedIDs: Set<PhotoItem.ID> = [] {
+        didSet {
+            if showsOnlyChecked { updateVisibleItems() }
+        }
+    }
+    /// Star filter; `nil` shows every rating.
+    var ratingFilter: RatingFilter? {
+        didSet {
+            if ratingFilter != oldValue { updateVisibleItems() }
+        }
+    }
+    /// "Marked" filter chip: narrows `visibleItems` to the ticked files.
+    var showsOnlyChecked = false {
+        didSet {
+            if showsOnlyChecked != oldValue { updateVisibleItems() }
+        }
+    }
     /// Keyed by sidecar URL so both files of a RAW+JPEG pair share a rating.
-    private(set) var ratings: [URL: Rating] = [:]
+    private(set) var ratings: [URL: Rating] = [:] {
+        didSet {
+            if ratingFilter != nil { updateVisibleItems() }
+        }
+    }
     /// Last sidecar write failure (e.g. card write-protected), for an alert.
     var ratingSaveError: String?
+    /// Files waiting for the user to confirm Delete.
+    var pendingDeletion: [PhotoItem]?
+    /// Why the last Delete failed, for an alert.
+    var deleteError: String?
+    /// Delete sheet checkbox: also delete the other half of a RAW+JPEG pair;
+    /// remembered across launches.
+    var deletesPairedFiles: Bool = UserDefaults.standard.bool(forKey: "deletesPairedFiles") {
+        didSet { UserDefaults.standard.set(deletesPairedFiles, forKey: "deletesPairedFiles") }
+    }
     /// Sidecars of shots that include a RAW file, i.e. the ones worth writing.
     @ObservationIgnored private var rawSidecars: Set<URL> = []
     /// Tail of the sidecar write chain; each write waits for the previous one so
@@ -185,6 +244,14 @@ final class LibraryViewModel {
         hiddenExtensions = []
     }
 
+    private func isVisible(_ item: PhotoItem) -> Bool {
+        guard !hiddenExtensions.contains(item.fileExtension) else { return false }
+        guard !showsOnlyChecked || checkedIDs.contains(item.id) else { return false }
+        if let ratingFilter, !ratingFilter.matches(rating(for: item.id)) { return false }
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        return query.isEmpty || item.fileName.localizedStandardContains(query)
+    }
+
     // MARK: - Navigation
 
     func toggleViewMode() {
@@ -212,8 +279,13 @@ final class LibraryViewModel {
         case .up: -row
         case .down: row
         }
-        let target = index + delta
-        // A row jump past either end stays put, like Finder; a single step clamps.
+        var target = index + delta
+        // Down from a tile with nothing directly below it lands on the last
+        // item when the last row is shorter, so the arrows can reach every
+        // file. Otherwise a jump past either end stays put, like Finder.
+        if direction == .down, target >= visibleItems.count, index / row < (visibleItems.count - 1) / row {
+            target = visibleItems.count - 1
+        }
         guard visibleItems.indices.contains(target) else { return }
         focusedID = visibleItems[target].id
     }
@@ -297,6 +369,90 @@ final class LibraryViewModel {
         checkedIDs = []
     }
 
+    // MARK: - Delete
+
+    /// ⌘⌫ / context menu / Single Image toolbar: asks before deleting
+    /// (handled by `RootView`).
+    func requestDelete(_ targets: [PhotoItem]) {
+        guard !targets.isEmpty else { return }
+        guard !isCopying else {
+            deleteError = "A copy is in progress. Wait for it to finish, or cancel it, before deleting."
+            return
+        }
+        pendingDeletion = targets
+    }
+
+    func requestDeleteForFocused() {
+        if let focusedItem { requestDelete(actionTargets(for: focusedItem)) }
+    }
+
+    /// Same-name files of the same shots (the JPEG of a NEF and vice versa)
+    /// not already in `targets`, including ones the filter hides.
+    func pairedFiles(of targets: [PhotoItem]) -> [PhotoItem] {
+        let ids = Set(targets.map(\.id))
+        let shots = Set(targets.map(\.sidecarURL))
+        return items.filter { !ids.contains($0.id) && shots.contains($0.sidecarURL) }
+    }
+
+    /// Delete sheet's button: the targets plus, when ticked, their pairs.
+    func confirmDeletion() {
+        guard let targets = pendingDeletion else { return }
+        delete(deletesPairedFiles ? targets + pairedFiles(of: targets) : targets)
+    }
+
+    /// Permanently deletes `targets` (no Trash, so the card's space is freed
+    /// at once). A RAW's sidecar goes too once no file of that shot is left.
+    func delete(_ targets: [PhotoItem]) {
+        pendingDeletion = nil
+        let doomed = Set(targets.map(\.id))
+        let remainingSidecars = Set(items.filter { !doomed.contains($0.id) }.map(\.sidecarURL))
+        let orphanedSidecars = Set(targets.map(\.sidecarURL)).subtracting(remainingSidecars)
+
+        Task {
+            let failures = await Self.removeFiles(targets.map(\.url), sidecars: Array(orphanedSidecars))
+            let deleted = doomed.subtracting(failures.map(\.url))
+
+            // Land on the nearest surviving neighbour, not the top of the grid.
+            if let focusedID, deleted.contains(focusedID), let index = focusedIndex {
+                let after = visibleItems[index...].first { !deleted.contains($0.id) }
+                let before = visibleItems[..<index].last { !deleted.contains($0.id) }
+                self.focusedID = (after ?? before)?.id
+            }
+            checkedIDs.subtract(deleted)
+            let keptSidecars = Set(failures.map { PhotoItem.sidecarURL(for: $0.url) })
+            for sidecar in orphanedSidecars.subtracting(keptSidecars) {
+                ratings[sidecar] = nil
+                rawSidecars.remove(sidecar)
+            }
+            items.removeAll { deleted.contains($0.id) }
+
+            if let first = failures.first {
+                let more = failures.count > 1 ? " (and \(failures.count - 1) more)" : ""
+                deleteError = "Couldn't delete \(first.url.lastPathComponent)\(more): \(first.reason)"
+            }
+        }
+    }
+
+    @concurrent
+    private static func removeFiles(_ urls: [URL], sidecars: [URL]) async -> [(url: URL, reason: String)] {
+        let fileManager = FileManager.default
+        var failures: [(url: URL, reason: String)] = []
+        for url in urls {
+            do {
+                try fileManager.removeItem(at: url)
+            } catch {
+                failures.append((url, error.localizedDescription))
+            }
+        }
+        // A shot with a file that couldn't be deleted keeps its rating.
+        let keptSidecars = Set(failures.map { PhotoItem.sidecarURL(for: $0.url) })
+        for sidecar in sidecars where !keptSidecars.contains(sidecar)
+            && fileManager.fileExists(atPath: sidecar.path(percentEncoded: false)) {
+            try? fileManager.removeItem(at: sidecar)
+        }
+        return failures
+    }
+
     // MARK: - Batch copy
 
     var isCopying: Bool {
@@ -313,15 +469,20 @@ final class LibraryViewModel {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = "Copy Here"
-        panel.message = "Choose where marked photos are copied."
+        panel.message = "Choose where marked photos are copied. Use New Folder to make one."
+        let dateFolders = NSButton(checkboxWithTitle: "Sort into date folders (YYYY-MM-DD)", target: nil, action: nil)
+        dateFolders.state = copiesIntoDateFolders ? .on : .off
+        panel.accessoryView = dateFolders
+        panel.isAccessoryViewDisclosed = true
         panel.directoryURL = copyDestination
             ?? FileManager.default.urls(for: .picturesDirectory, in: .userDomainMask).first
         guard panel.runModal() == .OK, let url = panel.url else { return false }
         copyDestination = url
+        copiesIntoDateFolders = dateFolders.state == .on
         return true
     }
 
-    /// Enter: copies every marked file (including ones hidden by the filter,
+    /// ⌘Return: copies every marked file (including ones hidden by the filter,
     /// matching the "N marked" count) to the destination.
     func startCopy() {
         guard !isCopying else { return }
@@ -337,6 +498,7 @@ final class LibraryViewModel {
         let ratings = ratings
         let pendingRatingWrite = lastSidecarWrite
         let sourceRoot = sourceURL
+        let intoDateFolders = copiesIntoDateFolders
         copyState = .running(CopyService.Progress(totalFiles: marked.count))
 
         copyTask = Task {
@@ -344,7 +506,7 @@ final class LibraryViewModel {
             // sidecars carry the latest stars.
             await pendingRatingWrite?.value
             do {
-                let plans = try await copier.plan(marked, to: destination, from: sourceRoot)
+                let plans = try await copier.plan(marked, to: destination, from: sourceRoot, intoDateFolders: intoDateFolders)
                 let report = await copier.copy(plans, to: destination, ratings: ratings) { progress in
                     Task { @MainActor [weak self] in
                         // A late progress update must not overwrite the result.
@@ -377,9 +539,8 @@ final class LibraryViewModel {
     }
 
     private func updateVisibleItems() {
-        visibleItems = hiddenExtensions.isEmpty
-            ? items
-            : items.filter { !hiddenExtensions.contains($0.fileExtension) }
+        let isFiltering = showsOnlyChecked || ratingFilter != nil || !hiddenExtensions.isEmpty || !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+        visibleItems = isFiltering ? items.filter(isVisible) : items
 
         guard !visibleItems.isEmpty else {
             focusedID = nil
@@ -392,9 +553,9 @@ final class LibraryViewModel {
         }
         // If the focused file was just filtered out, move to the nearest visible
         // file after it (or before, at the end) instead of jumping to the top.
-        if hiddenExtensions.contains(items[allIndex].fileExtension) {
-            let after = items[allIndex...].first { !hiddenExtensions.contains($0.fileExtension) }
-            let before = items[..<allIndex].last { !hiddenExtensions.contains($0.fileExtension) }
+        if !isVisible(items[allIndex]) {
+            let after = items[allIndex...].first(where: isVisible)
+            let before = items[..<allIndex].last(where: isVisible)
             self.focusedID = (after ?? before)?.id
         }
     }
@@ -405,6 +566,8 @@ final class LibraryViewModel {
         scanError = nil
         focusedID = nil
         viewMode = .grid
+        showsOnlyChecked = false
+        ratingFilter = nil
         checkedIDs = []
         ratings = [:]
         rawSidecars = []

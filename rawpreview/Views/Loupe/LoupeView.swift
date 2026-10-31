@@ -37,6 +37,14 @@ struct LoupeView: View {
         }
         .toolbar {
             ToolbarItem {
+                Button("Delete", systemImage: "trash") {
+                    library.requestDeleteForFocused()
+                }
+                .focusable(false)
+                .disabled(library.focusedItem == nil)
+                .help("Delete this photo permanently, or all marked photos if it is marked (⌘⌫)")
+            }
+            ToolbarItem {
                 Button("Info", systemImage: "info.circle") {
                     library.showsInspector.toggle()
                 }
@@ -85,6 +93,17 @@ struct LoupeView: View {
                     isLoadingFullResolution: image != nil && !isFullResolution
                 )
                 .padding(12)
+            }
+        }
+        .contextMenu {
+            if let item = library.focusedItem {
+                PhotoContextMenu(item: item)
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if !library.checkedIDs.isEmpty {
+                CopyButton()
+                    .padding(12)
             }
         }
     }

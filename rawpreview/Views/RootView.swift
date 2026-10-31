@@ -14,10 +14,19 @@ struct RootView: View {
                 .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 300)
         } detail: {
             detail
+                // On the detail column, not next to the copy sheet: two
+                // `.sheet`s on one view fight over presentation.
+                .sheet(isPresented: Binding(
+                    get: { library.pendingDeletion != nil },
+                    set: { if !$0 { library.pendingDeletion = nil } }
+                )) {
+                    DeleteSheet()
+                        .environment(library)
+                }
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button("Open Folder…", systemImage: "folder.badge.plus") {
+                Button("Open Folder…", systemImage: "folder") {
                     library.chooseFolder()
                 }
                 .keyboardShortcut("o", modifiers: .command)
@@ -46,6 +55,17 @@ struct RootView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(library.ejectError ?? "")
+        }
+        .alert(
+            "Couldn't Delete",
+            isPresented: Binding(
+                get: { library.deleteError != nil },
+                set: { if !$0 { library.deleteError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(library.deleteError ?? "")
         }
         .alert(
             "Rating Not Saved",

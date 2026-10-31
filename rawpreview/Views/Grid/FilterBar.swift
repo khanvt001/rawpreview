@@ -5,7 +5,8 @@
 
 import SwiftUI
 
-/// One toggle chip per file extension found in the source, e.g. "NEF 481".
+/// One toggle chip per file extension found in the source, e.g. "NEF 481",
+/// plus a file-name search box (⌘F).
 struct FilterBar: View {
     @Environment(LibraryViewModel.self) private var library
 
@@ -14,6 +15,11 @@ struct FilterBar: View {
             Image(systemName: "line.3.horizontal.decrease")
                 .foregroundStyle(.secondary)
                 .help("Filter by file type")
+
+            MarkedFilterChip()
+            RatingFilterChip()
+
+            Divider().frame(height: 16)
 
             ScrollView(.horizontal) {
                 HStack(spacing: 6) {
@@ -37,11 +43,158 @@ struct FilterBar: View {
                 .buttonStyle(.link)
                 .font(.callout)
             }
+
+            SearchField()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(.bar)
         .overlay(alignment: .bottom) { Divider() }
+    }
+}
+
+private struct SearchField: View {
+    @Environment(LibraryViewModel.self) private var library
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        @Bindable var library = library
+
+        HStack(spacing: 4) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Search file names", text: $library.searchText)
+                .textFieldStyle(.plain)
+                .focused($isFocused)
+                // Esc clears; Return hands the keyboard back to the grid.
+                .onExitCommand {
+                    library.searchText = ""
+                    isFocused = false
+                }
+                .onSubmit { isFocused = false }
+                .onChange(of: isFocused) { _, focused in
+                    library.isSearchFocused = focused
+                }
+            if !library.searchText.isEmpty {
+                Button {
+                    library.searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .focusable(false)
+                .help("Clear search")
+            }
+        }
+        .font(.callout)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .frame(width: 200)
+        .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 6))
+        .overlay {
+            if isFocused {
+                RoundedRectangle(cornerRadius: 6).stroke(Color.accentColor, lineWidth: 1)
+            }
+        }
+        .background {
+            // Invisible ⌘F target.
+            Button("Find") { isFocused = true }
+                .keyboardShortcut("f", modifiers: .command)
+                .opacity(0)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        .help("Search file names (⌘F)")
+    }
+}
+
+/// "✓ Marked 12": shows only the files marked for copy (Return / S).
+private struct MarkedFilterChip: View {
+    @Environment(LibraryViewModel.self) private var library
+
+    var body: some View {
+        let isOn = library.showsOnlyChecked
+
+        Button {
+            library.showsOnlyChecked.toggle()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "checkmark.circle.fill")
+                Text("Marked")
+                    .fontWeight(.semibold)
+                Text(library.checkedIDs.count, format: .number)
+                    .foregroundStyle(isOn ? AnyShapeStyle(.white.opacity(0.8)) : AnyShapeStyle(.secondary))
+            }
+            .font(.callout.monospacedDigit())
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .background(
+                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.fill.tertiary),
+                in: Capsule()
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .focusable(false)
+        .help(isOn ? "Show all files" : "Show only marked files")
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+}
+
+/// "★ 3+" menu: shows only files with at least N stars, or only unrated ones.
+private struct RatingFilterChip: View {
+    @Environment(LibraryViewModel.self) private var library
+
+    var body: some View {
+        @Bindable var library = library
+        let isOn = library.ratingFilter != nil
+
+        Menu {
+            Picker("Rating", selection: $library.ratingFilter) {
+                Text("Any Rating").tag(LibraryViewModel.RatingFilter?.none)
+                Divider()
+                ForEach((1...Rating.maxStars).reversed(), id: \.self) { stars in
+                    Text(Self.label(for: .atLeast(Rating(stars))))
+                        .tag(LibraryViewModel.RatingFilter?.some(.atLeast(Rating(stars))))
+                }
+                Divider()
+                Text("Unrated").tag(LibraryViewModel.RatingFilter?.some(.unrated))
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "star.fill")
+                Text(library.ratingFilter.map(Self.label) ?? "Rating")
+                    .fontWeight(.semibold)
+            }
+            .font(.callout.monospacedDigit())
+            .padding(.horizontal, 10)
+            .padding(.vertical, 3)
+            .foregroundStyle(isOn ? AnyShapeStyle(.white) : AnyShapeStyle(.secondary))
+            .background(
+                isOn ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.fill.tertiary),
+                in: Capsule()
+            )
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .focusable(false)
+        .help("Filter by star rating")
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private static func label(for filter: LibraryViewModel.RatingFilter) -> String {
+        switch filter {
+        case .unrated: "Unrated"
+        case .atLeast(let rating) where rating.rawValue == Rating.maxStars: String(repeating: "★", count: Rating.maxStars)
+        case .atLeast(let rating): String(repeating: "★", count: rating.rawValue) + "+"
+        }
     }
 }
 

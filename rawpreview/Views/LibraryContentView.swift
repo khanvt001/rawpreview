@@ -12,13 +12,15 @@ import SwiftUI
 /// | ← → ↑ ↓    | Move focus (↑↓ jump a row in the grid)  |
 /// | Space      | Toggle Grid ⇄ Single Image              |
 /// | Esc        | Back to Grid                            |
-/// | S          | Mark / unmark for copy                  |
+/// | Return, S  | Mark / unmark for copy                  |
 /// | 1–5, 0     | Set / clear star rating                 |
-/// | Return     | Copy marked files to the destination    |
+/// | ⌘Return    | Copy marked files to the destination    |
+/// | ⌘⌫         | Delete permanently, after confirming (all marked if focused one is marked) |
 /// | Z          | Single Image: toggle Fit ⇄ 100%         |
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
+/// | ⌘F         | Grid: search file names (Esc clears)    |
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
     @FocusState private var hasKeyFocus: Bool
@@ -26,7 +28,10 @@ struct LibraryContentView: View {
     var body: some View {
         @Bindable var library = library
 
-        Group {
+        // A ZStack, not a Group: Group would hand `.focusable()` to each mode's
+        // view separately, so swapping modes dropped key focus onto a view
+        // that was never focused while `hasKeyFocus` still read true.
+        ZStack {
             switch library.viewMode {
             case .grid: PhotoGridView()
             case .loupe: LoupeView()
@@ -39,8 +44,19 @@ struct LibraryContentView: View {
         // Take key focus back from the sidebar / toolbar whenever the user
         // interacts with the photos.
         .simultaneousGesture(TapGesture().onEnded { hasKeyFocus = true })
-        .onChange(of: library.focusedID) { hasKeyFocus = true }
-        .onChange(of: library.viewMode) { hasKeyFocus = true }
+        .onChange(of: library.focusedID) {
+            if !library.isSearchFocused { hasKeyFocus = true }
+        }
+        // Leaving the search box (Return / Esc) hands the keyboard back.
+        .onChange(of: library.isSearchFocused) { _, focused in
+            if !focused { hasKeyFocus = true }
+        }
+        .onChange(of: library.viewMode) {
+            // Re-assert after the swapped-in view is installed; setting true
+            // while it already reads true would be a no-op.
+            hasKeyFocus = false
+            Task { @MainActor in hasKeyFocus = true }
+        }
         .onAppear { hasKeyFocus = true }
         .toolbar {
             ToolbarItem(placement: .navigation) {
@@ -69,10 +85,22 @@ struct LibraryContentView: View {
     }
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
+        // The search box sits inside this view, so its keystrokes pass through
+        // here first; let it have them (digits, S, Space, arrows…) as text.
+        guard !library.isSearchFocused else { return .ignored }
+
         // ⌘+ is typed as ⌘⇧= on most layouts, which the View menu's ⌘= item
         // doesn't match, so catch it here.
         if press.modifiers.contains(.command), press.characters == "+", library.viewMode == .loupe {
             library.requestZoom(.zoomIn)
+            return .handled
+        }
+        if press.modifiers == .command, press.key == .delete {
+            if press.phase == .down { library.requestDeleteForFocused() }
+            return .handled
+        }
+        if press.modifiers == .command, press.key == .return {
+            if press.phase == .down { library.startCopy() }
             return .handled
         }
         // Leave other ⌘/⌃/⌥ combinations to menus and the system.
@@ -100,7 +128,7 @@ struct LibraryContentView: View {
             library.viewMode = .grid
             return .handled
         case .return:
-            library.startCopy()
+            library.toggleCheckedForFocused()
             return .handled
         default:
             break
