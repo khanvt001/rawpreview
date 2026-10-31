@@ -20,13 +20,18 @@ import SwiftUI
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
+/// | E          | Single Image: show / hide edit          |
 /// | P          | Single Image: show / hide presets       |
 /// | [ ]        | Single Image: previous / next preset    |
 /// | \          | Single Image: preset before / after     |
 /// | ⌘F         | Grid: search file names (Esc clears)    |
+/// | ?          | Keyboard Shortcuts window               |
+///
+/// ⌘Return and ⌘⌫ live in the Photo menu (`PhotoCommands`).
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
     @Environment(PresetStore.self) private var presets
+    @Environment(\.openWindow) private var openWindow
     @FocusState private var hasKeyFocus: Bool
 
     var body: some View {
@@ -109,14 +114,6 @@ struct LibraryContentView: View {
             library.requestZoom(.zoomIn)
             return .handled
         }
-        if press.modifiers == .command, press.key == .delete {
-            if press.phase == .down { library.requestDeleteForFocused() }
-            return .handled
-        }
-        if press.modifiers == .command, press.key == .return {
-            if press.phase == .down { library.startCopy() }
-            return .handled
-        }
         // Leave other ⌘/⌃/⌥ combinations to menus and the system.
         guard press.modifiers.isDisjoint(with: [.command, .control, .option]) else { return .ignored }
 
@@ -152,6 +149,9 @@ struct LibraryContentView: View {
         switch character {
         case "s":
             library.toggleCheckedForFocused()
+            return .handled
+        case "?":
+            openWindow(id: KeyboardShortcutsView.windowID)
             return .handled
         case "z" where library.viewMode == .loupe:
             library.requestZoom(.toggle)

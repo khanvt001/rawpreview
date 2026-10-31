@@ -11,7 +11,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0F7693213094CC1600C95388 /* rawpreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = rawpreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F7693213094CC1600C95388 /* rawpreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = rawpreview.app; path = RawPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */

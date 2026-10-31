@@ -571,6 +571,16 @@
         }
       }
     },
+    "Back to the grid": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quay lại lưới"
+          }
+        }
+      }
+    },
     "Before / after (\\)": {
       "localizations": {
         "vi": {
@@ -587,6 +597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bit Depth"
+          }
+        }
+      }
+    },
+    "Browse": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duyệt ảnh"
           }
         }
       }
@@ -861,6 +881,16 @@
         }
       }
     },
+    "Clear rating": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá xếp hạng"
+          }
+        }
+      }
+    },
     "Clear search": {
       "localizations": {
         "vi": {
@@ -999,12 +1029,32 @@
         }
       }
     },
+    "Copy Marked Files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép tệp đã đánh dấu"
+          }
+        }
+      }
+    },
     "Copy account number": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Chép số tài khoản"
+          }
+        }
+      }
+    },
+    "Copy marked files": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép tệp đã đánh dấu"
           }
         }
       }
@@ -1159,6 +1209,16 @@
         }
       }
     },
+    "Cull": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lọc ảnh"
+          }
+        }
+      }
+    },
     "Delete": {
       "localizations": {
         "vi": {
@@ -1185,6 +1245,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Xoá %lld tệp…"
+          }
+        }
+      }
+    },
+    "Delete (all marked, if this photo is marked)": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá (tất cả ảnh đã đánh dấu, nếu ảnh này được đánh dấu)"
           }
         }
       }
@@ -1225,6 +1295,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Xong"
+          }
+        }
+      }
+    },
+    "Double-click": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nhấp đúp"
           }
         }
       }
@@ -1475,6 +1555,16 @@
         }
       }
     },
+    "Fit ⇄ 100%": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vừa khung ⇄ 100%"
+          }
+        }
+      }
+    },
     "Focal Length": {
       "localizations": {
         "vi": {
@@ -1511,6 +1601,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lưới"
+          }
+        }
+      }
+    },
+    "Grid ⇄ Single Image": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lưới ⇄ Một ảnh"
           }
         }
       }
@@ -1635,6 +1735,16 @@
         }
       }
     },
+    "Info / Edit / Presets sidebar": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanh bên Thông tin / Chỉnh sửa / Presets"
+          }
+        }
+      }
+    },
     "Insert an SD card or choose a folder to start previewing.": {
       "localizations": {
         "vi": {
@@ -1661,6 +1771,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tệp JPEG, HEIF hoặc PNG theo kích thước bạn chọn, có áp dụng preset và chỉnh sửa của từng ảnh"
+          }
+        }
+      }
+    },
+    "Keyboard Shortcuts": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phím tắt"
           }
         }
       }
@@ -1755,6 +1875,16 @@
         }
       }
     },
+    "Mark / unmark for copy": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đánh dấu / bỏ đánh dấu để sao chép"
+          }
+        }
+      }
+    },
     "Mark for Copy": {
       "localizations": {
         "vi": {
@@ -1801,6 +1931,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chuyển %lld tệp vào Thùng rác?"
+          }
+        }
+      }
+    },
+    "Move between photos": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chuyển giữa các ảnh"
           }
         }
       }
@@ -2095,6 +2235,16 @@
         }
       }
     },
+    "Preset before / after": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trước / sau khi áp preset"
+          }
+        }
+      }
+    },
     "Presets": {
       "localizations": {
         "vi": {
@@ -2121,6 +2271,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Đang xem trước preset “%@” (gần đúng) · \\ để xem trước / sau"
+          }
+        }
+      }
+    },
+    "Previous / next preset": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset trước / sau"
           }
         }
       }
@@ -2225,6 +2385,16 @@
         }
       }
     },
+    "Reset a slider": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đặt lại thanh trượt"
+          }
+        }
+      }
+    },
     "Saved To": {
       "localizations": {
         "vi": {
@@ -2281,6 +2451,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tìm preset"
+          }
+        }
+      }
+    },
+    "Set star rating": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đặt số sao"
           }
         }
       }
@@ -2509,6 +2689,16 @@
         }
       }
     },
+    "Show Grid": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện lưới"
+          }
+        }
+      }
+    },
     "Show Preset": {
       "localizations": {
         "vi": {
@@ -2525,6 +2715,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mở thư mục preset"
+          }
+        }
+      }
+    },
+    "Show Single Image": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hiện một ảnh"
           }
         }
       }
@@ -2665,6 +2865,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chia vào thư mục theo ngày (YYYY-MM-DD)"
+          }
+        }
+      }
+    },
+    "Space": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space"
           }
         }
       }
@@ -2975,6 +3185,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thu nhỏ"
+          }
+        }
+      }
+    },
+    "Zoom around the pointer": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phóng quanh con trỏ"
+          }
+        }
+      }
+    },
+    "Zoom in / out / to fit": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Phóng to / thu nhỏ / vừa khung"
           }
         }
       }

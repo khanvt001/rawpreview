@@ -34,6 +34,7 @@ struct RawPreviewApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             ZoomCommands(library: library)
+            PhotoCommands(library: library)
             CommandGroup(replacing: .appInfo) {
                 Button("About RawPreview") { AppInfo.showAboutPanel() }
                 SupportMenuButton()
@@ -47,6 +48,11 @@ struct RawPreviewApp: App {
         Settings {
             SettingsView()
         }
+
+        Window("Keyboard Shortcuts", id: KeyboardShortcutsView.windowID) {
+            KeyboardShortcutsView()
+        }
+        .windowResizability(.contentSize)
 
         Window("Support RawPreview", id: SupportView.windowID) {
             SupportView()
