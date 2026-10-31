@@ -101,11 +101,13 @@ struct RootView: View {
             .navigationTitle(sourceURL.lastPathComponent)
             .navigationSubtitle(sourceURL.path(percentEncoded: false))
         } else {
-            ContentUnavailableView(
-                "No Source Selected",
-                systemImage: "sdcard",
-                description: Text("Insert an SD card or choose a folder to start previewing.")
-            )
+            ContentUnavailableView {
+                Label("No Source Selected", systemImage: "sdcard")
+            } description: {
+                Text("Insert an SD card or choose a folder to start previewing.")
+            } actions: {
+                Button("Open Folder…") { library.chooseFolder() }
+            }
             .navigationTitle("RawPreview")
         }
     }
@@ -115,9 +117,21 @@ private struct SourceSidebar: View {
     @Environment(LibraryViewModel.self) private var library
 
     var body: some View {
-        let selection = Binding(
-            get: { library.selectedVolumeID },
-            set: { library.selectVolume(id: $0) }
+        let recents = library.availableRecentFolders
+        // Volume and recent-folder rows are both tagged by URL.
+        let selection = Binding<URL?>(
+            get: {
+                if let source = library.sourceURL, recents.contains(source) { return source }
+                return library.selectedVolumeID
+            },
+            set: { url in
+                guard let url else { return }
+                if recents.contains(url) {
+                    library.openRecentFolder(url)
+                } else {
+                    library.selectVolume(id: url)
+                }
+            }
         )
         let cards = library.volumes.filter(\.isRemovable)
         let others = library.volumes.filter { !$0.isRemovable }
@@ -135,6 +149,21 @@ private struct SourceSidebar: View {
             }
             Section("Volumes") {
                 ForEach(others) { VolumeRow(volume: $0) }
+            }
+            if !recents.isEmpty {
+                Section("Recent Folders") {
+                    ForEach(recents, id: \.self) { url in
+                        Label(url.lastPathComponent, systemImage: "folder")
+                            .help(url.path(percentEncoded: false))
+                            .tag(url)
+                            .contextMenu {
+                                Button("Show in Finder") {
+                                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                                }
+                                Button("Remove from Recents") { library.removeRecentFolder(url) }
+                            }
+                    }
+                }
             }
         }
         .listStyle(.sidebar)

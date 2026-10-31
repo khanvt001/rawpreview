@@ -2185,12 +2185,32 @@
         }
       }
     },
+    "Recent Folders": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thư mục gần đây"
+          }
+        }
+      }
+    },
     "Remove Preset": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
             "value": "Xoá preset"
+          }
+        }
+      }
+    },
+    "Remove from Recents": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Xoá khỏi danh sách gần đây"
           }
         }
       }

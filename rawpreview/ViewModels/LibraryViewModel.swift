@@ -82,6 +82,9 @@ final class LibraryViewModel {
         didSet {
             guard sourceURL != oldValue else { return }
             searchText = ""
+            if let sourceURL {
+                UserDefaults.standard.set(sourceURL.path(percentEncoded: false), forKey: Self.lastSourceKey)
+            }
             rescan()
         }
     }
@@ -243,6 +246,17 @@ final class LibraryViewModel {
     @ObservationIgnored private var mountObservers: [any NSObjectProtocol] = []
 
     private static let hiddenExtensionsKey = "hiddenExtensions"
+    private static let lastSourceKey = "lastSource"
+    private static let recentFoldersKey = "recentFolders"
+    private static let recentFoldersLimit = 6
+
+    /// Folders opened with Open Folder…, newest first, for the sidebar.
+    private(set) var recentFolders: [URL] = (UserDefaults.standard.stringArray(forKey: "recentFolders") ?? [])
+        .map { URL(filePath: $0, directoryHint: .isDirectory) } {
+        didSet {
+            UserDefaults.standard.set(recentFolders.map { $0.path(percentEncoded: false) }, forKey: Self.recentFoldersKey)
+        }
+    }
 
     init() {
         hiddenExtensions = Set(UserDefaults.standard.stringArray(forKey: Self.hiddenExtensionsKey) ?? [])
@@ -262,11 +276,20 @@ final class LibraryViewModel {
 
     func refreshVolumes() async {
         volumes = await volumeService.mountedVolumes()
-        // Auto-pick the first card on launch / insert so the user can start immediately.
+        // Auto-pick the first card on launch / insert so the user can start
+        // immediately; with no card, reopen what was showing last time.
         if sourceURL == nil, let card = volumes.first(where: \.isRemovable) {
             sourceURL = card.preferredSourceURL
+        } else if sourceURL == nil, !hasRestoredSource,
+                  let path = UserDefaults.standard.string(forKey: Self.lastSourceKey),
+                  FileManager.default.fileExists(atPath: path) {
+            sourceURL = URL(filePath: path, directoryHint: .isDirectory)
         }
+        hasRestoredSource = true
     }
+
+    /// The last source is reopened at launch only, not every time a card goes.
+    @ObservationIgnored private var hasRestoredSource = false
 
     func selectVolume(id: VolumeInfo.ID?) {
         guard let volume = volumes.first(where: { $0.id == id }) else { return }
@@ -275,6 +298,34 @@ final class LibraryViewModel {
 
     func setSource(_ url: URL) {
         sourceURL = url
+    }
+
+    /// Recent folders that still exist (a drive may be disconnected).
+    var availableRecentFolders: [URL] {
+        recentFolders.filter { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }
+    }
+
+    /// Opens `url` and moves it to the top of the recent folders.
+    func openRecentFolder(_ url: URL) {
+        addRecentFolder(url)
+        sourceURL = recentFolders.first { $0.standardizedFileURL == url.standardizedFileURL } ?? url
+    }
+
+    func removeRecentFolder(_ url: URL) {
+        recentFolders.removeAll { $0 == url }
+    }
+
+    private func addRecentFolder(_ url: URL) {
+        let url = URL(filePath: url.standardizedFileURL.path(percentEncoded: false), directoryHint: .isDirectory)
+        // A volume (or its DCIM) already has its own row.
+        guard !volumes.contains(where: {
+            $0.url.standardizedFileURL == url.standardizedFileURL || $0.preferredSourceURL.standardizedFileURL == url.standardizedFileURL
+        }) else { return }
+        recentFolders.removeAll { $0 == url }
+        recentFolders.insert(url, at: 0)
+        if recentFolders.count > Self.recentFoldersLimit {
+            recentFolders.removeLast(recentFolders.count - Self.recentFoldersLimit)
+        }
     }
 
     /// Lets the user pick any folder. Not needed for permissions (the app is not
@@ -287,7 +338,7 @@ final class LibraryViewModel {
         panel.prompt = String(localized: "Open")
         panel.directoryURL = sourceURL ?? URL(filePath: "/Volumes", directoryHint: .isDirectory)
         if panel.runModal() == .OK, let url = panel.url {
-            sourceURL = url
+            openRecentFolder(url)
         }
     }
 
