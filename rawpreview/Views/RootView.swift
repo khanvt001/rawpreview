@@ -183,4 +183,5 @@ private struct VolumeRow: View {
 #Preview {
     RootView()
         .environment(LibraryViewModel())
+        .environment(PresetStore())
 }

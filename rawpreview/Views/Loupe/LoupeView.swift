@@ -8,6 +8,7 @@ import SwiftUI
 /// Single Image mode: zoomable image, filmstrip below, EXIF inspector on the right.
 struct LoupeView: View {
     @Environment(LibraryViewModel.self) private var library
+    @Environment(PresetStore.self) private var presets
 
     @State private var image: CGImage?
     @State private var isFullResolution = false
@@ -37,6 +38,9 @@ struct LoupeView: View {
         }
         .toolbar {
             ToolbarItem {
+                PresetMenu()
+            }
+            ToolbarItem {
                 Button("Delete", systemImage: "trash") {
                     library.requestDeleteForFocused()
                 }
@@ -52,9 +56,15 @@ struct LoupeView: View {
                 .help("Show / hide info (I)")
             }
         }
-        .task(id: library.focusedID) {
+        .task(id: LoadKey(photo: library.focusedID, preset: presets.activePreset?.revision)) {
             await load()
         }
+    }
+
+    /// Reload when the photo or the applied preset changes.
+    private struct LoadKey: Equatable {
+        let photo: PhotoItem.ID?
+        let preset: UUID?
     }
 
     @ViewBuilder
@@ -90,6 +100,7 @@ struct LoupeView: View {
                     isChecked: library.isChecked(item.id),
                     rating: library.rating(for: item.id),
                     zoom: image == nil ? nil : zoom,
+                    preset: presets.activePreset,
                     isLoadingFullResolution: image != nil && !isFullResolution
                 )
                 .padding(12)
@@ -125,11 +136,18 @@ struct LoupeView: View {
             return
         }
 
+        let preset = presets.activePreset
+
         // 1. Paint whatever is in memory (full image or a thumbnail) this frame.
+        //    Thumbnails take the preset inline, so a photo never flashes
+        //    unedited; a full image is shown only if its render is cached.
         let full = PreviewService.shared.cachedFullResolution(for: item.url)
+        let fullReady = full.flatMap { PresetRenderer.cached($0, preset: preset, url: item.url) }
         exif = MetadataService.shared.cachedExif(for: item.url)
-        image = full ?? PreviewService.shared.placeholder(for: item.url)
-        isFullResolution = full != nil
+        image = fullReady ?? PreviewService.shared.placeholder(for: item.url).map {
+            PresetRenderer.render($0, preset: preset, url: item.url)
+        }
+        isFullResolution = fullReady != nil
         isUnreadable = false
 
         // Screen-sharp previews for the next few photos are cheap (~25 ms each
@@ -140,26 +158,31 @@ struct LoupeView: View {
         if exif == nil {
             exif = await MetadataService.shared.exif(for: item.url)
         }
-        guard full == nil else { return }
+        guard fullReady == nil else { return }
 
         // 2. A 1024 px image looks sharp at Fit and is ready almost at once.
         if (image?.width ?? 0) < Self.navigationPixelSize,
            let preview = await ThumbnailService.shared.thumbnail(for: item.url, pixelSize: Self.navigationPixelSize),
            !Task.isCancelled {
-            image = preview
+            image = PresetRenderer.render(preview, preset: preset, url: item.url)
         }
 
         // 3. Full resolution (for zooming) only once navigation pauses. While an
         //    arrow key is held, each step cancels this task here, so photos you
-        //    skip past never pay for a 20 MP decode and swap.
-        try? await Task.sleep(for: .milliseconds(150))
-        guard !Task.isCancelled else { return }
+        //    skip past never pay for a 20 MP decode and swap. Already decoded
+        //    (only the preset changed): no reason to wait.
+        if full == nil {
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled else { return }
+        }
         PreviewService.shared.prefetch(library.neighbours(of: item.id, radius: 1).filter(\.kind.isImage).map(\.url))
 
         let loaded = await PreviewService.shared.fullResolution(for: item.url)
         guard !Task.isCancelled else { return }
         if let loaded {
-            image = loaded
+            let rendered = await PresetRenderer.renderDetached(loaded, preset: preset, url: item.url)
+            guard !Task.isCancelled else { return }
+            image = rendered
             isFullResolution = true
         } else if image == nil {
             isUnreadable = true
@@ -177,6 +200,7 @@ private struct LoupeInfoBar: View {
     let isChecked: Bool
     let rating: Rating
     let zoom: ZoomState?
+    let preset: DevelopPreset?
     let isLoadingFullResolution: Bool
 
     var body: some View {
@@ -198,6 +222,12 @@ private struct LoupeInfoBar: View {
                     .foregroundStyle(.secondary)
                     .help("Z or double-click: Fit / 100% · ⌘+ ⌘− ⌘0 · ⌘-scroll, ⌥-scroll or pinch to zoom")
             }
+            if let preset {
+                Divider().frame(height: 12)
+                Label(preset.title, systemImage: preset.unsupportedSettings.isEmpty ? "camera.filters" : "exclamationmark.triangle")
+                    .foregroundStyle(.secondary)
+                    .help(presetHelp(preset))
+            }
             if isLoadingFullResolution {
                 ProgressView()
                     .controlSize(.mini)
@@ -208,5 +238,13 @@ private struct LoupeInfoBar: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 7)
         .background(.regularMaterial, in: Capsule())
+    }
+
+    private func presetHelp(_ preset: DevelopPreset) -> String {
+        var help = "Previewing preset “\(preset.title)” (approximate) · \\ shows before / after"
+        if !preset.unsupportedSettings.isEmpty {
+            help += "\nNot previewed: \(preset.unsupportedSettings.joined(separator: ", "))"
+        }
+        return help
     }
 }

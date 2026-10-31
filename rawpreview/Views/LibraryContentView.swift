@@ -20,9 +20,11 @@ import SwiftUI
 /// | ⌘+ ⌘− ⌘0   | Single Image: zoom in / out / to fit    |
 /// | ⌘/⌥ scroll | Single Image: zoom around the cursor    |
 /// | I          | Single Image: show / hide info sidebar  |
+/// | \          | Single Image: preset before / after     |
 /// | ⌘F         | Grid: search file names (Esc clears)    |
 struct LibraryContentView: View {
     @Environment(LibraryViewModel.self) private var library
+    @Environment(PresetStore.self) private var presets
     @FocusState private var hasKeyFocus: Bool
 
     var body: some View {
@@ -144,6 +146,9 @@ struct LibraryContentView: View {
             return .handled
         case "i" where library.viewMode == .loupe:
             library.showsInspector.toggle()
+            return .handled
+        case "\\" where library.viewMode == .loupe && presets.selectedPreset != nil:
+            presets.isEnabled.toggle()
             return .handled
         default:
             break
