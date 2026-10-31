@@ -171,6 +171,16 @@
         }
       }
     },
+    "%lld marked · %@": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld đã đánh dấu · %2$@"
+          }
+        }
+      }
+    },
     "%lld of %lld files": {
       "localizations": {
         "vi": {
@@ -1885,6 +1895,16 @@
         }
       }
     },
+    "Mark every photo up to this one": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Đánh dấu mọi ảnh tới ảnh này"
+          }
+        }
+      }
+    },
     "Mark for Copy": {
       "localizations": {
         "vi": {
@@ -3245,6 +3265,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "“%@” + Chỉnh sửa"
+          }
+        }
+      }
+    },
+    "⇧-click": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧-nhấp"
+          }
+        }
+      }
+    },
+    "⇧-click a photo to mark every photo up to it": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧-nhấp vào một ảnh để đánh dấu mọi ảnh tới ảnh đó"
           }
         }
       }

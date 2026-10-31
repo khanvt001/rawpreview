@@ -71,8 +71,15 @@ struct ThumbnailCell: View {
             }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(Color.accentColor, lineWidth: isFocused ? 3 : 0)
+            // An outline with a light inner edge, so the focused tile reads
+            // differently from a marked one (accent tint and check badge).
+            if isFocused {
+                RoundedRectangle(cornerRadius: 6)
+                    .strokeBorder(Color.accentColor, lineWidth: 3)
+                RoundedRectangle(cornerRadius: 6)
+                    .inset(by: 3)
+                    .strokeBorder(.white.opacity(0.7), lineWidth: 1)
+            }
         }
         .contentShape(RoundedRectangle(cornerRadius: 6))
         .onHover { isHovering = $0 }

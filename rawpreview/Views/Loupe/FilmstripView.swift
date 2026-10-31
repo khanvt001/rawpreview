@@ -61,7 +61,11 @@ struct FilmstripView: View {
                     .id(item.id)
                     .contextMenu { PhotoContextMenu(item: item) }
                     .onTapGesture {
-                        library.focusedID = item.id
+                        if NSEvent.modifierFlags.contains(.shift) {
+                            library.markRange(to: item.id)
+                        } else {
+                            library.focusedID = item.id
+                        }
                     }
                 }
             }

@@ -157,7 +157,11 @@ struct PhotoGridView: View {
                 // Simultaneous so a single click focuses immediately instead
                 // of waiting out the double-click interval.
                 .simultaneousGesture(TapGesture().onEnded {
-                    library.focusedID = item.id
+                    if NSEvent.modifierFlags.contains(.shift) {
+                        library.markRange(to: item.id)
+                    } else {
+                        library.focusedID = item.id
+                    }
                 })
             }
         }
@@ -196,6 +200,9 @@ private struct GridStatusBar: View {
         HStack(spacing: 12) {
             Text("\(library.visibleItems.count) of \(library.items.count) files")
             if !library.checkedIDs.isEmpty {
+                Text("\(library.checkedIDs.count) marked · \(library.checkedBytes.formatted(.byteCount(style: .file)))")
+                    .foregroundStyle(.secondary)
+                    .help("⇧-click a photo to mark every photo up to it")
                 CopyButton()
             }
             Spacer()

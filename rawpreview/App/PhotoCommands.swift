@@ -102,6 +102,7 @@ struct KeyboardShortcutsView: View {
         ]),
         ShortcutGroup(title: "Cull", rows: [
             ("S  ↩", "Mark / unmark for copy"),
+            ("⇧-click", "Mark every photo up to this one"),
             ("1 – 5", "Set star rating"),
             ("0", "Clear rating"),
             ("⌘↩", "Copy marked files"),

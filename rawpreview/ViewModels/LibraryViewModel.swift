@@ -484,6 +484,20 @@ final class LibraryViewModel {
         }
     }
 
+    /// ⇧-click: marks every visible photo from the focused one to `id`
+    /// (both included), then focuses `id`, like a range selection.
+    func markRange(to id: PhotoItem.ID) {
+        guard let end = visibleItems.firstIndex(where: { $0.id == id }) else { return }
+        let start = focusedIndex ?? end
+        checkedIDs.formUnion(visibleItems[min(start, end)...max(start, end)].map(\.id))
+        focusedID = id
+    }
+
+    /// Total size of the marked files, for the status bar.
+    var checkedBytes: Int64 {
+        items.lazy.filter { self.checkedIDs.contains($0.id) }.reduce(0) { $0 + $1.fileSize }
+    }
+
     func rating(for id: PhotoItem.ID) -> Rating {
         ratings[PhotoItem.sidecarURL(for: id)] ?? .none
     }
