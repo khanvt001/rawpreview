@@ -171,25 +171,28 @@ private struct HistogramView: View {
 }
 
 /// Name and value above a slider that fills from zero, like Lightroom's.
+/// Clicking the value lets you type one.
 private struct AdjustmentSlider: View {
     let slider: LightAdjustments.Slider
     @Binding var value: Double
+
+    @Environment(LibraryViewModel.self) private var library
+    @State private var draft: String?
+    @FocusState private var isEditing: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text(slider.title)
                 Spacer()
-                Text(slider.format(value))
-                    .monospacedDigit()
-                    .foregroundStyle(value == 0 ? .secondary : .primary)
+                valueField
             }
             .font(.callout)
             CenteredSlider(value: $value, range: slider.range, step: slider.step)
         }
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { value = 0 }
-        .help("Drag to adjust · double-click to reset")
+        .help("Drag to adjust (⌥ for fine steps) · click the number to type one · double-click to reset")
         .accessibilityRepresentation {
             Slider(value: $value, in: slider.range, step: slider.step) {
                 Text(slider.title)
@@ -198,8 +201,56 @@ private struct AdjustmentSlider: View {
     }
 }
 
+extension AdjustmentSlider {
+    @ViewBuilder
+    private var valueField: some View {
+        if let draft {
+            TextField("Value", text: Binding(get: { draft }, set: { self.draft = $0 }))
+                .textFieldStyle(.plain)
+                .multilineTextAlignment(.trailing)
+                .monospacedDigit()
+                .frame(width: 56)
+                .focused($isEditing)
+                .onSubmit { commit() }
+                .onExitCommand { endEditing() }
+                .onChange(of: isEditing) { _, editing in
+                    // Typing goes through the photos' key handler first;
+                    // keep it from treating digits as ratings.
+                    library.isSearchFocused = editing
+                    if !editing { commit() }
+                }
+                .onAppear { isEditing = true }
+        } else {
+            Button(slider.format(value)) { draft = slider.format(value) }
+                .buttonStyle(.plain)
+                .monospacedDigit()
+                .foregroundStyle(value == 0 ? .secondary : .primary)
+                .focusable(false)
+        }
+    }
+
+    /// "+0,5", "-20" and "15" all work.
+    private func commit() {
+        guard let text = draft else { return }
+        let cleaned = text.trimmingCharacters(in: .whitespaces)
+            .replacingOccurrences(of: ",", with: ".")
+            .replacingOccurrences(of: "+", with: "")
+        if let typed = Double(cleaned) {
+            value = min(max((typed / slider.step).rounded() * slider.step, slider.range.lowerBound), slider.range.upperBound)
+        }
+        endEditing()
+    }
+
+    private func endEditing() {
+        draft = nil
+        library.isSearchFocused = false
+        library.returnKeyFocusToPhotos()
+    }
+}
+
 /// A track with a fill from zero to the thumb. Dragging moves the value by
-/// how far the pointer moves, so clicking the thumb never makes it jump.
+/// how far the pointer moves, so clicking the thumb never makes it jump;
+/// holding ⌥ moves it a tenth as fast.
 private struct CenteredSlider: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
@@ -236,7 +287,8 @@ private struct CenteredSlider: View {
                     .onChanged { drag in
                         let start = dragStart ?? value
                         dragStart = start
-                        let moved = start + Double(drag.translation.width / usable) * span
+                        let rate = NSEvent.modifierFlags.contains(.option) ? 0.1 : 1
+                        let moved = start + Double(drag.translation.width / usable) * span * rate
                         value = min(max((moved / step).rounded() * step, range.lowerBound), range.upperBound)
                     }
                     .onEnded { _ in dragStart = nil }

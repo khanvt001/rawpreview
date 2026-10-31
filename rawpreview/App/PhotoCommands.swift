@@ -14,6 +14,7 @@ import SwiftUI
 /// fire while typing in a search box. The Keyboard Shortcuts window lists them.
 struct PhotoCommands: Commands {
     let library: LibraryViewModel
+    let edits: EditStore
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
@@ -32,6 +33,19 @@ struct PhotoCommands: Commands {
                 }
             }
             .disabled(item == nil)
+
+            Divider()
+
+            Button("Copy Edits") {
+                if let item { edits.copyAdjustments(of: item.id) }
+            }
+            .keyboardShortcut("c", modifiers: [.command, .shift])
+            .disabled(item?.kind.isImage != true || library.isSearchFocused)
+            Button(pasteTitle(item)) {
+                if let item { edits.pasteAdjustments(onto: library.actionTargets(for: item)) }
+            }
+            .keyboardShortcut("v", modifiers: [.command, .shift])
+            .disabled(item == nil || edits.copiedAdjustments == nil || library.isSearchFocused)
 
             Divider()
 
@@ -81,6 +95,13 @@ struct PhotoCommands: Commands {
                 .keyboardShortcut("/", modifiers: .command)
         }
     }
+
+    /// "Paste Edits", or "Paste Edits to 12 Photos" when the focused photo
+    /// is marked and the paste goes to every marked one.
+    private func pasteTitle(_ item: PhotoItem?) -> String {
+        let count = item.map { library.actionTargets(for: $0).count } ?? 0
+        return count > 1 ? String(localized: "Paste Edits to \(count) Photos") : String(localized: "Paste Edits")
+    }
 }
 
 /// Every key the photo views understand, grouped like the menus.
@@ -118,6 +139,7 @@ struct KeyboardShortcutsView: View {
             ("H", "Hide / show the overlays"),
         ]),
         ShortcutGroup(title: "Edit", rows: [
+            ("⌘⇧C  ⌘⇧V", "Copy / paste edits"),
             ("Double-click", "Reset a slider"),
         ]),
     ]

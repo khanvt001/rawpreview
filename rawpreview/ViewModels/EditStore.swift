@@ -54,6 +54,21 @@ final class EditStore {
         !adjustments(for: id).isZero
     }
 
+    /// Photo ▸ Copy Edits, waiting to be pasted onto other photos.
+    private(set) var copiedAdjustments: LightAdjustments?
+
+    func copyAdjustments(of id: PhotoItem.ID) {
+        copiedAdjustments = adjustments(for: id)
+    }
+
+    /// Replaces the edits of `items` (a RAW+JPEG pair once) with the copied ones.
+    func pasteAdjustments(onto items: [PhotoItem]) {
+        guard let copiedAdjustments else { return }
+        for item in items where item.kind.isImage {
+            setAdjustments(copiedAdjustments, for: item.id)
+        }
+    }
+
     /// `preset` plus the adjustments of whichever of `items` have any, for
     /// copy and share; `nil` when that applies nothing.
     func exportLook(preset: DevelopPreset?, for items: [PhotoItem]) -> ExportLook? {

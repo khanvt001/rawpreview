@@ -34,7 +34,7 @@ struct RawPreviewApp: App {
         .windowToolbarStyle(.unified)
         .commands {
             ZoomCommands(library: library)
-            PhotoCommands(library: library)
+            PhotoCommands(library: library, edits: edits)
             CommandGroup(replacing: .appInfo) {
                 Button("About RawPreview") { AppInfo.showAboutPanel() }
                 SupportMenuButton()

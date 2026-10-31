@@ -979,6 +979,16 @@
         }
       }
     },
+    "Copy / paste edits": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép / dán chỉnh sửa"
+          }
+        }
+      }
+    },
     "Copy Cancelled": {
       "localizations": {
         "vi": {
@@ -995,6 +1005,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sao chép hoàn tất"
+          }
+        }
+      }
+    },
+    "Copy Edits": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sao chép chỉnh sửa"
           }
         }
       }
@@ -1309,12 +1329,12 @@
         }
       }
     },
-    "Drag to adjust · double-click to reset": {
+    "Drag to adjust (⌥ for fine steps) · click the number to type one · double-click to reset": {
       "localizations": {
         "vi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kéo để chỉnh · nhấp đúp để đặt lại"
+            "value": "Kéo để chỉnh (giữ ⌥ để chỉnh tinh) · nhấp vào con số để nhập · nhấp đúp để đặt lại"
           }
         }
       }
@@ -2201,6 +2221,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Thứ tự"
+          }
+        }
+      }
+    },
+    "Paste Edits": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dán chỉnh sửa"
+          }
+        }
+      }
+    },
+    "Paste Edits to %lld Photos": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dán chỉnh sửa vào %lld ảnh"
           }
         }
       }
@@ -3105,6 +3145,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Chưa xếp hạng"
+          }
+        }
+      }
+    },
+    "Value": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giá trị"
           }
         }
       }
