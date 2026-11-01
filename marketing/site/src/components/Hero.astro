@@ -40,9 +40,8 @@ const t = copy[lang].hero;
       >
         <source src={href(`video/rawpreview-intro-${lang}.mp4`)} type="video/mp4" />
       </video>
-      <button class="btn btn-secondary sound" type="button" hidden data-sound>
-        <Icon name="volume" size={18} />
-        {t.play}
+      <button class="sound" type="button" hidden data-sound aria-label={t.play} title={t.play}>
+        <Icon name="volume-x" size={22} />
       </button>
     </figure>
   </div>
@@ -135,10 +134,30 @@ const t = copy[lang].hero;
     aspect-ratio: 16 / 9;
   }
 
+  /* Muted-speaker icon over the video; restarts it with sound. */
   .sound {
     position: absolute;
-    left: var(--space-6);
-    bottom: var(--space-6);
+    left: var(--space-4);
+    bottom: var(--space-4);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--scrim);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .sound:hover {
+    background: rgba(10, 12, 15, 0.9);
+  }
+
+  .sound[hidden] {
+    display: none;
   }
 
   @media (max-width: 720px) {
@@ -152,10 +171,8 @@ const t = copy[lang].hero;
     }
 
     .sound {
-      left: var(--space-3);
-      bottom: var(--space-3);
-      padding: var(--space-2) 12px;
-      font-size: 14px;
+      left: var(--space-2);
+      bottom: var(--space-2);
     }
   }
 </style>
