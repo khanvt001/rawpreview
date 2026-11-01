@@ -3,10 +3,11 @@ import {AbsoluteFill} from 'remotion';
 import {linearTiming, TransitionSeries} from '@remotion/transitions';
 import {copy} from './copy';
 import {fonts, type Lang} from './fonts';
-import {Music, Sfx, beatBefore} from './audio';
+import {Music, PAIN_SECONDS, Sfx, beatBefore} from './audio';
 import {dip} from './dip';
 import {color, sec} from './tokens';
 import {Intro} from './scenes/Intro';
+import {Pain} from './scenes/Pain';
 import {PREVIEW_LIVE_FRAMES, PreviewLive} from './scenes/PreviewLive';
 import {LOOKS_LIVE_FRAMES, LooksLive} from './scenes/LooksLive';
 import {CULL_LIVE_FRAMES, CullLive} from './scenes/CullLive';
@@ -17,6 +18,7 @@ import {Outro} from './scenes/Outro';
 // Scene lengths in frames; transitions overlap neighbours by T frames.
 const scenes = [
   {C: Intro, n: sec(3.5)},
+  {C: Pain, n: sec(PAIN_SECONDS)},
   {C: PreviewLive, n: PREVIEW_LIVE_FRAMES},
   {C: LooksLive, n: LOOKS_LIVE_FRAMES},
   {C: CullLive, n: CULL_LIVE_FRAMES},

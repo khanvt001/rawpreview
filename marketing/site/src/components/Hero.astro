@@ -1,0 +1,178 @@
+---
+import {copy, type Lang} from '../i18n/copy';
+import {DOWNLOAD_URL, href} from '../site';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang].hero;
+---
+
+<section class="hero">
+  <div class="container">
+    <div class="intro">
+      <p class="label eyebrow">{t.eyebrow}</p>
+      <h1 class="display-xl">{t.title}</h1>
+      <p class="body-lg lede">{t.body}</p>
+      <div class="actions">
+        <a class="btn btn-primary" href={DOWNLOAD_URL}>
+          <Icon name="download" size={18} />
+          {t.cta}
+        </a>
+        <a class="btn btn-secondary" href="#how">{t.secondary}</a>
+      </div>
+      <p class="caption note">{t.note}</p>
+    </div>
+
+    <figure class="player" data-player>
+      <video
+        playsinline
+        muted
+        loop
+        controls
+        preload="metadata"
+        poster={href(`video/poster-${lang}.jpg`)}
+        aria-label={t.videoLabel}
+        width="1920"
+        height="1080"
+      >
+        <source src={href(`video/rawpreview-intro-${lang}.mp4`)} type="video/mp4" />
+      </video>
+      <button class="sound" type="button" hidden data-sound aria-label={t.play} title={t.play}>
+        <Icon name="volume-x" size={22} />
+      </button>
+    </figure>
+  </div>
+</section>
+
+<script>
+  // Plays muted on loop where motion is welcome; "Play with sound" restarts it with music and controls.
+  for (const player of document.querySelectorAll<HTMLElement>('[data-player]')) {
+    const video = player.querySelector('video')!;
+    const sound = player.querySelector<HTMLButtonElement>('[data-sound]')!;
+    video.controls = false;
+    sound.hidden = false;
+
+    // Plays only while the whole video is on screen (below the sticky header).
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const header = document.querySelector('header')?.offsetHeight ?? 0;
+      new IntersectionObserver(
+        ([entry]) => {
+          if (!video.muted) return;
+          if (entry.intersectionRatio >= 0.98) video.play().catch(() => {});
+          else video.pause();
+        },
+        {rootMargin: `-${header}px 0px 0px 0px`, threshold: [0, 0.98]},
+      ).observe(video);
+    }
+
+    sound.addEventListener('click', () => {
+      sound.hidden = true;
+      video.loop = false;
+      video.muted = false;
+      video.controls = true;
+      video.currentTime = 0;
+      video.play().catch(() => {});
+    });
+  }
+</script>
+
+<style>
+  .hero {
+    padding-top: var(--space-24);
+    padding-bottom: var(--space-16);
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 860px;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  h1 {
+    margin-top: var(--space-4);
+    text-wrap: balance;
+  }
+
+  .lede {
+    max-width: 600px;
+    margin-top: var(--space-6);
+    color: var(--ink-muted);
+    text-wrap: pretty;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-top: var(--space-8);
+  }
+
+  .note {
+    margin-top: var(--space-3);
+    color: var(--ink-muted);
+  }
+
+  .player {
+    position: relative;
+    margin-top: var(--space-16);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: #14171c;
+  }
+
+  video {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+  }
+
+  /* Muted-speaker icon over the video; restarts it with sound. */
+  .sound {
+    position: absolute;
+    left: var(--space-4);
+    bottom: var(--space-4);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--scrim);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .sound:hover {
+    background: rgba(10, 12, 15, 0.9);
+  }
+
+  .sound[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 720px) {
+    .hero {
+      padding-top: var(--space-16);
+    }
+
+    .player {
+      margin-top: var(--space-12);
+      border-radius: var(--radius-md);
+    }
+
+    .sound {
+      left: var(--space-2);
+      bottom: var(--space-2);
+    }
+  }
+</style>

@@ -1,0 +1,144 @@
+---
+import {Image} from 'astro:assets';
+import appIcon from '../assets/app-icon.png';
+import {copy, type Lang} from '../i18n/copy';
+import {DOWNLOAD_URL} from '../site';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang];
+---
+
+<section class="section" id="download">
+  <div class="container">
+    <div class="card">
+      <!-- The icon's sunset blocks, as on the video's end card. Decorative only. -->
+      <div class="blocks" aria-hidden="true">
+        <span class="b sun"></span>
+        <span class="b coral"></span>
+        <span class="b teal"></span>
+      </div>
+      <div class="content">
+        <Image src={appIcon} alt="" width={88} height={88} class="icon" />
+        <h2 class="display-lg">{t.final.title}</h2>
+        <div class="actions">
+          <a class="btn btn-primary" href={DOWNLOAD_URL}>
+            <Icon name="download" size={18} />
+            {t.hero.cta}
+          </a>
+        </div>
+        <p class="caption note">{t.hero.note}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .card {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-16);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+
+  .content {
+    position: relative;
+    max-width: 640px;
+  }
+
+  .icon {
+    width: 88px;
+    height: 88px;
+  }
+
+  h2 {
+    margin-top: var(--space-6);
+    text-wrap: balance;
+  }
+
+  .actions {
+    margin-top: var(--space-8);
+  }
+
+  .note {
+    margin-top: var(--space-3);
+    color: var(--ink-muted);
+  }
+
+  .blocks {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 34%;
+  }
+
+  .b {
+    position: absolute;
+  }
+
+  .sun {
+    top: 0;
+    right: 0;
+    width: 62%;
+    height: 42%;
+    background: var(--sun);
+  }
+
+  .coral {
+    top: 30%;
+    right: 34%;
+    width: 52%;
+    height: 40%;
+    background: var(--coral);
+  }
+
+  .teal {
+    bottom: 0;
+    right: 0;
+    width: 48%;
+    height: 44%;
+    background: var(--teal);
+  }
+
+  @media (max-width: 860px) {
+    .card {
+      padding: var(--space-8) var(--space-6) 160px;
+    }
+
+    .blocks {
+      top: auto;
+      left: 0;
+      width: auto;
+      height: 120px;
+    }
+
+    .sun {
+      top: auto;
+      bottom: 0;
+      left: 0;
+      right: auto;
+      width: 40%;
+      height: 70%;
+    }
+
+    .coral {
+      top: auto;
+      bottom: 30%;
+      right: auto;
+      left: 32%;
+      width: 34%;
+      height: 70%;
+    }
+
+    .teal {
+      width: 36%;
+      height: 100%;
+    }
+  }
+</style>

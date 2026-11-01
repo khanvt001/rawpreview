@@ -1,0 +1,434 @@
+---
+import {Image, Picture} from 'astro:assets';
+import adoxColorImplosion from '../assets/looks/adox-color-implosion.png';
+import adoxSilvermax21 from '../assets/looks/adox-silvermax-21.png';
+import original from '../assets/looks/original.png';
+import tokyoNeonNight from '../assets/looks/tokyo-neon-night.png';
+import {categoryCounts, copy, type Lang} from '../i18n/copy';
+import {EMULSION_PRESETS_URL, ESSENTIAL_PRESETS_URL, JSTANX_URL, PEVA3_URL} from '../site';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang].looks;
+
+// Preset names exactly as the app shows them; `category` indexes t.categories.
+const looks = [
+  {id: 'tokyo-neon-night', name: 'Tokyo Neon Night', category: 9, src: tokyoNeonNight},
+  {id: 'adox-silvermax-21', name: 'Adox Silvermax 21', category: 1, src: adoxSilvermax21},
+  {id: 'adox-color-implosion', name: 'Adox Color Implosion', category: 0, src: adoxColorImplosion},
+];
+const photo = {
+  formats: ['avif', 'webp'] as ('avif' | 'webp')[],
+  widths: [640, 938],
+  fallbackFormat: 'webp' as const,
+  // Loaded up front so switching looks never shows an empty frame.
+  loading: 'eager' as const,
+  sizes: '(max-width: 960px) 100vw, 760px',
+};
+---
+
+<section class="section looks" id="looks">
+  <div class="container">
+    <div class="section-head">
+      <p class="label eyebrow">{t.eyebrow}</p>
+      <h2 class="display-lg">{t.title}</h2>
+      <p class="body-lg">{t.body}</p>
+    </div>
+
+    <div class="stage">
+      <figure>
+        <div class="compare" style="--pos: 50%" data-compare>
+          <div class="after">
+            {looks.map((look, i) => <Picture src={look.src} alt={`DSC_6773.NEF · ${look.name}`} data-look={look.id} hidden={i > 0} {...photo} />)}
+          </div>
+          <div class="before">
+            <Picture src={original} alt={`DSC_6773.NEF · ${t.original}`} {...photo} />
+          </div>
+          <div class="handle" aria-hidden="true">
+            <span class="knob"><Icon name="move-horizontal" size={20} /></span>
+          </div>
+          <span class="tag tag-before label" aria-hidden="true">{t.original}</span>
+          <span class="tag tag-after label" aria-hidden="true" data-look-name>{looks[0].name}</span>
+          <input type="range" min="0" max="100" value="50" step="1" aria-label={t.compare} />
+        </div>
+        <figcaption>
+          <span class="exif">{t.exif}</span>
+          <span class="caption">{t.shotNote}</span>
+        </figcaption>
+      </figure>
+
+      <div class="side">
+        <fieldset class="chips">
+          <legend class="label">{t.choose}</legend>
+          {
+            looks.map((look, i) => (
+              <label class="chip">
+                <input class="visually-hidden" type="radio" name="look" value={look.id} checked={i === 0} />
+                <Image class="swatch" src={look.src} alt="" width={88} height={88} fit="cover" />
+                <span class="chip-text">
+                  <span class="name">{look.name}</span>
+                  <span class="cat">{t.categories[look.category]}</span>
+                </span>
+              </label>
+            ))
+          }
+        </fieldset>
+        <div class="import">
+          <h3 class="name">{t.import.title}</h3>
+          <p class="caption">{t.import.body}</p>
+          <p class="exts">{t.import.formats.map((ext) => <span class="file-badge">{ext}</span>)}</p>
+          <p class="caption more">
+            {t.import.more.lead} <a href={ESSENTIAL_PRESETS_URL}>{t.import.more.name}</a> {t.import.more.by}{' '}
+            <a href={JSTANX_URL}>{t.import.more.author}</a>{t.import.more.after}
+          </p>
+        </div>
+        <p class="caption approx">{t.approx}</p>
+      </div>
+    </div>
+
+    <div class="categories">
+      <h3 class="label">{t.categoriesTitle}</h3>
+      <ul>
+        {
+          t.categories.map((name, i) => (
+            <li>
+              <span>{name}</span>
+              <span class="exif">{categoryCounts[i]}</span>
+            </li>
+          ))
+        }
+      </ul>
+      <p class="caption credit">
+        {t.credit.lead} <a href={EMULSION_PRESETS_URL}>{t.credit.name}</a> {t.credit.by}{' '}
+        <a href={PEVA3_URL}>{t.credit.author}</a>{t.credit.after}
+      </p>
+    </div>
+  </div>
+</section>
+
+<script>
+  for (const compare of document.querySelectorAll<HTMLElement>('[data-compare]')) {
+    const range = compare.querySelector('input')!;
+    range.addEventListener('input', () => compare.style.setProperty('--pos', `${range.value}%`));
+
+    const section = compare.closest('section')!;
+    const name = compare.querySelector('[data-look-name]')!;
+    section.querySelectorAll<HTMLInputElement>('input[name="look"]').forEach((radio) =>
+      radio.addEventListener('change', () => {
+        compare.querySelectorAll<HTMLElement>('[data-look]').forEach((pic) => (pic.hidden = pic.dataset.look !== radio.value));
+        name.textContent = radio.closest('label')!.querySelector('.name')!.textContent;
+      }),
+    );
+  }
+</script>
+
+<style>
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .compare {
+    position: relative;
+    aspect-ratio: 938 / 626;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+    user-select: none;
+    touch-action: pan-y;
+  }
+
+  .compare :global(img) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .compare :global([hidden]) {
+    display: none;
+  }
+
+  .before {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+
+  .handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: var(--pos);
+    width: 2px;
+    margin-left: -1px;
+    background: #fff;
+    pointer-events: none;
+  }
+
+  .knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    translate: -50% -50%;
+    border-radius: var(--radius-pill);
+    background: #fff;
+    color: #161a20;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .tag {
+    position: absolute;
+    top: var(--space-4);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    background: var(--scrim);
+    color: #fff;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .tag-before {
+    left: var(--space-4);
+  }
+
+  .tag-after {
+    right: var(--space-4);
+  }
+
+  input[type='range'] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: ew-resize;
+  }
+
+  .compare:has(input:focus-visible) {
+    outline: 2px solid var(--amber-ink);
+    outline-offset: 3px;
+  }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--space-1) var(--space-4);
+    margin-top: var(--space-3);
+    color: var(--ink-muted);
+  }
+
+  /* Preset chips (design system: PresetChip) */
+
+  .chips {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  legend {
+    margin-bottom: var(--space-3);
+    padding: 0;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 14px var(--space-2) var(--space-2);
+    background: var(--surface-raised);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: border-color 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .chip:hover {
+    border-color: var(--line);
+  }
+
+  .chip:has(input:checked) {
+    border-color: var(--amber);
+  }
+
+  .chip:has(input:focus-visible) {
+    outline: 2px solid var(--amber-ink);
+    outline-offset: 2px;
+  }
+
+  .swatch {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-xs);
+    object-fit: cover;
+  }
+
+  .chip-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .name {
+    font: 500 15px/20px var(--font-sans);
+  }
+
+  .chip:has(input:checked) .name::after {
+    content: ' ✓';
+    color: var(--amber-ink);
+  }
+
+  .cat {
+    font: 600 11px/14px var(--font-sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal-ink);
+  }
+
+  .import {
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .import .caption {
+    margin-top: var(--space-1);
+    color: var(--ink-muted);
+  }
+
+  .import .exts {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .import .more {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  .import a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
+  .import .file-badge {
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    background: var(--surface-raised);
+  }
+
+  .approx {
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    color: var(--ink-muted);
+  }
+
+  /* Categories */
+
+  .categories {
+    margin-top: var(--space-16);
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--line);
+  }
+
+  .categories h3 {
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .categories ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0 var(--space-8);
+    margin-top: var(--space-4);
+  }
+
+  .categories li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--space-4);
+    padding-block: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .categories li .exif {
+    color: var(--ink-muted);
+  }
+
+  .credit {
+    margin-top: var(--space-6);
+    color: var(--ink-muted);
+  }
+
+  .credit a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
+  @media (max-width: 960px) {
+    .stage {
+      grid-template-columns: 1fr;
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    legend {
+      grid-column: 1 / -1;
+    }
+
+    legend {
+      float: left;
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .compare {
+      border-radius: var(--radius-md);
+    }
+
+    .tag {
+      top: var(--space-2);
+      font-size: 11px;
+      padding: 4px 8px;
+    }
+
+    .tag-before {
+      left: var(--space-2);
+    }
+
+    .tag-after {
+      right: var(--space-2);
+    }
+  }
+</style>

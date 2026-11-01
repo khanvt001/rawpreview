@@ -1,0 +1,90 @@
+---
+import {copy, rawFormats, type Lang} from '../i18n/copy';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang].formats;
+---
+
+<section class="section" id="formats">
+  <div class="container">
+    <div class="section-head">
+      <p class="label eyebrow">{t.eyebrow}</p>
+      <h2 class="display-lg">{t.title}</h2>
+      <p class="body-lg">{t.body}</p>
+    </div>
+
+    <ul class="makers">
+      {
+        rawFormats.map((f) => (
+          <li>
+            <span class="maker">{f.maker}</span>
+            <span class="exts">
+              {f.ext.map((e) => (
+                <span class="badge file-badge">{e}</span>
+              ))}
+            </span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="also">
+      <span class="label">{t.otherLabel}</span>
+      {t.other.map((o) => <span class="pill file-badge">{o}</span>)}
+    </p>
+  </div>
+</section>
+
+<style>
+  .makers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-3);
+  }
+
+  .makers li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: 14px var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .maker {
+    font: 500 15px/20px var(--font-sans);
+  }
+
+  .exts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-1);
+  }
+
+  .also {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: var(--space-6);
+  }
+
+  .also .label {
+    margin-right: var(--space-2);
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .pill {
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    background: var(--surface-raised);
+  }
+</style>
