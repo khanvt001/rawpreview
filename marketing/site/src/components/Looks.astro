@@ -5,6 +5,7 @@ import adoxSilvermax21 from '../assets/looks/adox-silvermax-21.png';
 import original from '../assets/looks/original.png';
 import tokyoNeonNight from '../assets/looks/tokyo-neon-night.png';
 import {categoryCounts, copy, type Lang} from '../i18n/copy';
+import {EMULSION_PRESETS_URL, ESSENTIAL_PRESETS_URL, JSTANX_URL, PEVA3_URL} from '../site';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -59,21 +60,33 @@ const photo = {
         </figcaption>
       </figure>
 
-      <fieldset class="chips">
-        <legend class="label">{t.choose}</legend>
-        {
-          looks.map((look, i) => (
-            <label class="chip">
-              <input class="visually-hidden" type="radio" name="look" value={look.id} checked={i === 0} />
-              <Image class="swatch" src={look.src} alt="" width={88} height={88} fit="cover" />
-              <span class="chip-text">
-                <span class="name">{look.name}</span>
-                <span class="cat">{t.categories[look.category]}</span>
-              </span>
-            </label>
-          ))
-        }
-      </fieldset>
+      <div class="side">
+        <fieldset class="chips">
+          <legend class="label">{t.choose}</legend>
+          {
+            looks.map((look, i) => (
+              <label class="chip">
+                <input class="visually-hidden" type="radio" name="look" value={look.id} checked={i === 0} />
+                <Image class="swatch" src={look.src} alt="" width={88} height={88} fit="cover" />
+                <span class="chip-text">
+                  <span class="name">{look.name}</span>
+                  <span class="cat">{t.categories[look.category]}</span>
+                </span>
+              </label>
+            ))
+          }
+        </fieldset>
+        <div class="import">
+          <h3 class="name">{t.import.title}</h3>
+          <p class="caption">{t.import.body}</p>
+          <p class="exts">{t.import.formats.map((ext) => <span class="file-badge">{ext}</span>)}</p>
+          <p class="caption more">
+            {t.import.more.lead} <a href={ESSENTIAL_PRESETS_URL}>{t.import.more.name}</a> {t.import.more.by}{' '}
+            <a href={JSTANX_URL}>{t.import.more.author}</a>{t.import.more.after}
+          </p>
+        </div>
+        <p class="caption approx">{t.approx}</p>
+      </div>
     </div>
 
     <div class="categories">
@@ -89,7 +102,8 @@ const photo = {
         }
       </ul>
       <p class="caption credit">
-        {t.credit}
+        {t.credit.lead} <a href={EMULSION_PRESETS_URL}>{t.credit.name}</a> {t.credit.by}{' '}
+        <a href={PEVA3_URL}>{t.credit.author}</a>{t.credit.after}
       </p>
     </div>
   </div>
@@ -290,6 +304,51 @@ const photo = {
     color: var(--teal-ink);
   }
 
+  .import {
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+
+  .import .caption {
+    margin-top: var(--space-1);
+    color: var(--ink-muted);
+  }
+
+  .import .exts {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+  }
+
+  .import .more {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+  }
+
+  .import a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
+  .import .file-badge {
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xs);
+    background: var(--surface-raised);
+  }
+
+  .approx {
+    margin-top: var(--space-3);
+    padding: var(--space-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    color: var(--ink-muted);
+  }
+
   /* Categories */
 
   .categories {
@@ -328,6 +387,11 @@ const photo = {
     color: var(--ink-muted);
   }
 
+  .credit a {
+    color: var(--ink);
+    text-underline-offset: 3px;
+  }
+
   @media (max-width: 960px) {
     .stage {
       grid-template-columns: 1fr;
@@ -336,6 +400,10 @@ const photo = {
     .chips {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    legend {
+      grid-column: 1 / -1;
     }
 
     legend {

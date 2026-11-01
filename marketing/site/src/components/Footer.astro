@@ -2,7 +2,7 @@
 import {Image} from 'astro:assets';
 import appIcon from '../assets/app-icon.png';
 import {copy, type Lang} from '../i18n/copy';
-import {homeOf} from '../site';
+import {EMULSION_PRESETS_URL, PEVA3_URL, homeOf} from '../site';
 
 interface Props {
   lang: Lang;
@@ -21,7 +21,10 @@ const t = copy[lang];
       </div>
     </div>
     <div class="credits caption muted">
-      <p>{t.looks.credit}</p>
+      <p>
+        {t.looks.credit.lead} <a href={EMULSION_PRESETS_URL}>{t.looks.credit.name}</a> {t.looks.credit.by}{' '}
+        <a href={PEVA3_URL}>{t.looks.credit.author}</a>{t.looks.credit.after}
+      </p>
       <p>{t.footer.music}</p>
     </div>
     <nav class="langs caption" aria-label="Language">
@@ -69,6 +72,11 @@ const t = copy[lang];
     display: flex;
     flex-direction: column;
     gap: var(--space-1);
+  }
+
+  .credits a {
+    color: var(--ink);
+    text-underline-offset: 3px;
   }
 
   .langs {

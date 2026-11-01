@@ -1,0 +1,136 @@
+---
+import {copy, type Lang} from '../i18n/copy';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang].why;
+---
+
+<section class="section why" id="why">
+  <div class="container">
+    <div class="section-head">
+      <p class="label eyebrow">{t.eyebrow}</p>
+      <h2 class="display-lg">{t.title}</h2>
+      <p class="body-lg">{t.body}</p>
+    </div>
+
+    <div class="compare">
+      <div class="card usual">
+        <h3 class="label">{t.usual.label}</h3>
+        <ol>
+          {
+            t.usual.steps.map((s, i) => (
+              <li>
+                <span class="exif n">{i + 1}</span>
+                <span class="body">{s}</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+      <div class="card ours">
+        <h3 class="label">{t.rawpreview.label}</h3>
+        <ol>
+          {
+            t.rawpreview.steps.map((s, i) => (
+              <li>
+                <span class="exif n">{i + 1}</span>
+                <span class="body">{s}</span>
+              </li>
+            ))
+          }
+        </ol>
+        <p class="caption note">{t.rawpreview.note}</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .why {
+    padding-top: var(--space-16);
+  }
+
+  .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-6);
+  }
+
+  .card {
+    padding: var(--space-8);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+  }
+
+  .usual {
+    background: transparent;
+    color: var(--ink-muted);
+  }
+
+  .ours {
+    background: var(--surface);
+  }
+
+  h3 {
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .ours h3 {
+    color: var(--teal-ink);
+  }
+
+  ol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+  }
+
+  li {
+    display: flex;
+    gap: var(--space-4);
+    align-items: baseline;
+  }
+
+  .n {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    translate: 0 -1px;
+  }
+
+  .ours .n {
+    background: var(--surface-raised);
+    color: var(--ink);
+  }
+
+  .ours .body {
+    color: var(--ink);
+  }
+
+  .note {
+    margin-top: var(--space-6);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line);
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 860px) {
+    .compare {
+      grid-template-columns: 1fr;
+    }
+
+    .card {
+      padding: var(--space-6);
+    }
+  }
+</style>

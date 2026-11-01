@@ -4,6 +4,11 @@ import type {Lang} from './i18n/copy';
 // (a GitHub release asset, a CDN link to the notarized DMG…).
 export const DOWNLOAD_URL: string = import.meta.env.PUBLIC_DOWNLOAD_URL || '#download';
 
+export const EMULSION_PRESETS_URL = 'https://github.com/peva3/EmulsionPresets';
+export const PEVA3_URL = 'https://github.com/peva3';
+export const ESSENTIAL_PRESETS_URL = 'https://github.com/jstanx/essential-lightroom-presets';
+export const JSTANX_URL = 'https://github.com/jstanx';
+
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 // A path inside the site, respecting the base path.

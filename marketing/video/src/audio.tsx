@@ -4,10 +4,12 @@ import {FPS, sec} from './tokens';
 
 // "Fun is Fun" by Aylex (freetouse.com): 125 BPM; the drop's first kick
 // hits at 9.11 s.
-const BEAT = 60 / 125;
+export const BEAT = 60 / 125;
 const DROP_IN_TRACK = 9.11;
-// The drop arrives as the Preview scene finishes fading in.
-export const DROP_AT = sec(3.5);
+// The drop arrives as the Preview scene finishes fading in: after the 3.5 s
+// intro and the usual-way scene, less the 0.8 s cut between them.
+export const PAIN_SECONDS = 0.8 + 11 * BEAT;   // so the cut into it lands on a beat too
+export const DROP_AT = sec(3.5 + PAIN_SECONDS - 0.8);
 const TRACK_START = DROP_IN_TRACK - DROP_AT / FPS;
 
 // The frame of the last beat at or before `frame`.

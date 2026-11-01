@@ -56,12 +56,17 @@ const t = copy[lang].hero;
     video.controls = false;
     sound.hidden = false;
 
+    // Plays only while the whole video is on screen (below the sticky header).
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      new IntersectionObserver(([entry]) => {
-        if (!video.muted) return;
-        if (entry.isIntersecting) video.play().catch(() => {});
-        else video.pause();
-      }).observe(video);
+      const header = document.querySelector('header')?.offsetHeight ?? 0;
+      new IntersectionObserver(
+        ([entry]) => {
+          if (!video.muted) return;
+          if (entry.intersectionRatio >= 0.98) video.play().catch(() => {});
+          else video.pause();
+        },
+        {rootMargin: `-${header}px 0px 0px 0px`, threshold: [0, 0.98]},
+      ).observe(video);
     }
 
     sound.addEventListener('click', () => {

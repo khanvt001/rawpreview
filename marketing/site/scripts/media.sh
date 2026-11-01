@@ -41,5 +41,5 @@ for lang in en vi; do
     -c:v libx264 -preset slow -crf 24 -pix_fmt yuv420p -c:a aac -b:a 128k \
     -movflags +faststart "$VIDEO/rawpreview-intro-$lang.mp4"
 done
-frame "$OUT/rawpreview-intro-en.mp4" 0.5 "$VIDEO/poster-en.jpg"
-frame "$OUT/rawpreview-intro-vi.mp4" 0.5 "$VIDEO/poster-vi.jpg"
+frame "$OUT/rawpreview-intro-en.mp4" 2.2 "$VIDEO/poster-en.jpg"
+frame "$OUT/rawpreview-intro-vi.mp4" 2.2 "$VIDEO/poster-vi.jpg"

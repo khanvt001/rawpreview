@@ -9,22 +9,41 @@ const categoryCounts = [83, 58, 20, 52, 25, 40, 33, 20, 25, 32, 23, 20, 20];
 
 const en = {
   meta: {
-    title: 'RawPreview — Cull before you copy',
+    title: 'RawPreview — From the card to your phone',
     description:
-      'A free macOS app for photographers: insert an SD card, see every RAW instantly, try 451 film looks, mark the keepers, copy only those, eject.',
+      'A free macOS app for photographers: insert an SD card, mark the keepers, apply a preset and AirDrop them to your phone as JPEGs. No catalog, no import, no export.',
   },
-  nav: {how: 'How it works', looks: 'Film looks', formats: 'Formats', faq: 'FAQ', download: 'Download'},
+  nav: {how: 'How it works', looks: 'Presets', formats: 'Formats', faq: 'FAQ', download: 'Download'},
   theme: {toDark: 'Switch to Darkroom (dark)', toLight: 'Switch to Daylight (light)'},
   langSwitch: {label: 'Tiếng Việt', short: 'VI'},
   hero: {
     eyebrow: 'Free for macOS',
-    title: 'Cull before you copy.',
-    body: 'Insert the card and every RAW opens instantly. Try film looks, mark the keepers, copy only those, eject. No import, no catalog.',
+    title: 'From the card to your phone.',
+    body: 'No card adapter for your phone? Insert the card into your Mac, mark the keepers, apply a preset and AirDrop them as JPEGs. No catalog, no import, no export.',
     cta: 'Download for macOS',
     note: 'Free · macOS 14 Sonoma or later',
     secondary: 'See how it works',
-    videoLabel: 'RawPreview product tour, 48 seconds',
+    videoLabel: 'RawPreview product tour, 54 seconds',
     play: 'Play with sound',
+  },
+  why: {
+    eyebrow: 'Why it exists',
+    title: 'A few photos to your phone shouldn’t need an editor.',
+    body: 'RawPreview started as a fix for one chore. With no card adapter for the phone, getting a few shots onto it meant opening a full photo editor first.',
+    usual: {
+      label: 'The usual way',
+      steps: [
+        'Create a catalog in Capture One or Lightroom and import the card',
+        'Cull inside the editor',
+        'Export the keepers as JPEG or PNG',
+        'Find the exported files and AirDrop them',
+      ],
+    },
+    rawpreview: {
+      label: 'With RawPreview',
+      steps: ['Insert the card', 'Mark the keepers, try a preset', 'AirDrop as JPEGs, look baked in, GPS removed'],
+      note: 'Nothing to import, nothing left behind on your Mac.',
+    },
   },
   how: {
     eyebrow: 'How it works',
@@ -52,7 +71,7 @@ const en = {
         id: 'share',
         step: '3 / 4 · Share',
         title: 'Send to your phone.',
-        body: 'AirDrop the keepers as JPEGs with the film look baked in and GPS removed. Ready to post before you get home.',
+        body: 'AirDrop the keepers as JPEGs with the preset baked in and GPS removed. Ready to post before you get home.',
         readout: 'AirDrop · 3 JPEGs',
         readoutLabel: 'Tokyo Neon Night baked in, GPS removed',
         alt: 'The AirDrop sheet over the grid, showing the photos sent to an iPhone.',
@@ -70,14 +89,22 @@ const en = {
     ],
   },
   looks: {
-    eyebrow: 'Film looks',
-    title: '451 film looks.',
-    body: 'Hover a look to preview it on the photo, click to apply it. Press \\ to compare with the original. Your own Lightroom presets (.lrtemplate or .xmp) import too.',
+    eyebrow: 'Presets',
+    title: '451 presets, plus yours.',
+    body: 'Film stocks, cinematic grades, black & white, seasonal and social looks: 13 categories built in. Hover a preset to preview it on the photo, click to apply it, press \\ to compare with the original.',
+    import: {
+      title: 'Bring your own presets',
+      body: 'Import Lightroom develop presets, or whole folders of them. They show up under Imported, above the built-in ones.',
+      formats: ['.xmp', '.lrtemplate'],
+      // Linked, not bundled: the author asks that the preset files aren't redistributed.
+      more: {lead: 'Want more? Download', name: 'Essential Lightroom Presets', by: 'by', author: 'Jason Stanley', after: ', 12 free everyday presets, then import them.'},
+    },
+    approx: 'Presets are approximate. RawPreview reads a preset’s develop settings and renders them with its own engine, not Adobe’s, so the result comes close to Lightroom but won’t match it pixel for pixel. Enough to set the mood for a share; finish in your editor when the photo matters.',
     original: 'Original',
-    compare: 'Compare the original with the film look',
-    choose: 'Choose a look',
+    compare: 'Compare the original with the preset',
+    choose: 'Choose a preset',
     exif: 'DSC_6773.NEF · ƒ/6.3 · 1/100 s · ISO 200',
-    shotNote: 'Rendered by RawPreview from the NEF on the card.',
+    shotNote: 'Rendered by RawPreview from the NEF on the card (approximate preview).',
     categoriesTitle: '13 categories',
     categories: [
       'Color Negative Film',
@@ -94,7 +121,7 @@ const en = {
       'Photographer Styles',
       'Video LUT Reference',
     ],
-    credit: 'Built-in looks from Emulsion Presets by peva3, MIT License.',
+    credit: {lead: 'The built-in presets come from', name: 'Emulsion Presets', by: 'by', author: 'peva3', after: ', shared under the MIT License. Thank you.'},
   },
   formats: {
     eyebrow: 'Formats',
@@ -108,15 +135,17 @@ const en = {
     eyebrow: 'FAQ',
     title: 'Before you insert the card.',
     items: [
+      {q: 'Why not just use Lightroom or Capture One?', a: 'Use them for the edits that matter. To get today’s shots onto your phone, they need a catalog, an import and an export first. RawPreview skips all three.'},
+      {q: 'Will a Lightroom preset look exactly as it does in Lightroom?', a: 'Close, not exact. RawPreview applies the preset’s develop settings with its own rendering, so colours and contrast can differ a little from Adobe’s. Treat presets as a quick mood for sharing, not a final grade.'},
       {q: 'Does it import or move my photos?', a: 'No. Whether it is a card or a folder picked with Open Folder…, RawPreview reads the files where they are. Nothing is copied until you choose Copy Marked Files.'},
       {q: 'Will Lightroom see my ratings?', a: 'Yes. Stars are saved in .xmp sidecars next to each RAW, which Lightroom Classic and Capture One read.'},
-      {q: 'Can I use my own presets?', a: 'Yes. Import Lightroom develop presets (.lrtemplate or .xmp), or whole folders of them, and they sit beside the 451 built-in looks.'},
+      {q: 'Can I use my own presets?', a: 'Yes. Import Lightroom develop presets (.lrtemplate or .xmp), or whole folders of them, and they sit beside the 451 built-in presets. Free packs such as Essential Lightroom Presets by Jason Stanley work too.'},
       {q: 'Can it delete rejects from the card?', a: 'Only if you turn on Delete on memory cards in Settings, and it asks before deleting anything.'},
       {q: 'What do I need?', a: 'A Mac with macOS 14 Sonoma or later. RawPreview is free.'},
     ],
   },
   final: {
-    title: 'Insert the card. Mark the keepers. Copy only those.',
+    title: 'Insert the card. Mark the keepers. AirDrop them.',
   },
   footer: {
     tagline: 'A free macOS app for photographers.',
@@ -128,22 +157,41 @@ type Copy = typeof en;
 
 const vi: Copy = {
   meta: {
-    title: 'RawPreview — Lọc ảnh trước khi sao chép',
+    title: 'RawPreview — Từ thẻ nhớ sang điện thoại',
     description:
-      'Ứng dụng macOS miễn phí cho người chụp ảnh: cắm thẻ SD, xem ngay mọi ảnh RAW, thử 451 preset màu phim, đánh dấu tấm ưng ý, chỉ sao chép những tấm đó rồi tháo thẻ.',
+      'Ứng dụng macOS miễn phí cho người chụp ảnh: cắm thẻ SD, chọn tấm ưng ý, áp preset rồi AirDrop sang điện thoại dưới dạng JPEG. Không catalog, không import, không export.',
   },
-  nav: {how: 'Cách dùng', looks: 'Màu phim', formats: 'Định dạng', faq: 'Hỏi đáp', download: 'Tải về'},
+  nav: {how: 'Cách dùng', looks: 'Preset', formats: 'Định dạng', faq: 'Hỏi đáp', download: 'Tải về'},
   theme: {toDark: 'Chuyển sang Darkroom (tối)', toLight: 'Chuyển sang Daylight (sáng)'},
   langSwitch: {label: 'English', short: 'EN'},
   hero: {
     eyebrow: 'Miễn phí cho macOS',
-    title: 'Lọc trước, chép sau.',
-    body: 'Cắm thẻ là xem ngay mọi ảnh RAW. Thử màu phim, đánh dấu tấm ưng ý, chỉ sao chép những tấm đó rồi tháo thẻ. Không import, không catalog.',
+    title: 'Từ thẻ nhớ sang điện thoại.',
+    body: 'Không có đầu đọc thẻ cho điện thoại? Cắm thẻ vào Mac, chọn tấm ưng ý, áp preset rồi AirDrop sang điện thoại dưới dạng JPEG. Không catalog, không import, không export.',
     cta: 'Tải về cho macOS',
     note: 'Miễn phí · macOS 14 Sonoma trở lên',
     secondary: 'Xem cách dùng',
-    videoLabel: 'Video giới thiệu RawPreview, 48 giây',
+    videoLabel: 'Video giới thiệu RawPreview, 54 giây',
     play: 'Phát kèm âm thanh',
+  },
+  why: {
+    eyebrow: 'Vì sao có RawPreview',
+    title: 'Gửi vài tấm ảnh sang điện thoại, đâu cần mở phần mềm chỉnh ảnh.',
+    body: 'RawPreview bắt đầu từ một việc vặt. Không có đầu đọc thẻ cho điện thoại, muốn đưa vài tấm vừa chụp sang máy là phải mở cả một phần mềm chỉnh ảnh.',
+    usual: {
+      label: 'Cách thường làm',
+      steps: [
+        'Tạo catalog trong Capture One hoặc Lightroom rồi import thẻ',
+        'Lọc ảnh trong phần mềm đó',
+        'Export tấm ưng ý ra JPEG hoặc PNG',
+        'Tìm tệp vừa export rồi AirDrop',
+      ],
+    },
+    rawpreview: {
+      label: 'Với RawPreview',
+      steps: ['Cắm thẻ', 'Chọn tấm ưng ý, thử preset', 'AirDrop dưới dạng JPEG, đã áp màu, tự ẩn GPS'],
+      note: 'Không import, không để lại gì trên máy Mac.',
+    },
   },
   how: {
     eyebrow: 'Cách dùng',
@@ -171,7 +219,7 @@ const vi: Copy = {
         id: 'share',
         step: '3 / 4 · Chia sẻ',
         title: 'Gửi nhanh qua điện thoại.',
-        body: 'Gửi tấm ưng ý qua AirDrop dưới dạng JPEG, đã áp màu phim và tự ẩn GPS. Có ảnh đăng ngay tại buổi chụp.',
+        body: 'Gửi tấm ưng ý qua AirDrop dưới dạng JPEG, đã áp preset và tự ẩn GPS. Có ảnh đăng ngay tại buổi chụp.',
         readout: 'AirDrop · 3 JPEG',
         readoutLabel: 'Áp màu Tokyo Neon Night · Tự ẩn GPS',
         alt: 'Bảng AirDrop phía trên lưới ảnh, ảnh đã được gửi sang iPhone.',
@@ -189,14 +237,21 @@ const vi: Copy = {
     ],
   },
   looks: {
-    eyebrow: 'Màu phim',
-    title: '451 preset màu phim.',
-    body: 'Lướt chuột qua một preset để xem thử trên ảnh, nhấp để áp màu. Nhấn \\ để so với ảnh gốc. Nhập được cả preset Lightroom của bạn (.lrtemplate hoặc .xmp).',
+    eyebrow: 'Preset',
+    title: '451 preset, thêm cả của bạn.',
+    body: 'Màu phim, màu điện ảnh, đen trắng, theo mùa, theo mạng xã hội: 13 nhóm có sẵn. Lướt chuột qua một preset để xem thử trên ảnh, nhấp để áp, nhấn \\ để so với ảnh gốc.',
+    import: {
+      title: 'Dùng preset của riêng bạn',
+      body: 'Nhập preset develop của Lightroom, hoặc cả thư mục preset. Chúng nằm ở mục Imported, phía trên các preset có sẵn.',
+      formats: ['.xmp', '.lrtemplate'],
+      more: {lead: 'Muốn thêm? Tải', name: 'Essential Lightroom Presets', by: 'của', author: 'Jason Stanley', after: ', 12 preset miễn phí cho ảnh thường ngày, rồi nhập vào.'},
+    },
+    approx: 'Màu chỉ gần đúng. RawPreview đọc thông số develop của preset rồi tự dựng ảnh bằng engine riêng, không phải engine của Adobe, nên kết quả gần giống Lightroom chứ không trùng khớp từng điểm ảnh. Đủ để tạo không khí khi chia sẻ; ảnh quan trọng thì hoàn thiện trong phần mềm chỉnh ảnh.',
     original: 'Ảnh gốc',
-    compare: 'So sánh ảnh gốc với màu phim',
-    choose: 'Chọn màu phim',
+    compare: 'So sánh ảnh gốc với preset',
+    choose: 'Chọn preset',
     exif: 'DSC_6773.NEF · ƒ/6.3 · 1/100 s · ISO 200',
-    shotNote: 'RawPreview dựng trực tiếp từ tệp NEF trên thẻ.',
+    shotNote: 'RawPreview dựng trực tiếp từ tệp NEF trên thẻ (xem trước gần đúng).',
     categoriesTitle: '13 nhóm',
     categories: [
       'Phim âm bản màu',
@@ -213,7 +268,7 @@ const vi: Copy = {
       'Phong cách nhiếp ảnh gia',
       'LUT video',
     ],
-    credit: 'Preset có sẵn lấy từ Emulsion Presets của peva3, giấy phép MIT.',
+    credit: {lead: 'Các preset có sẵn được lấy từ', name: 'Emulsion Presets', by: 'của', author: 'peva3', after: ', chia sẻ theo giấy phép MIT. Xin cảm ơn tác giả.'},
   },
   formats: {
     eyebrow: 'Định dạng',
@@ -227,15 +282,17 @@ const vi: Copy = {
     eyebrow: 'Hỏi đáp',
     title: 'Trước khi cắm thẻ.',
     items: [
+      {q: 'Sao không dùng luôn Lightroom hay Capture One?', a: 'Hãy dùng chúng cho những bức cần chỉnh kỹ. Còn để đưa ảnh vừa chụp sang điện thoại, chúng bắt bạn tạo catalog, import rồi export trước. RawPreview bỏ qua cả ba bước đó.'},
+      {q: 'Preset Lightroom có lên màu y hệt trong Lightroom không?', a: 'Gần giống, không y hệt. RawPreview áp thông số develop của preset bằng cách dựng ảnh riêng, nên màu và độ tương phản có thể lệch đôi chút so với Adobe. Hãy coi preset là cách tạo không khí nhanh để chia sẻ, không phải bản chỉnh màu cuối cùng.'},
       {q: 'Ứng dụng có import hay di chuyển ảnh của tôi không?', a: 'Không. Dù là thẻ nhớ hay thư mục mở bằng Open Folder…, RawPreview đọc ảnh ngay tại chỗ. Chưa có gì được sao chép cho tới khi bạn chọn Copy Marked Files.'},
       {q: 'Lightroom có thấy số sao tôi chấm không?', a: 'Có. Số sao được lưu trong tệp .xmp nằm cạnh mỗi ảnh RAW, Lightroom Classic và Capture One đều đọc được.'},
-      {q: 'Tôi dùng preset riêng được không?', a: 'Được. Nhập preset develop của Lightroom (.lrtemplate hoặc .xmp), hoặc cả thư mục preset, chúng sẽ nằm cạnh 451 preset có sẵn.'},
+      {q: 'Tôi dùng preset riêng được không?', a: 'Được. Nhập preset develop của Lightroom (.lrtemplate hoặc .xmp), hoặc cả thư mục preset, chúng sẽ nằm cạnh 451 preset có sẵn. Các bộ miễn phí như Essential Lightroom Presets của Jason Stanley cũng dùng được.'},
       {q: 'Ứng dụng có xoá ảnh hỏng trên thẻ được không?', a: 'Chỉ khi bạn bật Delete on memory cards trong Settings, và ứng dụng luôn hỏi lại trước khi xoá.'},
       {q: 'Máy tôi cần gì?', a: 'Một máy Mac chạy macOS 14 Sonoma trở lên. RawPreview miễn phí.'},
     ],
   },
   final: {
-    title: 'Cắm thẻ. Chọn tấm ưng\u00a0ý. Chỉ chép những tấm đó.',
+    title: 'Cắm thẻ. Chọn tấm ưng\u00a0ý. AirDrop sang điện thoại.',
   },
   footer: {
     tagline: 'Ứng dụng macOS miễn phí cho người chụp ảnh.',
