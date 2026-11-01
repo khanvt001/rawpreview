@@ -1,0 +1,94 @@
+---
+import {copy, type Lang} from '../i18n/copy';
+import Icon from './Icon.astro';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang].faq;
+---
+
+<section class="section" id="faq">
+  <div class="container layout">
+    <div class="section-head">
+      <p class="label eyebrow">{t.eyebrow}</p>
+      <h2 class="display-lg">{t.title}</h2>
+    </div>
+
+    <div class="items">
+      {
+        t.items.map((item, i) => (
+          <details open={i === 0}>
+            <summary class="title">
+              <span>{item.q}</span>
+              <Icon name="plus" size={22} class="toggle" />
+            </summary>
+            <p class="body-lg">{item.a}</p>
+          </details>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--space-12);
+    align-items: start;
+  }
+
+  details {
+    border-bottom: 1px solid var(--line);
+  }
+
+  details:first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    padding-block: var(--space-6);
+    font-size: 21px;
+    line-height: 28px;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary :global(.toggle) {
+    flex: none;
+    color: var(--ink-muted);
+    transition: rotate 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  details[open] summary :global(.toggle) {
+    rotate: 45deg;
+  }
+
+  details p {
+    padding-bottom: var(--space-6);
+    color: var(--ink-muted);
+    max-width: 60ch;
+  }
+
+  @media (max-width: 860px) {
+    .layout {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    summary {
+      font-size: 18px;
+      line-height: 24px;
+    }
+  }
+</style>

@@ -1,0 +1,30 @@
+---
+import type {Lang} from '../i18n/copy';
+import Base from '../layouts/Base.astro';
+import Faq from './Faq.astro';
+import Final from './Final.astro';
+import Footer from './Footer.astro';
+import Formats from './Formats.astro';
+import Header from './Header.astro';
+import Hero from './Hero.astro';
+import Looks from './Looks.astro';
+import Steps from './Steps.astro';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+---
+
+<Base lang={lang}>
+  <Header lang={lang} />
+  <main>
+    <Hero lang={lang} />
+    <Steps lang={lang} />
+    <Looks lang={lang} />
+    <Formats lang={lang} />
+    <Faq lang={lang} />
+    <Final lang={lang} />
+  </main>
+  <Footer lang={lang} />
+</Base>

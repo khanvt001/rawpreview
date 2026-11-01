@@ -1,0 +1,55 @@
+---
+import {getImage} from 'astro:assets';
+import '../styles/global.css';
+import appIcon from '../assets/app-icon.png';
+import {copy, type Lang} from '../i18n/copy';
+import {homeOf, href} from '../site';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang];
+
+const favicon = await getImage({src: appIcon, width: 64, format: 'png'});
+const touchIcon = await getImage({src: appIcon, width: 180, format: 'png'});
+const absolute = (path: string) => (Astro.site ? new URL(path, Astro.site).href : path);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <meta name="theme-color" content="#14171c" />
+    {Astro.site && <link rel="canonical" href={absolute(homeOf(lang))} />}
+    {Astro.site && <link rel="alternate" hreflang="en" href={absolute(homeOf('en'))} />}
+    {Astro.site && <link rel="alternate" hreflang="vi" href={absolute(homeOf('vi'))} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:image" content={absolute(href(`video/poster-${lang}.jpg`))} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/png" href={favicon.src} />
+    <link rel="apple-touch-icon" href={touchIcon.src} />
+
+    <!-- Darkroom unless the visitor picked Daylight before. Runs before paint. -->
+    <script is:inline>
+      try {
+        if (localStorage.getItem('theme') === 'light') document.documentElement.dataset.theme = 'light';
+      } catch {}
+    </script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap"
+    />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

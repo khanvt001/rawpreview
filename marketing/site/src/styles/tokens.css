@@ -1,0 +1,124 @@
+/* RawPreview — generated from src/design/tokens.json by scripts/tokens.mjs. Do not edit. */
+
+:root {
+  --ground: #14171c;
+  --surface: #1d2128;
+  --surface-raised: #272c35;
+  --slate: #3e4551;
+  --line: #353c47;
+  --ink: #eef0f3;
+  --ink-muted: #99a2ae;
+  --amber: #f4a447;
+  --on-amber: #1b1206;
+  --amber-ink: #f4a447;
+  --sun: #fe9f81;
+  --coral: #e6686c;
+  --rose: #dd699e;
+  --teal: #5a958f;
+  --teal-ink: #7cbab3;
+  --check: #5ace7d;
+  --danger: #ff7a6b;
+  --scrim: rgba(10, 12, 15, 0.72);
+  --shadow-window: 0 32px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Instrument Sans", -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --ground: #f2f3f5;
+  --surface: #ffffff;
+  --surface-raised: #e6e8ec;
+  --line: #d3d7dd;
+  --ink: #161a20;
+  --ink-muted: #596270;
+  --amber-ink: #9a5708;
+  --teal-ink: #2f6f69;
+  --check: #1a7238;
+  --danger: #b3322a;
+  --shadow-window: 0 32px 80px rgba(22, 26, 32, 0.22), 0 0 0 1px rgba(22, 26, 32, 0.08);
+  color-scheme: light;
+}
+
+.display-xl {
+  font-family: var(--font-display);
+  font-size: 88px;
+  line-height: 0.92;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.display-lg {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.body-lg {
+  font-family: var(--font-sans);
+  font-size: 19px;
+  line-height: 30px;
+  font-weight: 400;
+}
+
+.body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 26px;
+  font-weight: 400;
+}
+
+.caption {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.exif {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.file-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}

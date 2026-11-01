@@ -1,0 +1,88 @@
+---
+import {Image} from 'astro:assets';
+import appIcon from '../assets/app-icon.png';
+import {copy, type Lang} from '../i18n/copy';
+import {homeOf} from '../site';
+
+interface Props {
+  lang: Lang;
+}
+const {lang} = Astro.props;
+const t = copy[lang];
+---
+
+<footer class="footer">
+  <div class="container row">
+    <div class="brand">
+      <Image src={appIcon} alt="" width={28} height={28} />
+      <div>
+        <p class="name">RawPreview</p>
+        <p class="caption muted">{t.footer.tagline}</p>
+      </div>
+    </div>
+    <div class="credits caption muted">
+      <p>{t.looks.credit}</p>
+      <p>{t.footer.music}</p>
+    </div>
+    <nav class="langs caption" aria-label="Language">
+      <a href={homeOf('en')} hreflang="en" lang="en" aria-current={lang === 'en' ? 'page' : undefined}>English</a>
+      <a href={homeOf('vi')} hreflang="vi" lang="vi" aria-current={lang === 'vi' ? 'page' : undefined}>Tiếng Việt</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    padding-block: var(--space-12);
+    border-top: 1px solid var(--line);
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--space-6) var(--space-12);
+  }
+
+  .brand {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+  }
+
+  .brand img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .name {
+    font: 800 16px/20px var(--font-display);
+    letter-spacing: -0.02em;
+  }
+
+  .muted {
+    color: var(--ink-muted);
+  }
+
+  .credits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+  .langs {
+    display: flex;
+    gap: var(--space-4);
+  }
+
+  .langs a {
+    color: var(--ink-muted);
+    text-decoration: none;
+  }
+
+  .langs a:hover,
+  .langs a[aria-current] {
+    color: var(--ink);
+  }
+</style>
