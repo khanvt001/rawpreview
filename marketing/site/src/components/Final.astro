@@ -30,7 +30,7 @@ const t = copy[lang];
             {t.hero.cta}
           </a>
         </div>
-        <p class="caption note">{t.hero.note}</p>
+        <p class="caption note">{t.hero.note} · <a href="#install">{t.hero.firstLaunch}</a></p>
       </div>
     </div>
   </div>
@@ -68,6 +68,11 @@ const t = copy[lang];
   .note {
     margin-top: var(--space-3);
     color: var(--ink-muted);
+  }
+
+  .note a {
+    color: var(--ink);
+    text-underline-offset: 3px;
   }
 
   .blocks {
