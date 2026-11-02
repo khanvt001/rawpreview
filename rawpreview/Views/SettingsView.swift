@@ -11,10 +11,25 @@ struct SettingsView: View {
     @AppStorage(LibraryViewModel.cardDeleteErasesKey) private var cardDeleteErases = true
     @AppStorage(ShareService.maxPixelSizeKey) private var shareLongEdge = 2048
     @AppStorage("gridShowsInfo") private var gridShowsInfo = true
+    @AppStorage(ProcessingSource.defaultsKey) private var processingSource = ProcessingSource.embedded.rawValue
+    @AppStorage(ProcessingSource.fallbackKey) private var rawFallbacks = Data()
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         Form {
+            Section {
+                Picker("Image processing source", selection: $processingSource) {
+                    ForEach(ProcessingSource.allCases, id: \.rawValue) { source in
+                        Text(source.title).tag(source.rawValue)
+                    }
+                }
+                if !ProcessingConfiguration.decodeFallbacks(rawFallbacks).isEmpty {
+                    Button("Reset RAW Fallback Choices") { rawFallbacks = Data() }
+                }
+            } footer: {
+                Text("Presets, edits and exports use this source. Fast uses the camera JPEG for paired shots. RAW can look different; unsupported files require choosing a fallback. Copying or sharing originals keeps the original files.")
+                    .foregroundStyle(.secondary)
+            }
             Section {
                 Picker("Delete on memory cards", selection: $cardDeleteErases) {
                     Text("Erase at once").tag(true)

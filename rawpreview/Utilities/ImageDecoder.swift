@@ -7,8 +7,8 @@ import CoreGraphics
 import Foundation
 import ImageIO
 
-/// The one place that turns a file into pixels. Synchronous: callers run it on
-/// background tasks.
+/// ImageIO preview/raster decoding. Full RAW development uses DevelopDecoder.
+/// Synchronous: callers run it on background tasks.
 ///
 /// Measured on Nikon Z 50 NEFs (5568×3712, Apple silicon):
 ///
@@ -23,6 +23,22 @@ import ImageIO
 /// ARWs embed 1616 px). For JPEG/HEIF the embedded EXIF thumbnail is a useless
 /// 160×120, so those go straight to decoding the image (≈40 ms for 512 px).
 nonisolated enum ImageDecoder {
+    /// Processing source, without display conversion. For a RAW this asks
+    /// ImageIO only for an existing embedded image, never a RAW fallback.
+    static func embeddedSource(_ url: URL, maxPixelSize: Int?) -> CGImage? {
+        guard MediaKind(fileExtension: url.pathExtension) == .raw else {
+            return decode(url, maxPixelSize: maxPixelSize, forDisplay: false)
+        }
+        guard !Task.isCancelled,
+              let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+        else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize ?? longestSide(of: source) ?? 100_000,
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
     /// - Parameters:
     ///   - maxPixelSize: Longest side of the result; `nil` for the image's full
     ///     pixel dimensions (100% zoom).
@@ -30,7 +46,10 @@ nonisolated enum ImageDecoder {
     ///     it costs the main thread nothing (see `DisplayColorSpace`). Pass
     ///     `false` for images that are written to files.
     static func decode(_ url: URL, maxPixelSize: Int?, forDisplay: Bool = true) -> CGImage? {
-        guard let image = decodeOriginal(url, maxPixelSize: maxPixelSize) else { return nil }
+        guard !Task.isCancelled else { return nil }
+        let timing = PipelineMetrics.begin("Decode")
+        defer { PipelineMetrics.end(timing) }
+        guard let image = decodeOriginal(url, maxPixelSize: maxPixelSize), !Task.isCancelled else { return nil }
         return forDisplay ? prepareForDisplay(image) : image
     }
 
@@ -90,6 +109,8 @@ nonisolated enum ImageDecoder {
     /// colour-matched on the main thread when it first appears (measured ~80 ms
     /// → <1 ms for a 20 MP photo on an external monitor).
     static func prepareForDisplay(_ image: CGImage) -> CGImage {
+        let timing = PipelineMetrics.begin("DisplayConversion")
+        defer { PipelineMetrics.end(timing) }
         guard !Task.isCancelled,
               let context = CGContext(
                   data: nil,

@@ -79,16 +79,15 @@ nonisolated struct CopyService: Sendable {
     }
 
     static let maxConcurrentCopies = 3
-    /// Each render holds a decoded and a rendered full-size image (~200 MB
-    /// for 24 MP), and keeps the GPU and a core busy; two overlap file reads
-    /// with rendering without letting memory run away.
-    static let maxConcurrentRenders = 2
+    /// File output is sequential and shares the GPU permit with previews.
+    static let maxConcurrentRenders = 1
 
     /// Write each shot as an image file instead of copying the originals.
     struct Export: Sendable {
         /// `nil`, or ignored when `settings.appliesLook` is off: as shot.
         let look: ExportLook?
         let settings: ExportSettings
+        var processing: ProcessingConfiguration = .current
 
         /// What the progress and summary say, e.g. "PNG with Edits applied".
         var title: String {
@@ -104,8 +103,8 @@ nonisolated struct CopyService: Sendable {
         enum Action: Sendable {
             case copy
             case skipExisting
-            /// Export an image file with this preset applied (`nil`: as shot).
-            case render(DevelopPreset?, ExportSettings)
+            /// Export using immutable source/develop state captured at planning.
+            case render(DevelopState, ExportSettings)
         }
 
         let source: URL
@@ -156,12 +155,15 @@ nonisolated struct CopyService: Sendable {
                 let destination = Self.resolveExportDestination(
                     for: item, extension: export.settings.format.fileExtension, in: itemFolder, reserved: &reserved
                 )
-                let preset = export.settings.appliesLook ? export.look?.preset(for: item) : nil
+                let state = export.settings.appliesLook
+                    ? export.look?.state(for: item, processing: export.processing) ?? DevelopState(processing: export.processing, preset: nil)
+                    : DevelopState(processing: export.processing, preset: nil)
+                let source = PhotoSourceResolver.resolveNow(item.url, processing: export.processing)
                 plans.append(Plan(
-                    source: item.url,
+                    source: source,
                     destination: destination,
                     size: item.fileSize,
-                    action: .render(preset, export.settings),
+                    action: .render(state, export.settings),
                     isRaw: false,
                     sourceSidecar: nil
                 ))
@@ -274,6 +276,7 @@ nonisolated struct CopyService: Sendable {
     private enum Outcome: Sendable {
         case copied(Int64)
         case skipped
+        case cancelled
         case failed(String)
     }
 
@@ -321,6 +324,8 @@ nonisolated struct CopyService: Sendable {
                         != plan.source.deletingPathExtension().lastPathComponent { report.renamed += 1 }
                 case .skipped:
                     report.skipped += 1
+                case .cancelled:
+                    report.wasCancelled = true
                 case .failed(let reason):
                     report.failures.append(.init(fileName: plan.source.lastPathComponent, reason: reason))
                 }
@@ -333,7 +338,7 @@ nonisolated struct CopyService: Sendable {
         }
 
         report.exported = exported.keys.sorted().compactMap { exported[$0] }
-        report.wasCancelled = Task.isCancelled && progress.completedFiles < plans.count
+        report.wasCancelled = report.wasCancelled || (Task.isCancelled && progress.completedFiles < plans.count)
         report.duration = ContinuousClock.now - start
         let withPreset = plans.contains { if case .render = $0.action { true } else { false } }
         Analytics.track("photos_copied", ["count": report.copied, "with_preset": withPreset])
@@ -342,11 +347,11 @@ nonisolated struct CopyService: Sendable {
 
     /// Copies one file (and its sidecar) on a TaskGroup child.
     private static func perform(_ plan: Plan, rating: Rating?) async -> Outcome {
-        guard !Task.isCancelled else { return .failed(String(localized: "Cancelled")) }
+        guard !Task.isCancelled else { return .cancelled }
         let fileManager = FileManager.default
         do {
-            if case let .render(preset, settings) = plan.action {
-                return .copied(try await render(plan, preset: preset, settings: settings, rating: rating))
+            if case let .render(state, settings) = plan.action {
+                return .copied(try await render(plan, state: state, settings: settings, rating: rating))
             }
             var outcome = Outcome.skipped
             if case .copy = plan.action {
@@ -366,6 +371,7 @@ nonisolated struct CopyService: Sendable {
             try await copySidecar(for: plan, rating: rating)
             return outcome
         } catch {
+            if Task.isCancelled || error is CancellationError { return .cancelled }
             return .failed(error.localizedDescription)
         }
     }
@@ -373,34 +379,28 @@ nonisolated struct CopyService: Sendable {
     /// Decodes at the chosen size, applies the preset (if any) and writes the
     /// file; returns its size. Off the cooperative pool's threads: one takes
     /// several hundred ms.
-    private static func render(_ plan: Plan, preset: DevelopPreset?, settings: ExportSettings, rating: Rating?) async throws -> Int64 {
-        try await Task.detached(priority: .userInitiated) {
+    private static func render(_ plan: Plan, state: DevelopState, settings: ExportSettings, rating: Rating?) async throws -> Int64 {
+        let result: Result<Int64, any Error>? = await RenderCoordinator.run(.export) {
+            Result { try renderNow(plan, state: state, settings: settings, rating: rating) }
+        }
+        guard let result else { throw CancellationError() }
+        return try result.get()
+    }
+
+    private static func renderNow(_ plan: Plan, state: DevelopState, settings: ExportSettings, rating: Rating?) throws -> Int64 {
+        try Task.checkCancellation()
+        let partial = plan.destination.appendingPathExtension("partial")
+        try? FileManager.default.removeItem(at: partial)
+        do {
+            try ExportService.write(source: plan.source, to: partial, state: state, settings: settings, rating: rating)
             try Task.checkCancellation()
-            let name = plan.source.lastPathComponent
-            // The same picture the loupe shows: for a RAW, the camera's
-            // full-size embedded preview. sRGB-tagged, not the screen's space.
-            guard let image = ImageDecoder.decode(plan.source, maxPixelSize: settings.longEdge, forDisplay: false) else {
-                throw ExportError.decodeFailed(name)
-            }
-            try Task.checkCancellation()
-            guard let rendered = preset.map({ PresetRenderer.export(image, preset: $0, sixteenBit: settings.writes16Bit) }) ?? image else {
-                throw CancellationError()
-            }
-            let partial = plan.destination.appendingPathExtension("partial")
+            try FileManager.default.moveItem(at: partial, to: plan.destination)
+        } catch {
             try? FileManager.default.removeItem(at: partial)
-            do {
-                try ImageWriter.write(
-                    rendered, to: partial, type: settings.format.type, original: plan.source,
-                    quality: settings.quality, keepsLocation: settings.keepsLocation, rating: rating
-                )
-                try FileManager.default.moveItem(at: partial, to: plan.destination)
-            } catch {
-                try? FileManager.default.removeItem(at: partial)
-                throw error
-            }
-            let size = try FileManager.default.attributesOfItem(atPath: plan.destination.path(percentEncoded: false))[.size] as? Int64
-            return size ?? 0
-        }.value
+            throw error
+        }
+        let size = try FileManager.default.attributesOfItem(atPath: plan.destination.path(percentEncoded: false))[.size] as? Int64
+        return size ?? 0
     }
 
     enum ExportError: LocalizedError {

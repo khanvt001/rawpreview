@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import Combine
 
 /// The sidebar's Presets page: the applied preset (its name opens a menu of
 /// every preset) with a before / after switch, a search box, then a grid of
@@ -18,6 +19,9 @@ struct PresetInspector: View {
     @AppStorage("presetPreviews") private var showsPreviews = true
     /// The focused photo, small, for the tiles to render from.
     @State private var source: PresetTile.Source?
+    @State private var sourceRevision = 0
+    @AppStorage(ProcessingSource.defaultsKey) private var sourceSetting = ProcessingSource.embedded.rawValue
+    @AppStorage(ProcessingSource.fallbackKey) private var fallbackData = Data()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -30,15 +34,20 @@ struct PresetInspector: View {
             Divider()
             bottomBar
         }
-        .task(id: showsPreviews ? library.focusedID : nil) {
+        .onReceive(NotificationCenter.default.publisher(for: DevelopService.sourceReady).receive(on: DispatchQueue.main)) { notification in
+            if let url = notification.object as? URL, url == source?.url { sourceRevision += 1 }
+        }
+        .task(id: SourceKey(photo: showsPreviews ? library.focusedID : nil, source: sourceSetting,
+                            fallbacks: fallbackData, revision: sourceRevision)) {
             guard showsPreviews, let item = library.focusedItem, item.kind.isImage else {
                 source = nil
                 return
             }
-            if let image = await ThumbnailService.shared.thumbnail(for: item.url, pixelSize: PresetTile.sourcePixelSize),
-               !Task.isCancelled {
-                source = PresetTile.Source(image: image, url: item.url)
-            }
+            let configuration = ProcessingConfiguration(source: ProcessingSource(rawValue: sourceSetting) ?? .embedded,
+                                                        embeddedFallbacks: ProcessingConfiguration.decodeFallbacks(fallbackData))
+            let resolved = await PhotoSourceResolver.resolve(item.url, processing: configuration)
+            guard !Task.isCancelled else { return }
+            source = PresetTile.Source(url: resolved, revision: sourceRevision)
         }
         // Never leave the loupe stuck on a hovered preset.
         .onDisappear { store.hoveredID = nil }
@@ -65,6 +74,13 @@ struct PresetInspector: View {
         } message: {
             Text(store.loadError ?? "")
         }
+    }
+
+    private struct SourceKey: Equatable {
+        let photo: PhotoItem.ID?
+        let source: String
+        let fallbacks: Data
+        let revision: Int
     }
 
     private var presetGrid: some View {
@@ -232,11 +248,9 @@ private struct ImportTile: View {
 /// it previews it on the photo.
 private struct PresetTile: View {
     struct Source: Equatable {
-        let image: CGImage
         let url: URL
+        let revision: Int
     }
-
-    static let sourcePixelSize = 240
 
     let preset: DevelopPreset?
     let isSelected: Bool
@@ -245,6 +259,10 @@ private struct PresetTile: View {
     let select: () -> Void
 
     @Environment(PresetStore.self) private var store
+    @Environment(EditStore.self) private var edits
+    @Environment(LibraryViewModel.self) private var library
+    @AppStorage(ProcessingSource.defaultsKey) private var sourceSetting = ProcessingSource.embedded.rawValue
+    @AppStorage(ProcessingSource.fallbackKey) private var fallbackData = Data()
     @State private var isHovered = false
     @State private var thumbnail: CGImage?
     @State private var hoverTask: Task<Void, Never>?
@@ -253,10 +271,17 @@ private struct PresetTile: View {
         let source: Source?
         let preset: UUID?
         let amount: Double
+        let light: LightAdjustments
+        let sourceSetting: String
+        let fallbacks: Data
     }
 
     var body: some View {
-        Button(action: select) {
+        Button {
+            hoverTask?.cancel()
+            store.hoveredID = nil
+            select()
+        } label: {
             VStack(alignment: .leading, spacing: 4) {
                 if source != nil {
                     thumbnailView
@@ -277,7 +302,11 @@ private struct PresetTile: View {
             hover(hovering)
         }
         .help(preset.map { [$0.title, $0.summary].compactMap(\.self).joined(separator: "\n") } ?? String(localized: "The photo as shot"))
-        .task(id: RenderKey(source: source, preset: preset?.revision, amount: amount)) {
+        .onDisappear {
+            hover(false)
+        }
+        .task(id: RenderKey(source: source, preset: preset?.revision, amount: amount,
+                            light: edits.adjustments(for: library.focusedID), sourceSetting: sourceSetting, fallbacks: fallbackData)) {
             await render()
         }
     }
@@ -300,15 +329,16 @@ private struct PresetTile: View {
             thumbnail = nil
             return
         }
-        guard let preset else {
-            thumbnail = source.image
-            return
+        let configuration = ProcessingConfiguration(source: ProcessingSource(rawValue: sourceSetting) ?? .embedded,
+                                                      embeddedFallbacks: ProcessingConfiguration.decodeFallbacks(fallbackData))
+        let state = DevelopState(processing: configuration, preset: preset?.atAmount(amount),
+                                 light: edits.adjustments(for: library.focusedID))
+        do {
+            let rendered = try await DevelopService.tile(url: source.url, state: state)
+            if !Task.isCancelled { thumbnail = rendered }
+        } catch {
+            if !Task.isCancelled { thumbnail = nil }
         }
-        let scaled = preset.atAmount(amount)
-        let rendered = await Task.detached(priority: .utility) {
-            PresetRenderer.render(source.image, preset: scaled, url: source.url)
-        }.value
-        if !Task.isCancelled { thumbnail = rendered }
     }
 
     /// Waits a moment so sweeping across the grid doesn't flash every preset.
@@ -317,7 +347,7 @@ private struct PresetTile: View {
         guard let id = preset?.id else { return }
         if hovering {
             hoverTask = Task {
-                try? await Task.sleep(for: .milliseconds(250))
+                try? await Task.sleep(for: .milliseconds(180))
                 guard !Task.isCancelled else { return }
                 store.hoveredID = id
             }
@@ -334,7 +364,7 @@ private struct PresetTile: View {
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 0)
-                if let preset, !preset.unsupportedSettings.isEmpty {
+                if let preset, preset.compatibility.hasInvalidData {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.caption2)
                         .foregroundStyle(.orange)
@@ -385,11 +415,15 @@ private struct GridHeader: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background {
-                // Only collapsible headers look (and highlight) like a row you can click.
-                if isExpanded != nil {
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(isHovered ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary))
-                }
+                // Opaque only inside the rounded row, so presets scrolling
+                // under a pinned header don't show through it. A rectangle
+                // around the row showed as a darker band: the sidebar is a
+                // translucent material no solid colour matches.
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                // Only collapsible headers highlight like a row you can click.
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isHovered && isExpanded != nil ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary))
             }
             .contentShape(RoundedRectangle(cornerRadius: 7))
         }
@@ -398,9 +432,38 @@ private struct GridHeader: View {
         .disabled(isExpanded == nil)
         .onHover { isHovered = $0 }
         .padding(.vertical, 3)
-        // Opaque around the rounded row, so presets scrolling under a pinned
-        // header don't show through.
-        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+/// What the preset's settings map to. The header above the grid doesn't
+/// scroll, so a long list scrolls inside a capped height instead of pushing
+/// the inspector taller than the window.
+private struct CompatibilityDetails: View {
+    let preset: DevelopPreset
+
+    private static let maxHeight: CGFloat = 120
+    @State private var contentHeight: CGFloat = 0
+
+    var body: some View {
+        ScrollView(.vertical) {
+            VStack(alignment: .leading, spacing: 4) {
+                if !preset.compatibility.labels(for: .supported).isEmpty {
+                    Text("Applied: \(preset.compatibility.labels(for: .supported).joined(separator: ", "))")
+                }
+                if !preset.compatibility.labels(for: .approximate).isEmpty {
+                    Text("Approximate: \(preset.compatibility.labels(for: .approximate).joined(separator: ", "))")
+                }
+                if !preset.unsupportedSettings.isEmpty {
+                    Text("Not applied: \(preset.unsupportedSettings.joined(separator: ", "))").foregroundStyle(.orange)
+                }
+            }
+            .font(.caption)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+        }
+        .scrollBounceBehavior(.basedOnSize)
+        .frame(height: min(contentHeight, Self.maxHeight))
     }
 }
 
@@ -464,7 +527,7 @@ private struct CurrentPresetCard: View {
                 .font(.callout)
                 .padding(.vertical, 2)
                 .disabled(!store.isEnabled)
-                .help("How strongly the preset is applied, mixed with the photo as shot. Edits are not affected.")
+                .help("Scales the preset's supported adjustments. Light edits are deltas added to the preset values.")
 
                 if let summary = preset.summary {
                     Text(summary)
@@ -474,10 +537,23 @@ private struct CurrentPresetCard: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 if !preset.unsupportedSettings.isEmpty {
-                    Label("Not previewed: \(preset.unsupportedSettings.joined(separator: ", "))", systemImage: "exclamationmark.triangle")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
+                    if preset.compatibility.hasInvalidData {
+                        Label("Some preset values are invalid. See compatibility details.", systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                            .help(preset.compatibility.details)
+                    } else {
+                        Label("Some preset components aren't applied. See compatibility details.", systemImage: "info.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .help(preset.compatibility.details)
+                    }
                 }
+                DisclosureGroup("Preset Compatibility") {
+                    CompatibilityDetails(preset: preset)
+                }
+                .font(.caption)
+                .focusable(false)
                 HStack {
                     Text("Approximate preview · [ ] previous / next")
                         .font(.caption2)
@@ -488,6 +564,14 @@ private struct CurrentPresetCard: View {
                         .font(.caption)
                         .focusable(false)
                 }
+            } else {
+                Text("Preset previews are approximate. Select a preset to review compatibility.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    // Capped like the summary: unbounded, the window's minimum
+                    // size is measured at a narrow width and grows past the screen.
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -553,8 +637,8 @@ private struct PresetSearchField: View {
     @FocusState private var isFocused: Bool
     /// The pointer is over the field, so focus arriving now is a click.
     @State private var isHovered = false
-    /// Unasked focus was already handed back since the field appeared.
-    @State private var hasDeflected = false
+    /// When unasked focus was recently handed back to the photos.
+    @State private var deflections: [Date] = []
 
     var body: some View {
         HStack(spacing: 4) {
@@ -571,12 +655,23 @@ private struct PresetSearchField: View {
                 .onChange(of: isFocused) { _, focused in
                     // Only focus the photos, which also takes it from here:
                     // clearing `isFocused` as well made two competing moves,
-                    // and AppKit handed focus straight back, forever. Once
-                    // per appearance, so it can never ping-pong.
-                    if focused, !isHovered, !hasDeflected {
-                        hasDeflected = true
-                        library.returnKeyFocusToPhotos()
-                        return
+                    // and AppKit handed focus straight back, forever.
+                    //
+                    // AppKit gives this field focus again after clicks in the
+                    // sidebar (it is the only focusable control there), so
+                    // hand it back every time, not once per appearance: a
+                    // second time left it here and arrows stopped moving
+                    // between photos. At most three a second, so a tug of
+                    // war still ends. Not once there is text: macOS hides the
+                    // pointer while typing, and filtering hands focus back
+                    // to the field, which is the user's.
+                    if focused, !isHovered, query.isEmpty {
+                        let now = Date()
+                        deflections = deflections.filter { now.timeIntervalSince($0) < 1 } + [now]
+                        if deflections.count <= 3 {
+                            library.returnKeyFocusToPhotos()
+                            return
+                        }
                     }
                     library.isSearchFocused = focused
                 }
@@ -593,7 +688,6 @@ private struct PresetSearchField: View {
             }
         }
         .onHover { isHovered = $0 }
-        .onAppear { hasDeflected = false }
         .font(.callout)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

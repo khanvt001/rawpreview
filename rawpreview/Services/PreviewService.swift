@@ -34,24 +34,31 @@ nonisolated final class PreviewService: Sendable {
     }
 
     func fullResolution(for url: URL) async -> CGImage? {
-        await loader.load(Self.key(url), priority: .userInitiated) {
+        return await loader.load(Self.key(url), priority: .userInitiated) {
             guard !Task.isCancelled else { return nil }
-            return ImageDecoder.decode(url, maxPixelSize: nil)
+            return await RenderCoordinator.run(.high) {
+                ImageDecoder.decode(url, maxPixelSize: nil)
+            }
         }
     }
 
     /// Warms full-resolution images for the neighbours of the current one.
     func prefetch(_ urls: [URL]) {
+        var jobs: [String: ImageLoader.Work] = [:]
         for url in urls {
-            loader.prefetch(Self.key(url)) { ImageDecoder.decode(url, maxPixelSize: nil) }
+            jobs[Self.key(url)] = {
+                await RenderCoordinator.run(.low) { ImageDecoder.decode(url, maxPixelSize: nil) }
+            }
         }
+        loader.prefetch(jobs)
     }
 
     func removeAll() {
+        loader.prefetch([:])
         loader.cache.removeAll()
     }
 
     private static func key(_ url: URL) -> String {
-        url.path(percentEncoded: false)
+        ImageSourceKey.display(url, size: "full")
     }
 }

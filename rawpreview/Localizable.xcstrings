@@ -1,6 +1,36 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Some preset values are invalid. See compatibility details.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một số giá trị preset không hợp lệ. Xem chi tiết tương thích."
+          }
+        }
+      }
+    },
+    "Some preset components aren't applied. See compatibility details.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Một số thành phần preset chưa được áp dụng. Xem chi tiết tương thích."
+          }
+        }
+      }
+    },
+    "Preset previews are approximate. Select a preset to review compatibility.": {
+      "localizations": {
+        "vi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset được xem trước bằng cách mô phỏng. Chọn preset để xem mức hỗ trợ."
+          }
+        }
+      }
+    },
     "“%@” + Edits" : {
       "localizations" : {
         "vi" : {
@@ -43,6 +73,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Còn trống %@"
+          }
+        }
+      }
+    },
+    "%@ has no readable embedded preview. Choose Original RAW in Settings to develop the RAW file." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ không có preview nhúng đọc được. Chọn RAW gốc trong Cài đặt để xử lý file RAW."
           }
         }
       }
@@ -566,6 +606,16 @@
         }
       }
     },
+    "Applied: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đã áp dụng: %@"
+          }
+        }
+      }
+    },
     "Apply %@" : {
       "localizations" : {
         "vi" : {
@@ -592,6 +642,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Xem trước gần đúng · lưu trên máy Mac này · nhấp đúp vào thanh trượt để đặt lại"
+          }
+        }
+      }
+    },
+    "Approximate: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mô phỏng: %@"
           }
         }
       }
@@ -716,6 +776,16 @@
         }
       }
     },
+    "Can't Process Photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xử lý ảnh"
+          }
+        }
+      }
+    },
     "Can't read %@. The file may be damaged or in an unsupported format." : {
       "localizations" : {
         "vi" : {
@@ -747,6 +817,7 @@
       }
     },
     "Cancelled" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -1174,6 +1245,16 @@
         }
       }
     },
+    "Couldn't decode %@." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể giải mã %@."
+          }
+        }
+      }
+    },
     "Couldn't Delete" : {
       "localizations" : {
         "vi" : {
@@ -1240,6 +1321,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Không đọc được thư mục"
+          }
+        }
+      }
+    },
+    "Couldn't render this image with the selected processing source." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xử lý ảnh này bằng nguồn đã chọn."
           }
         }
       }
@@ -1430,6 +1521,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tháo “%@”"
+          }
+        }
+      }
+    },
+    "Embedded Preview — Fast" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preview nhúng — Nhanh"
           }
         }
       }
@@ -1747,6 +1848,7 @@
       }
     },
     "How strongly the preset is applied, mixed with the photo as shot. Edits are not affected." : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -1758,6 +1860,16 @@
     },
     "I  E  P" : {
 
+    },
+    "Image processing source" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nguồn xử lý ảnh"
+          }
+        }
+      }
     },
     "Import" : {
       "localizations" : {
@@ -1940,6 +2052,7 @@
       }
     },
     "Loading full resolution…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "vi" : {
           "stringUnit" : {
@@ -2219,6 +2332,16 @@
         }
       }
     },
+    "Not applied: %@" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chưa áp dụng: %@"
+          }
+        }
+      }
+    },
     "Not enough space: %@ needed, %@ available." : {
       "localizations" : {
         "vi" : {
@@ -2309,6 +2432,16 @@
         }
       }
     },
+    "Original RAW — High Quality" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RAW gốc — Chất lượng cao"
+          }
+        }
+      }
+    },
     "Paste Edits" : {
       "localizations" : {
         "vi" : {
@@ -2369,12 +2502,42 @@
         }
       }
     },
+    "Preparing JPEGs…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuẩn bị JPEG…"
+          }
+        }
+      }
+    },
+    "Preparing Photos" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang chuẩn bị ảnh"
+          }
+        }
+      }
+    },
     "Preset before / after" : {
       "localizations" : {
         "vi" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trước / sau khi áp preset"
+          }
+        }
+      }
+    },
+    "Preset Compatibility" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mức hỗ trợ preset"
           }
         }
       }
@@ -2395,6 +2558,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Presets"
+          }
+        }
+      }
+    },
+    "Presets, edits and exports use this source. Fast uses the camera JPEG for paired shots. RAW can look different; unsupported files require choosing a fallback. Copying or sharing originals keeps the original files." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preset, chỉnh sửa và ảnh xuất dùng chung nguồn này. Chế độ nhanh dùng JPEG từ máy ảnh cho các cặp RAW+JPEG. RAW có thể cho kết quả khác; file không được hỗ trợ cần chọn nguồn thay thế. Sao chép hoặc gửi file gốc vẫn giữ nguyên file."
           }
         }
       }
@@ -2435,6 +2608,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Preset trước / sau"
+          }
+        }
+      }
+    },
+    "Processing source" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nguồn xử lý"
           }
         }
       }
@@ -2499,6 +2682,16 @@
         }
       }
     },
+    "RAW processing isn't available for %@. Choose Use Embedded Preview for this photo, or change the processing source in Settings." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Không thể xử lý RAW cho %@. Hãy chọn dùng preview nhúng cho ảnh này hoặc đổi nguồn xử lý trong Cài đặt."
+          }
+        }
+      }
+    },
     "RawPreview" : {
       "localizations" : {
         "vi" : {
@@ -2549,6 +2742,16 @@
         }
       }
     },
+    "Rendering photo…" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đang xử lý ảnh…"
+          }
+        }
+      }
+    },
     "Reset" : {
       "localizations" : {
         "vi" : {
@@ -2569,6 +2772,16 @@
         }
       }
     },
+    "Reset RAW Fallback Choices" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Đặt lại lựa chọn thay thế RAW"
+          }
+        }
+      }
+    },
     "S  ↩" : {
 
     },
@@ -2578,6 +2791,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lưu vào"
+          }
+        }
+      }
+    },
+    "Scales the preset's supported adjustments. Light edits are deltas added to the preset values." : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Điều chỉnh mức áp dụng các thông số preset được hỗ trợ. Chỉnh ánh sáng được cộng vào giá trị của preset."
           }
         }
       }
@@ -3254,6 +3477,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chưa xếp hạng"
+          }
+        }
+      }
+    },
+    "Use Embedded Preview for This Photo" : {
+      "localizations" : {
+        "vi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dùng preview nhúng cho ảnh này"
           }
         }
       }

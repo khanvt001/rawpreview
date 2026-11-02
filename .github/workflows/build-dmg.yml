@@ -26,6 +26,11 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      # The Core Image kernels in DevelopKernels.metal need the Metal
+      # toolchain, which Xcode ships as a separate download.
+      - name: Install Metal toolchain
+        run: xcodebuild -downloadComponent MetalToolchain
+
       - name: Build DMG
         run: scripts/build_dmg.sh
 

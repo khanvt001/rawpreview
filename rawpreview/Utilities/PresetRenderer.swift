@@ -9,6 +9,9 @@ import CoreImage.CIFilterBuiltins
 import Foundation
 import os
 
+/// Legacy bitmap renderer retained for phase 1 benchmark comparisons. The
+/// source-aware production path is DevelopRenderer; its LUT cache and spatial
+/// effects reuse the helpers here.
 /// Applies a `DevelopPreset` to already-decoded images with Core Image on the
 /// GPU: clarity / texture, the preset's colour as a 3D lookup table (see
 /// `PresetLook`), then vignette and grain.
@@ -17,19 +20,30 @@ import os
 /// image. Results are cached so going back to a photo, or toggling before /
 /// after, is instant.
 nonisolated enum PresetRenderer {
-    /// One full-resolution render plus navigation previews: the original is
-    /// already in `PreviewService`, so more would mostly duplicate memory.
-    private static let cache = ImageCache(name: "preset", totalCostLimitMB: 120, countLimit: 6)
-    /// The newest render's cache key for each photo at each size. A new render
-    /// replaces the previous one of the same photo and size: every step of an
-    /// Edit slider drag (or of [ / ] through presets) is a new look, and
-    /// keeping those ~80 MB renders around only pushes useful ones out.
-    private static let latestKeys = OSAllocatedUnfairLock<[String: String]>(initialState: [:])
-    /// Lookup tables by preset revision; ~575 KB each, built on first use.
-    /// Stepping through presets ([ / ]) can touch hundreds, so only the most
-    /// recent `cubeLimit` are kept.
-    private static let cubes = OSAllocatedUnfairLock<(tables: [UUID: Data], order: [UUID])>(initialState: ([:], []))
-    private static let cubeLimit = 48
+    private struct SourceKey: Hashable, Sendable {
+        let file: String
+        let width: Int
+        let height: Int
+        let profile: Data?
+        let displayGeneration: Int
+        let version: Int
+    }
+    private struct ResultKey: Hashable, Sendable {
+        let source: SourceKey
+        let look: DevelopPreset.RenderKey
+    }
+    private struct WorkKey: Hashable, Sendable {
+        let result: ResultKey
+        let interactive: Bool
+    }
+    enum Purpose: Sendable {
+        case selected, hover, tile
+    }
+    // Hover/tile churn cannot evict the selected look needed on pointer exit.
+    private static let cache = BoundedCache<ResultKey, CGImage>(byteLimit: 120 * 1024 * 1024, countLimit: 6)
+    private static let transient = BoundedCache<ResultKey, CGImage>(byteLimit: 16 * 1024 * 1024, countLimit: 24)
+    private static let pending = SharedWork<WorkKey, CGImage>()
+    private static let cubes = BoundedCache<DevelopPreset.ColorKey, Data>(byteLimit: 28 * 1024 * 1024, countLimit: 48)
     private static let cubeDimension = 33
     /// 8-bit working buffers: the default half-float ones cost 8 bytes a pixel,
     /// ~180 MB per intermediate for a 24 MP photo, and a preset with clarity,
@@ -55,45 +69,60 @@ nonisolated enum PresetRenderer {
     /// `image` itself when there is nothing to apply, or a cached render.
     static func cached(_ image: CGImage, preset: DevelopPreset?, url: URL) -> CGImage? {
         guard let preset, !preset.isNoOp else { return image }
-        return cache[key(image, preset: preset, url: url)]
-    }
-
-    /// Renders now on the current thread. Fine for previews; use
-    /// `renderDetached` for full-resolution images.
-    static func render(_ image: CGImage, preset: DevelopPreset?, url: URL) -> CGImage {
-        if let hit = cached(image, preset: preset, url: url) { return hit }
-        guard let preset, let rendered = apply(preset, to: image) else { return image }
         let key = key(image, preset: preset, url: url)
-        cache[key] = rendered
-        let previous = latestKeys.withLock { $0.updateValue(key, forKey: slot(image, url: url)) }
-        if let previous, previous != key {
-            cache[previous] = nil
-        }
-        return rendered
+        return cache[key] ?? transient[key]
     }
 
-    static func renderDetached(_ image: CGImage, preset: DevelopPreset?, url: URL) async -> CGImage {
-        if let hit = cached(image, preset: preset, url: url) { return hit }
-        let task = Task.detached(priority: .userInitiated) {
-            render(image, preset: preset, url: url)
+    /// Both cache misses and LUT generation run through the shared render
+    /// permit. Interactive callers replace the lane's pending request.
+    static func renderDetached(
+        _ image: CGImage,
+        preset: DevelopPreset?,
+        url: URL,
+        priority: AsyncLimiter.Priority = .high,
+        purpose: Purpose = .selected
+    ) async -> CGImage {
+        guard !Task.isCancelled else { return image }
+        if let hit = cached(image, preset: preset, url: url) {
+            PipelineMetrics.event("render.hit")
+            return hit
         }
-        // A detached task doesn't inherit cancellation: pass it on, so a
-        // slider drag doesn't queue up a full-resolution render per step.
-        return await withTaskCancellationHandler {
-            await task.value
-        } onCancel: {
-            task.cancel()
-        }
+        guard let preset else { return image }
+        let requestID = RenderCoordinator.nextRequestID()
+        let key = key(image, preset: preset, url: url)
+        return await pending.run(
+            WorkKey(result: key, interactive: priority == .high),
+            priority: priority == .low ? .utility : .userInitiated,
+            latest: priority == .high ? .init(lane: "loupe", id: requestID) : nil
+        ) {
+            await RenderCoordinator.run(priority, latest: priority == .high ? "loupe.render" : nil, requestID: requestID) {
+                // A previous request may have finished while this one waited.
+                if let hit = cache[key] ?? transient[key] { return hit }
+                guard !Task.isCancelled else { return nil }
+                PipelineMetrics.event("render.miss")
+                guard let rendered = apply(preset, to: image), !Task.isCancelled else { return nil }
+                let target = purpose == .selected ? cache : transient
+                target.insert(rendered, for: key, cost: rendered.bytesPerRow * rendered.height) {
+                    // Keep only the latest selected look for a photo/size.
+                    purpose == .selected && $0.source == key.source
+                }
+                return rendered
+            }
+        } ?? image
     }
 
-    /// For files written out (copy / share): renders on the current thread
-    /// in half-float, and keeps nothing in the cache, so a batch export
-    /// doesn't push the loupe's renders out. `image` itself when the preset
-    /// changes nothing.
-    /// - Parameter sixteenBit: Return 16 bits per channel (for a 16-bit PNG)
-    ///   rather than 8.
+    /// Called inside RenderCoordinator's file-output permit, in half-float.
+    /// Does not fill the preview cache. This API is internal to file workers.
     static func export(_ image: CGImage, preset: DevelopPreset, sixteenBit: Bool = false) -> CGImage? {
         preset.isNoOp ? image : apply(preset, to: image, context: exportContext, sixteenBit: sixteenBit)
+    }
+
+    static func removeAll() {
+        cache.removeAll()
+        transient.removeAll()
+        cubes.removeAll()
+        context.clearCaches()
+        exportContext.clearCaches()
     }
 
     private static func apply(
@@ -102,6 +131,11 @@ nonisolated enum PresetRenderer {
         context: CIContext = context,
         sixteenBit: Bool = false
     ) -> CGImage? {
+        guard !Task.isCancelled else { return nil }
+        guard let cubeData = cubeData(for: preset) else { return nil }
+        guard !Task.isCancelled else { return nil }
+        let timing = PipelineMetrics.begin("Render")
+        defer { PipelineMetrics.end(timing) }
         let input = CIImage(cgImage: image)
         let extent = input.extent
         // Sizes are relative to the image, so a 1024 px preview and the full
@@ -110,12 +144,14 @@ nonisolated enum PresetRenderer {
 
         var output = input
         output = localContrast(output, source: image, amount: preset.texture * 0.6, radius: longSide * 0.004)
+        guard !Task.isCancelled else { return nil }
         output = localContrast(output, source: image, amount: preset.clarity * 0.8, radius: longSide * 0.02)
 
+        guard !Task.isCancelled else { return nil }
         let cube = CIFilter.colorCubeWithColorSpace()
         cube.inputImage = output
         cube.cubeDimension = Float(cubeDimension)
-        cube.cubeData = cubeData(for: preset)
+        cube.cubeData = cubeData
         // The look works on gamma-encoded sRGB values, like the sliders do.
         cube.colorSpace = sRGB
         output = cube.outputImage ?? output
@@ -175,18 +211,21 @@ nonisolated enum PresetRenderer {
         return bitmap.makeImage()
     }
 
-    private static func cubeData(for preset: DevelopPreset) -> Data {
-        let id = preset.revision
-        if let data = cubes.withLock({ $0.tables[id] }) { return data }
-        let data = preset.cubeData(dimension: cubeDimension)
-        cubes.withLock { state in
-            if state.tables.updateValue(data, forKey: id) == nil {
-                state.order.append(id)
-            }
-            while state.order.count > cubeLimit {
-                state.tables[state.order.removeFirst()] = nil
-            }
+    static func cubeData(for preset: DevelopPreset) -> Data? {
+        let key = preset.colorKey
+        if let data = cubes[key] {
+            PipelineMetrics.event("lut.hit")
+            return data
         }
+        // All preview/export workers hold the same permit here. The second
+        // caller rechecks the content cache instead of building a duplicate.
+        guard !Task.isCancelled else { return nil }
+        PipelineMetrics.event("lut.miss")
+        let timing = PipelineMetrics.begin("LUT")
+        let data = preset.cubeData(dimension: cubeDimension)
+        PipelineMetrics.end(timing)
+        guard !Task.isCancelled, !data.isEmpty else { return nil }
+        cubes.insert(data, for: key, cost: data.count)
         return data
     }
 
@@ -247,73 +286,62 @@ nonisolated enum PresetRenderer {
         return context.makeImage().map { CIImage(cgImage: $0) }
     }
 
-    /// An ellipse following the frame (Lightroom's Roundness 0): darkens or
-    /// lightens towards the corners.
-    private static func applyVignette(_ vignette: PresetLook.Vignette, to image: CIImage, extent: CGRect) -> CIImage {
-        // Built as a circle in a square of the image's height, then stretched.
-        let corner = extent.height / 2 * 2.squareRoot()
+    private static let vignetteKernel = DevelopKernels.general("postCropVignette")
+
+    /// Lightroom's post-crop vignette: an ellipse following the frame at
+    /// Roundness 0, a circle at 100, close to the frame's rectangle at -100;
+    /// Highlight Priority keeps bright areas, Color Priority keeps hues,
+    /// Paint Overlay mixes towards black or white.
+    static func applyVignette(_ vignette: PresetLook.Vignette, to image: CIImage, extent: CGRect) -> CIImage {
+        // Distances are in half-frame units, so a corner is √2 away.
+        let corner = 2.0.squareRoot()
         let reach = 0.25 + 0.6 * vignette.midpoint
         let inner = corner * reach * (1 - 0.6 * vignette.feather)
-        let outer = max(inner + 1, corner * (reach * (1 + 0.6 * vignette.feather) + 0.15))
+        let outer = max(inner + 0.01, corner * (reach * (1 + 0.6 * vignette.feather) + 0.15))
         let strength = min(abs(vignette.amount) * 0.85, 1)
-
-        let gradient = CIFilter.radialGradient()
-        gradient.center = .zero
-        gradient.radius0 = Float(inner)
-        gradient.radius1 = Float(outer)
-        let darkens = vignette.amount < 0
-        gradient.color0 = gray(darkens ? 1 : 0)
-        gradient.color1 = gray(darkens ? 1 - strength : strength)
-        guard let mask = gradient.outputImage?
-            .transformed(by: CGAffineTransform(scaleX: extent.width / extent.height, y: 1)
-                .concatenating(CGAffineTransform(translationX: extent.midX, y: extent.midY)))
-            .cropped(to: extent)
+        guard let vignetteKernel,
+              let output = vignetteKernel.apply(
+                  extent: extent,
+                  roiCallback: { _, rect in rect },
+                  arguments: [
+                      image,
+                      CIVector(x: extent.midX, y: extent.midY, z: extent.width / 2, w: extent.height / 2),
+                      CIVector(x: vignette.roundness, y: inner, z: outer, w: 0),
+                      CIVector(x: vignette.amount < 0 ? -strength : strength, y: Double(vignette.style.rawValue),
+                               z: vignette.highlightContrast, w: 0),
+                  ])
         else { return image }
-
-        let blend: CIFilter & CICompositeOperation = darkens ? CIFilter.multiplyCompositing() : CIFilter.screenBlendMode()
-        blend.inputImage = mask
-        blend.backgroundImage = image
-        return blend.outputImage ?? image
+        return output
     }
 
-    /// Monochrome noise added to every channel; scaled with the image so
-    /// grain size is a property of the photo, not of the preview's pixels.
-    private static func applyGrain(_ grain: PresetLook.Grain, to image: CIImage, longSide: Double) -> CIImage {
+    private static let grainKernel = DevelopKernels.color("filmGrain")
+
+    /// Monochrome grain, strongest in the midtones as in Lightroom; Roughness
+    /// mixes in a coarser layer. Scaled with the image so grain size is a
+    /// property of the photo, not of the preview's pixels.
+    static func applyGrain(_ grain: PresetLook.Grain, to image: CIImage, longSide: Double) -> CIImage {
         // Lightroom's default size (25) is about one pixel of a 4000 px image.
         let scale = (0.6 + grain.size * 1.6) * longSide / 4000
         // Grain finer than a pixel averages out in a small preview.
         let amplitude = grain.amount * 0.14 * min(1, scale.squareRoot())
 
-        guard let random = CIFilter.randomGenerator().outputImage else { return image }
-        let monochrome = CIFilter.colorMatrix()
-        monochrome.inputImage = random
-        let spread = CIVector(x: 2 * amplitude, y: 0, z: 0, w: 0)
-        monochrome.rVector = spread
-        monochrome.gVector = spread
-        monochrome.bVector = spread
-        monochrome.aVector = CIVector(x: 0, y: 0, z: 0, w: 0)
-        monochrome.biasVector = CIVector(x: -amplitude, y: -amplitude, z: -amplitude, w: 0)
-        guard let noise = monochrome.outputImage?
-            .transformed(by: CGAffineTransform(scaleX: max(scale, 1), y: max(scale, 1)))
+        guard let random = CIFilter.randomGenerator().outputImage, let grainKernel else { return image }
+        let fine = random.transformed(by: CGAffineTransform(scaleX: max(scale, 1), y: max(scale, 1))).cropped(to: image.extent)
+        let coarse = random
+            .transformed(by: CGAffineTransform(translationX: 1031, y: 577))
+            .transformed(by: CGAffineTransform(scaleX: max(scale * 2.3, 1), y: max(scale * 2.3, 1)))
             .cropped(to: image.extent)
-        else { return image }
-
-        let add = CIFilter.additionCompositing()
-        add.inputImage = noise
-        add.backgroundImage = image
-        return add.outputImage ?? image
+        return grainKernel.apply(extent: image.extent, arguments: [image, fine, coarse, amplitude, grain.roughness]) ?? image
     }
 
-    private static func gray(_ value: Double) -> CIColor {
-        CIColor(red: value, green: value, blue: value, alpha: 1, colorSpace: sRGB) ?? CIColor(red: value, green: value, blue: value)
-    }
-
-    private static func key(_ image: CGImage, preset: DevelopPreset, url: URL) -> String {
-        "\(preset.revision)|\(slot(image, url: url))"
-    }
-
-    /// One photo at one size, whatever the look.
-    private static func slot(_ image: CGImage, url: URL) -> String {
-        "\(image.width)x\(image.height)|\(url.path(percentEncoded: false))"
+    private static func key(_ image: CGImage, preset: DevelopPreset, url: URL) -> ResultKey {
+        ResultKey(source: SourceKey(
+            file: ImageSourceKey.file(url),
+            width: image.width,
+            height: image.height,
+            profile: image.colorSpace?.copyICCData() as Data?,
+            displayGeneration: DisplayColorSpace.generation,
+            version: ImageSourceKey.pipelineVersion
+        ), look: preset.renderKey)
     }
 }

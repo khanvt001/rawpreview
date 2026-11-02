@@ -9,8 +9,8 @@ import Foundation
 /// `PresetLook` the preview can apply.
 ///
 /// This is an approximation of Lightroom's rendering, not a reproduction:
-/// Camera Raw works on raw sensor data in its own colour space, while we
-/// start from the camera's embedded JPEG. Settings the preview can't imitate
+/// Camera Raw uses Adobe's camera profiles and process algorithms, while
+/// our creative look follows the selected ImageIO/Apple RAW decode. Settings we can't imitate
 /// at all (Calibration, unusual profiles) are listed in
 /// `unsupportedSettings` instead of being faked.
 nonisolated struct DevelopPreset: Identifiable, Sendable {
@@ -25,14 +25,16 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     /// Human-readable names of the adjustments this preset makes that the
     /// preview leaves out, e.g. `["Calibration"]`.
     let unsupportedSettings: [String]
-    /// Changes every time the preset is loaded, so rendered images cached for
-    /// an older version of the same file name are never reused.
+    let compatibility: PresetCompatibility
+    var processVersion: String? { settings["ProcessVersion"]?.string ?? settings["ProcessVersion"]?.number.map { String($0) } }
+    var profileReference: PresetProfileReference { PresetProfileReference(settings: settings) }
+    /// UI/store revision. Render and LUT caches use effective content keys.
     private(set) var revision = UUID()
-    /// 0…1: how much of the preset is applied, mixed with the photo as shot
-    /// (the Presets sidebar's Amount).
+    /// 0…1 strength. DevelopState resolves effective parameters for production;
+    /// the legacy `apply` method retains phase 1's image-mixing comparison.
     private(set) var amount = 1.0
-    /// The photo's Edit adjustments, applied after the preset at `amount`
-    /// (see `combining`).
+    /// Legacy post-look adjustments, for phase 1 comparisons. Production Light
+    /// deltas are stored separately and resolved by DevelopState.
     private(set) var adjustments: PresetLook?
 
     enum LoadError: LocalizedError {
@@ -69,21 +71,22 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         self.id = id
         self.title = title
         self.summary = summary
-        self.settings = settings
-        look = PresetLook(settings: settings)
-        unsupportedSettings = Self.unsupported(in: settings)
+        let normalized = PresetNormalization.normalize(settings)
+        self.settings = normalized
+        look = PresetLook(settings: normalized)
+        compatibility = PresetCompatibility(settings: normalized)
+        unsupportedSettings = compatibility.labels(for: .unsupported)
     }
 
-    /// This preset applied at `amount` (0…1). A new revision, so renders
-    /// of other amounts aren't reused.
+    /// This preset applied at `amount` (0…1), with a new UI/store revision.
     func atAmount(_ amount: Double) -> DevelopPreset {
         var preset = self
-        preset.amount = min(max(amount, 0), 1)
+        preset.amount = amount.isFinite ? min(max(amount, 0), 1) : 0
         preset.revision = UUID()
         return preset
     }
 
-    /// `preset` (at its amount) followed by `light`, as one preset the
+    /// Legacy comparison helper: `preset` followed by `light`, as one preset the
     /// renderer can apply; `light` alone when there is no preset. The edits
     /// come after the preset rather than being added to its settings, so the
     /// preset's Amount doesn't scale them too.
@@ -110,6 +113,32 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         (amount == 0 || look.isIdentity) && (adjustments?.isIdentity ?? true)
     }
 
+    struct ColorKey: Hashable, Sendable {
+        let look: PresetLook
+        let amount: Double
+        let adjustments: PresetLook?
+        let appliesLook: Bool
+    }
+
+    /// Content, not revision/UUID: equivalent imports, amounts and edits share
+    /// the same table. Amount and edits retain phase 1's existing semantics.
+    var colorKey: ColorKey {
+        ColorKey(look: look.colorKey, amount: amount, adjustments: adjustments?.colorKey, appliesLook: amount > 0 && !look.isIdentity)
+    }
+
+    struct RenderKey: Hashable, Sendable {
+        let color: ColorKey
+        let clarity: Double
+        let texture: Double
+        let dehaze: Double
+        let vignette: PresetLook.Vignette?
+        let grain: PresetLook.Grain?
+    }
+
+    var renderKey: RenderKey {
+        RenderKey(color: colorKey, clarity: clarity, texture: texture, dehaze: dehaze, vignette: vignette, grain: grain)
+    }
+
     // MARK: - Rendering
 
     /// One colour through the preset at `amount`, then the edits: what the
@@ -131,15 +160,17 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     /// The preset's local contrast, vignette and grain, scaled by `amount`.
     var clarity: Double { look.clarity * amount }
     var texture: Double { look.texture * amount }
+    var dehaze: Double { look.dehaze * amount }
 
     var vignette: PresetLook.Vignette? {
         guard amount > 0, let vignette = look.vignette else { return nil }
-        return PresetLook.Vignette(amount: vignette.amount * amount, midpoint: vignette.midpoint, feather: vignette.feather)
+        return PresetLook.Vignette(amount: vignette.amount * amount, midpoint: vignette.midpoint, feather: vignette.feather,
+                                   roundness: vignette.roundness, style: vignette.style, highlightContrast: vignette.highlightContrast)
     }
 
     var grain: PresetLook.Grain? {
         guard amount > 0, let grain = look.grain else { return nil }
-        return PresetLook.Grain(amount: grain.amount * amount, size: grain.size)
+        return PresetLook.Grain(amount: grain.amount * amount, size: grain.size, roughness: grain.roughness)
     }
 
     /// "Kodak Gold", or "Kodak Gold 50%" below full strength.
@@ -151,37 +182,6 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     private static func localizedTitle(_ title: String) -> String {
         guard title.hasPrefix("$$$/"), let equals = title.firstIndex(of: "=") else { return title }
         return String(title[title.index(after: equals)...])
-    }
-
-    // MARK: - Unsupported settings
-
-    /// Adjustments whose default is 0 that `PresetLook` doesn't imitate.
-    private static let unsupportedByKey: [String: String] = [
-        "RedHue": "Calibration", "RedSaturation": "Calibration",
-        "GreenHue": "Calibration", "GreenSaturation": "Calibration",
-        "BlueHue": "Calibration", "BlueSaturation": "Calibration", "ShadowTint": "Calibration",
-    ]
-
-    /// Profiles the camera's embedded JPEG already roughly looks like, plus
-    /// the ones `PresetLook` imitates.
-    private static let supportedProfiles: Set<String> = [
-        "Camera Standard", "Embedded", "Adobe Standard", "Adobe Color", "Adobe Vivid",
-        "Adobe Monochrome", "Camera Monochrome",
-    ]
-
-    private static func unsupported(in settings: [String: PresetValue]) -> [String] {
-        var labels: [String] = []
-        func add(_ label: String) {
-            if !labels.contains(label) { labels.append(label) }
-        }
-        if let profile = settings["CameraProfile"]?.string, !supportedProfiles.contains(profile) {
-            add("Profile (\(profile))")
-        }
-        for key in settings.keys.sorted() {
-            guard let value = settings[key]?.number, value != 0, let label = unsupportedByKey[key] else { continue }
-            add(label)
-        }
-        return labels
     }
 
     // MARK: - Parsing
@@ -199,13 +199,7 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
 
         var settings: [String: PresetValue] = [:]
         for (key, value) in settingsTable.fields {
-            switch value {
-            case .string(let string): settings[key] = .string(string)
-            case .number(let number): settings[key] = .number(number)
-            case .bool(let bool): settings[key] = .bool(bool)
-            case .table(let table): settings[key] = .list(table.array.compactMap(\.number))
-            case .nil: break
-            }
+            settings[key] = PresetValue(lua: value)
         }
         return (root["title"]?.string, settings)
     }
@@ -216,7 +210,7 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
     /// Lightroom 7.3+ presets: `crs:` attributes on an `rdf:Description`,
     /// curves as `rdf:Seq` lists of `"x, y"` items.
     private static func parseXMP(_ url: URL, name: String) throws -> (String?, [String: PresetValue]) {
-        guard let document = try? XMLDocument(contentsOf: url, options: []),
+        guard let document = try? XMLDocument(contentsOf: url, options: [.nodeLoadExternalEntitiesNever]),
               let description = descriptions(in: document.rootElement()).first(where: hasCameraRawSettings)
         else { throw LoadError.unreadable(name) }
 
@@ -224,28 +218,25 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         var title: String?
         for attribute in description.attributes ?? [] where attribute.uri == crsNamespace {
             guard let key = attribute.localName, let text = attribute.stringValue else { continue }
-            settings[key] = PresetValue(xmpText: text)
+            settings[key] = scalar(key, text)
         }
         for child in description.children ?? [] {
             guard let element = child as? XMLElement, element.uri == crsNamespace, let key = element.localName else { continue }
             let items = element.elements(forLocalName: "Seq", uri: rdfNamespace).first?.elements(forLocalName: "li", uri: rdfNamespace)
                 ?? element.elements(forLocalName: "Alt", uri: rdfNamespace).first?.elements(forLocalName: "li", uri: rdfNamespace)
             if key == "Name" {
-                title = items?.first?.stringValue
-            } else if key == "Look" {
-                // Lightroom 7.3+ names the profile in a nested description.
-                let look = element.elements(forLocalName: "Description", uri: rdfNamespace).first
-                if settings["CameraProfile"] == nil,
-                   let profile = look?.attribute(forLocalName: "Name", uri: crsNamespace)?.stringValue {
-                    settings["CameraProfile"] = .string(profile)
-                }
+                title = (items?.first { $0.attribute(forName: "xml:lang")?.stringValue == "x-default" } ?? items?.first)?.stringValue
             } else if let items, key.hasPrefix("ToneCurve") {
                 // "x, y" per item → flat [x0, y0, x1, y1, …] like lrtemplates.
-                settings[key] = .list(items.flatMap { item in
-                    (item.stringValue ?? "").split(separator: ",").compactMap { Double($0.trimmingCharacters(in: .whitespaces)) }
-                })
-            } else if let text = items?.first?.stringValue ?? element.stringValue {
-                settings[key] = PresetValue(xmpText: text)
+                let components = items.map { ($0.stringValue ?? "").split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) } }
+                let values = components.flatMap { $0 }.compactMap { Double($0) }
+                if components.allSatisfy({ $0.count == 2 }), values.count == items.count * 2, values.allSatisfy(\.isFinite) {
+                    settings[key] = .list(values)
+                } else {
+                    settings[key] = .array(items.map { .string($0.stringValue ?? "") })
+                }
+            } else {
+                settings[key] = ["ProcessVersion", "Version"].contains(key) ? .string(element.stringValue ?? "") : xmlValue(element)
             }
         }
         if let presetType = settings["PresetType"]?.string, presetType != "Normal" {
@@ -253,6 +244,41 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
         }
         // `crs:Name` is usually an `rdf:Alt` element, sometimes an attribute.
         return (title ?? settings["Name"]?.string, settings)
+    }
+
+    /// Keep RDF resources/arrays intact, including Look UUID/Amount/Parameters
+    /// and unsupported masks. Never substitute a creative Look for CameraProfile.
+    private static func xmlValue(_ element: XMLElement) -> PresetValue {
+        if let sequence = (element.children ?? []).compactMap({ $0 as? XMLElement }).first(where: {
+            $0.uri == rdfNamespace && ["Seq", "Bag", "Alt"].contains($0.localName ?? "")
+        }) {
+            if sequence.localName == "Alt" {
+                let items = sequence.elements(forLocalName: "li", uri: rdfNamespace)
+                let preferred = items.filter { $0.attribute(forName: "xml:lang")?.stringValue == "x-default" }
+                    + items.filter { $0.attribute(forName: "xml:lang")?.stringValue != "x-default" }
+                return .array(preferred.map { .string($0.stringValue ?? "") })
+            }
+            return PresetValue.sequence(sequence.elements(forLocalName: "li", uri: rdfNamespace).map(xmlValue))
+        }
+        let resource = element.elements(forLocalName: "Description", uri: rdfNamespace).first ?? element
+        var fields: [String: PresetValue] = [:]
+        if let reference = resource.attribute(forLocalName: "resource", uri: rdfNamespace)?.stringValue {
+            fields["rdf:resource"] = .string(reference)
+        }
+        for attribute in resource.attributes ?? [] where attribute.uri == crsNamespace {
+            if let name = attribute.localName, let text = attribute.stringValue { fields[name] = scalar(name, text) }
+        }
+        for child in (resource.children ?? []).compactMap({ $0 as? XMLElement }) where child.uri == crsNamespace {
+            if let name = child.localName { fields[name] = xmlValue(child) }
+        }
+        return fields.isEmpty ? scalar(resource.localName ?? "", resource.stringValue ?? "") : .object(fields)
+    }
+
+    private static func scalar(_ key: String, _ text: String) -> PresetValue {
+        if ["Name", "UUID", "Version", "ProcessVersion", "CameraProfile"].contains(key) || key.hasSuffix("Digest") {
+            return .string(text)
+        }
+        return PresetValue(xmpText: text)
     }
 
     private static func descriptions(in element: XMLElement?) -> [XMLElement] {
@@ -270,18 +296,44 @@ nonisolated struct DevelopPreset: Identifiable, Sendable {
 
 /// One develop setting, as either preset format (or the built-in preset
 /// file, as plain JSON values) stores it.
-nonisolated enum PresetValue: Sendable, Decodable {
+nonisolated enum PresetValue: Sendable, Codable, Hashable {
     case string(String)
     case number(Double)
     case bool(Bool)
     /// Curve points, flattened: `[x0, y0, x1, y1, …]` on a 0–255 scale.
     case list([Double])
+    indirect case object([String: PresetValue])
+    indirect case array([PresetValue])
+
+    init?(lua: LuaValue) {
+        switch lua {
+        case .string(let value): self = .string(value)
+        case .number(let value): self = value.isFinite ? .number(value) : .string(String(value))
+        case .bool(let value): self = .bool(value)
+        case .table(let table):
+            if !table.fields.isEmpty {
+                var fields = table.fields.compactMapValues { PresetValue(lua: $0) }
+                if !table.array.isEmpty { fields["_items"] = Self.sequence(table.array.compactMap { PresetValue(lua: $0) }) }
+                self = .object(fields)
+            }
+            else {
+                let values = table.array.compactMap { PresetValue(lua: $0) }
+                self = Self.sequence(values)
+            }
+        case .nil: return nil
+        }
+    }
+
+    static func sequence(_ values: [PresetValue]) -> PresetValue {
+        values.allSatisfy { $0.number != nil } ? .list(values.compactMap(\.number)) : .array(values)
+    }
 
     init(xmpText text: String) {
-        if let number = Double(text) {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let number = Double(text), number.isFinite {
             self = .number(number)
-        } else if text == "True" || text == "False" {
-            self = .bool(text == "True")
+        } else if text.lowercased() == "true" || text.lowercased() == "false" {
+            self = .bool(text.lowercased() == "true")
         } else {
             self = .string(text)
         }
@@ -295,8 +347,24 @@ nonisolated enum PresetValue: Sendable, Decodable {
             self = .bool(bool)
         } else if let list = try? container.decode([Double].self) {
             self = .list(list)
+        } else if let object = try? container.decode([String: PresetValue].self) {
+            self = .object(object)
+        } else if let array = try? container.decode([PresetValue].self) {
+            self = .array(array)
         } else {
             self = .string(try container.decode(String.self))
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .string(let value): try container.encode(value)
+        case .number(let value): try container.encode(value)
+        case .bool(let value): try container.encode(value)
+        case .list(let value): try container.encode(value)
+        case .object(let value): try container.encode(value)
+        case .array(let value): try container.encode(value)
         }
     }
 
@@ -305,10 +373,29 @@ nonisolated enum PresetValue: Sendable, Decodable {
     }
 
     var number: Double? {
-        if case .number(let value) = self { value } else { nil }
+        if case .number(let value) = self, value.isFinite { value } else { nil }
     }
 
     var list: [Double]? {
         if case .list(let value) = self { value } else { nil }
+    }
+
+    var object: [String: PresetValue]? {
+        if case .object(let value) = self { value } else { nil }
+    }
+
+    var bool: Bool? {
+        if case .bool(let value) = self { value } else { nil }
+    }
+
+    var isActive: Bool {
+        switch self {
+        case .number(let value): value != 0
+        case .bool(let value): value
+        case .string(let value): !value.isEmpty && value != "None" && value != "Off"
+        case .list(let value): !value.isEmpty
+        case .object(let value): !value.isEmpty
+        case .array(let value): !value.isEmpty
+        }
     }
 }

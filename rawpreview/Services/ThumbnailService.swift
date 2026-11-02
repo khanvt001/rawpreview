@@ -59,7 +59,7 @@ nonisolated final class ThumbnailService: Sendable {
         return await loader.load(Self.key(url, bucket)) {
             await cardReads.run(.high) {
                 guard !Task.isCancelled else { return nil }
-                return ImageDecoder.decode(url, maxPixelSize: bucket)
+                return Self.decodePreview(url, pixelSize: bucket)
             }
         }
     }
@@ -67,22 +67,33 @@ nonisolated final class ThumbnailService: Sendable {
     func prefetch(_ urls: [URL], pixelSize: Int) {
         let bucket = Self.bucket(for: pixelSize)
         let cardReads = cardReads
+        var jobs: [String: ImageLoader.Work] = [:]
         for url in urls {
-            loader.prefetch(Self.key(url, bucket)) {
-                await cardReads.run(.low) { ImageDecoder.decode(url, maxPixelSize: bucket) }
+            jobs[Self.key(url, bucket)] = {
+                await cardReads.run(.low) { Self.decodePreview(url, pixelSize: bucket) }
             }
         }
+        loader.prefetch(jobs)
     }
 
     func removeAll() {
+        loader.prefetch([:])
         loader.cache.removeAll()
     }
 
+    /// Grid/prefetch must not start an uncoordinated RAW engine merely to
+    /// enlarge a small embedded preview. Full RAW development belongs to the
+    /// shared heavy-work permit in DevelopService.
+    private static func decodePreview(_ url: URL, pixelSize: Int) -> CGImage? {
+        guard let image = ImageDecoder.embeddedSource(url, maxPixelSize: pixelSize), !Task.isCancelled else { return nil }
+        return ImageDecoder.prepareForDisplay(image)
+    }
+
     private static func key(_ url: URL, _ size: Int) -> String {
-        "\(size)|\(url.path(percentEncoded: false))"
+        ImageSourceKey.display(url, size: String(size))
     }
 
     private static func quickKey(_ url: URL) -> String {
-        "exif|\(url.path(percentEncoded: false))"
+        ImageSourceKey.display(url, size: "exif")
     }
 }

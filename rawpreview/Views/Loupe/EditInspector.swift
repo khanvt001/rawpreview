@@ -106,12 +106,11 @@ struct EditInspector: View {
     private func autoTone(_ item: PhotoItem) async {
         isAutoRunning = true
         defer { isAutoRunning = false }
-        var original = PreviewService.shared.cachedImage(for: item.url)
-        if original == nil {
-            original = await ThumbnailService.shared.thumbnail(for: item.url, pixelSize: 1024)
-        }
-        guard let original else { return }
-        let preset = presets.activePreset
+        let configuration = ProcessingConfiguration.current
+        let preset = presets.appliedPreset
+        let source = await PhotoSourceResolver.resolve(item.url, processing: configuration)
+        let state = DevelopState(processing: configuration, preset: nil)
+        guard let original = try? await DevelopService.preview(url: source, state: state, longEdge: 1024) else { return }
         let light = await Task.detached(priority: .userInitiated) {
             Histogram(original).map { AutoTone.adjustments(for: $0, preset: preset) }
         }.value

@@ -105,23 +105,4 @@ final class EditStore {
         try? data.write(to: fileURL, options: .atomic)
     }
 
-    private struct CombinedKey: Equatable {
-        let preset: UUID?
-        let light: LightAdjustments
-    }
-
-    @ObservationIgnored private var combined: (key: CombinedKey, preset: DevelopPreset?)?
-
-    /// `base` with the photo's adjustments on top, for the renderer. The same
-    /// inputs return the same instance, so its `revision` (the render cache
-    /// key) only changes when a slider or the preset does.
-    func preset(applying base: DevelopPreset?, to id: PhotoItem.ID?) -> DevelopPreset? {
-        let light = adjustments(for: id)
-        guard !light.isZero else { return base }
-        let key = CombinedKey(preset: base?.revision, light: light)
-        if let combined, combined.key == key { return combined.preset }
-        let preset = DevelopPreset.combining(base, with: light)
-        combined = (key, preset)
-        return preset
-    }
 }

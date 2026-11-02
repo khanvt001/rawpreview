@@ -84,10 +84,7 @@ enum SharingController {
     static func shareJPEGs(of items: [PhotoItem], look: ExportLook? = nil) {
         let anchor = Anchor.pointer()
         Analytics.track("photos_shared", ["count": items.count, "via": "share_sheet", "with_preset": look?.preset != nil, "with_edits": look?.adjustments.isEmpty == false])
-        Task {
-            guard let urls = await makeJPEGs(items, look: look) else { return }
-            share(urls, from: anchor)
-        }
+        prepareJPEGs(items, look: look) { urls in share(urls, from: anchor) }
     }
 
     /// The share picker (AirDrop, Messages, Mail…) for files already written.
@@ -100,8 +97,7 @@ enum SharingController {
 
     static func airDropJPEGs(of items: [PhotoItem], look: ExportLook? = nil) {
         Analytics.track("photos_shared", ["count": items.count, "via": "airdrop", "with_preset": look?.preset != nil, "with_edits": look?.adjustments.isEmpty == false])
-        Task {
-            guard let urls = await makeJPEGs(items, look: look) else { return }
+        prepareJPEGs(items, look: look) { urls in
             guard let airDrop = NSSharingService(named: .sendViaAirDrop), airDrop.canPerform(withItems: urls) else {
                 showError(String(localized: "AirDrop isn't available. Check that Wi-Fi and Bluetooth are on."))
                 return
@@ -110,12 +106,59 @@ enum SharingController {
         }
     }
 
-    private static func makeJPEGs(_ items: [PhotoItem], look: ExportLook?) async -> [URL]? {
-        do {
-            return try await ShareService.makeJPEGs(for: items, look: look)
-        } catch {
-            showError(error.localizedDescription)
-            return nil
+    @Observable final class Preparation {
+        var completed = 0
+        var total = 1
+        var task: Task<Void, Never>?
+    }
+
+    private struct PreparationView: View {
+        let operation: Preparation
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Preparing JPEGs…").font(.headline)
+                ProgressView(value: Double(operation.completed), total: Double(max(1, operation.total)))
+                HStack {
+                    Text("\(operation.completed) / \(operation.total)").monospacedDigit().foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Cancel", role: .cancel) { operation.task?.cancel() }
+                }
+            }
+            .padding(20)
+            .frame(width: 320)
+        }
+    }
+
+    private static func prepareJPEGs(_ items: [PhotoItem], look: ExportLook?, completion: @escaping ([URL]) -> Void) {
+        let configuration = ProcessingConfiguration.current
+        let longEdge = ShareService.maxPixelSize
+        let operation = Preparation()
+        operation.total = Set(items.map(\.sidecarURL)).count
+        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 320, height: 140),
+                            styleMask: [.titled], backing: .buffered, defer: false)
+        panel.title = String(localized: "Preparing Photos")
+        panel.isReleasedWhenClosed = false
+        panel.contentView = NSHostingView(rootView: PreparationView(operation: operation))
+        panel.center()
+        panel.makeKeyAndOrderFront(nil)
+        operation.task = Task {
+            defer { panel.close(); operation.task = nil }
+            do {
+                let urls = try await ShareService.makeJPEGs(for: items, look: look, processing: configuration, longEdge: longEdge) { completed, total in
+                    Task { @MainActor in
+                        operation.completed = completed
+                        operation.total = total
+                    }
+                }
+                try Task.checkCancellation()
+                panel.orderOut(nil)
+                completion(urls)
+            } catch is CancellationError {
+                return
+            } catch {
+                panel.orderOut(nil)
+                showError(error.localizedDescription)
+            }
         }
     }
 

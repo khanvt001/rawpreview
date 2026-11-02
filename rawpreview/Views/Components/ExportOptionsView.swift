@@ -10,6 +10,7 @@ import SwiftUI
 /// data and destination. Choices are remembered.
 struct ExportOptionsView: View {
     @Environment(LibraryViewModel.self) private var library
+    @AppStorage(ProcessingSource.defaultsKey) private var processingSource = ProcessingSource.embedded.rawValue
 
     var body: some View {
         @Bindable var library = library
@@ -25,6 +26,7 @@ struct ExportOptionsView: View {
             }
 
             Form {
+                LabeledContent("Processing source", value: (ProcessingSource(rawValue: processingSource) ?? .embedded).title)
                 Picker("Format", selection: $library.exportSettings.format) {
                     ForEach(ExportSettings.Format.allCases) { format in
                         Text(format.title).tag(format)
