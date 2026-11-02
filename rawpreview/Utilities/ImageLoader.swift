@@ -5,6 +5,7 @@
 
 import CoreGraphics
 import Foundation
+import os
 
 /// Cache-first image loading with request coalescing.
 ///
@@ -18,14 +19,14 @@ import Foundation
 actor ImageLoader {
     typealias Work = @Sendable () async -> CGImage?
 
-    private struct InFlight {
-        let id: UUID
-        let task: Task<CGImage?, Never>
-        var waiters: Int
-    }
-
     nonisolated let cache: ImageCache
-    private var inFlight: [String: InFlight] = [:]
+    private let work = SharedWork<String, CGImage>()
+    private struct Prefetch {
+        let id: UUID
+        let task: Task<Void, Never>
+    }
+    private var prefetchTasks: [String: Prefetch] = [:]
+    private nonisolated let prefetchGeneration = OSAllocatedUnfairLock(initialState: 0)
 
     init(cache: ImageCache) {
         self.cache = cache
@@ -36,49 +37,46 @@ actor ImageLoader {
     }
 
     func load(_ key: String, priority: TaskPriority? = nil, work: @escaping Work) async -> CGImage? {
-        if let hit = cache[key] { return hit }
-
-        let entry: InFlight
-        if var existing = inFlight[key] {
-            existing.waiters += 1
-            entry = existing
-        } else {
-            entry = InFlight(
-                id: UUID(),
-                task: Task.detached(priority: priority ?? Task.currentPriority) { await work() },
-                waiters: 1
-            )
+        guard !Task.isCancelled else { return nil }
+        if let hit = cache[key] {
+            PipelineMetrics.event("decode.hit")
+            return hit
         }
-        inFlight[key] = entry
-
-        let image = await withTaskCancellationHandler {
-            await entry.task.value
-        } onCancel: {
-            Task { await self.waiterCancelled(key: key, id: entry.id) }
+        let cache = cache
+        return await self.work.run(key, priority: priority) {
+            // Another caller may have filled the cache before registration.
+            if let hit = cache[key] { return hit }
+            PipelineMetrics.event("decode.miss")
+            guard let image = await work(), !Task.isCancelled else { return nil }
+            cache[key] = image
+            return image
         }
-
-        // First waiter back publishes the result; the rest find the entry gone.
-        if inFlight[key]?.id == entry.id {
-            inFlight[key] = nil
-            if let image { cache[key] = image }
-        }
-        return image
     }
 
-    /// Starts loads without awaiting them (used for neighbour prefetch).
-    nonisolated func prefetch(_ key: String, work: @escaping Work) {
-        guard cached(key) == nil else { return }
-        Task(priority: .utility) { _ = await self.load(key, priority: .utility, work: work) }
+    /// Replaces the prefetch window, cancelling obsolete subscriptions. A
+    /// visible caller sharing the same decode keeps its subscription.
+    nonisolated func prefetch(_ jobs: [String: Work]) {
+        let generation = prefetchGeneration.withLock { $0 += 1; return $0 }
+        Task { await self.replacePrefetch(jobs, generation: generation) }
     }
 
-    private func waiterCancelled(key: String, id: UUID) {
-        guard var entry = inFlight[key], entry.id == id else { return }
-        entry.waiters -= 1
-        if entry.waiters <= 0 {
-            entry.task.cancel()
-            inFlight[key] = nil
-        } else {
-            inFlight[key] = entry
+    private func replacePrefetch(_ jobs: [String: Work], generation: Int) {
+        guard prefetchGeneration.withLock({ $0 }) == generation else { return }
+        for key in Array(prefetchTasks.keys) where jobs[key] == nil {
+            prefetchTasks.removeValue(forKey: key)?.task.cancel()
         }
+        for (key, work) in jobs where cached(key) == nil && prefetchTasks[key] == nil {
+            let id = UUID()
+            let task = Task(priority: .utility) {
+                _ = await self.load(key, priority: .utility, work: work)
+                self.prefetchFinished(key, id: id)
+            }
+            prefetchTasks[key] = Prefetch(id: id, task: task)
+        }
+    }
+
+    private func prefetchFinished(_ key: String, id: UUID) {
+        // The task may have been removed and replaced in a newer window.
+        if prefetchTasks[key]?.id == id { prefetchTasks[key] = nil }
     }
 }

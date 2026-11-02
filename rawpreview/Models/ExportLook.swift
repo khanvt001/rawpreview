@@ -20,9 +20,8 @@ nonisolated struct ExportLook: Sendable {
         self.adjustments = adjustments
     }
 
-    /// The look for one photo; `nil` exports it as shot.
-    func preset(for item: PhotoItem) -> DevelopPreset? {
-        DevelopPreset.combining(preset, with: adjustments[item.sidecarURL] ?? LightAdjustments())
+    func state(for item: PhotoItem, processing: ProcessingConfiguration) -> DevelopState {
+        DevelopState(processing: processing, preset: preset, light: adjustments[item.sidecarURL] ?? LightAdjustments())
     }
 
     /// For "Share as JPEG with …": "“Kodak Gold 50%”", "Edits" or

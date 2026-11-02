@@ -38,6 +38,9 @@ nonisolated enum ImageWriter {
         keepsLocation: Bool,
         rating: Rating? = nil
     ) throws {
+        try Task.checkCancellation()
+        let timing = PipelineMetrics.begin("Encode")
+        defer { PipelineMetrics.end(timing) }
         let name = original.lastPathComponent
         guard let destination = CGImageDestinationCreateWithURL(
             destinationURL as CFURL, type.identifier as CFString, 1, nil
@@ -69,6 +72,7 @@ nonisolated enum ImageWriter {
             properties[kCGImagePropertyIPTCDictionary] = [kCGImagePropertyIPTCStarRating: rating.rawValue]
         }
 
+        try Task.checkCancellation()
         CGImageDestinationAddImage(destination, image, properties as CFDictionary)
         guard CGImageDestinationFinalize(destination) else {
             throw WriteError.failed(name, type)

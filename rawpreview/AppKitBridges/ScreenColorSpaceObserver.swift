@@ -40,6 +40,8 @@ struct ScreenColorSpaceObserver: NSViewRepresentable {
             else { return }
             ThumbnailService.shared.removeAll()
             PreviewService.shared.removeAll()
+            PresetRenderer.removeAll()
+            DevelopService.removeDisplayResults()
         }
     }
 }

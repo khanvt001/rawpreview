@@ -107,8 +107,8 @@ final class PresetStore {
         }
     }
 
-    /// How strongly the chosen preset is applied, 0…1, mixed with the photo
-    /// as shot; remembered across launches.
+    /// How strongly the chosen preset is applied, 0…1; DevelopState resolves
+    /// effective parameters. Remembered across launches.
     var amount: Double = UserDefaults.standard.object(forKey: "presetAmount") as? Double ?? 0.5 {
         didSet { UserDefaults.standard.set(amount, forKey: "presetAmount") }
     }

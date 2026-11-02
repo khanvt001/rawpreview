@@ -9,8 +9,8 @@ import Foundation
 /// Makes lightweight JPEG copies for sharing (AirDrop, Messages, Mail…), so a
 /// 25 MB RAW goes out as a ~1 MB JPEG the other side can open.
 ///
-/// - Decoded from the RAW's embedded preview (`ImageDecoder`), so it's fast
-///   and matches what the camera showed.
+/// - Uses the snapshotted processing source, preset, Amount and Light deltas
+///   through ExportService, the same graph as loupe and normal exports.
 /// - Long edge 2048 px by default (Settings), quality 0.85; orientation baked in.
 /// - Optionally with a preset and Edit adjustments applied (`ExportLook`).
 /// - Camera EXIF (exposure, lens, date) is kept; GPS is removed, so a shared
@@ -45,22 +45,40 @@ nonisolated enum ShareService {
     /// One JPEG per shot, in input order, named after the original
     /// (`DSC_6260.NEF` → `DSC_6260.jpg`), with `look` applied if given.
     @concurrent
-    static func makeJPEGs(for items: [PhotoItem], look: ExportLook? = nil) async throws -> [URL] {
+    static func makeJPEGs(for items: [PhotoItem], look: ExportLook? = nil,
+                          processing: ProcessingConfiguration = .current,
+                          longEdge: Int = maxPixelSize,
+                          onProgress: @escaping @Sendable (Int, Int) -> Void = { _, _ in }) async throws -> [URL] {
         let folder = exportRoot.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let jobs = uniqueJobs(for: items)
 
-        return try await withThrowingTaskGroup(of: (Int, URL).self) { group in
-            for (index, job) in jobs.enumerated() {
-                group.addTask {
-                    (index, try makeJPEG(for: job.item, named: job.name, preset: look?.preset(for: job.item), in: folder))
+        onProgress(0, jobs.count)
+        var results: [URL] = []
+        do {
+            for job in jobs {
+                try Task.checkCancellation()
+                let state = look?.state(for: job.item, processing: processing) ?? DevelopState(processing: processing, preset: nil)
+                let source = PhotoSourceResolver.resolveNow(job.item.url, processing: processing)
+                let result: Result<URL, any Error>? = await RenderCoordinator.run(.export) {
+                    Result {
+                        var settings = ExportSettings()
+                        settings.longEdge = longEdge
+                        settings.quality = quality
+                        settings.keepsLocation = false
+                        let destination = folder.appending(path: job.name)
+                        try ExportService.write(source: source, to: destination, state: state, settings: settings)
+                        return destination
+                    }
                 }
+                guard let result else { throw CancellationError() }
+                results.append(try result.get())
+                onProgress(results.count, jobs.count)
             }
-            var results = [URL?](repeating: nil, count: jobs.count)
-            for try await (index, url) in group {
-                results[index] = url
-            }
-            return results.compactMap(\.self)
+            return results
+        } catch {
+            try? FileManager.default.removeItem(at: folder)
+            throw error
         }
     }
 
@@ -92,26 +110,6 @@ nonisolated enum ShareService {
             used.insert(name.lowercased())
             return (item, "\(name).jpg")
         }
-    }
-
-    private static func makeJPEG(for item: PhotoItem, named name: String, preset: DevelopPreset?, in folder: URL) throws -> URL {
-        try Task.checkCancellation()
-        // sRGB, not the screen's colour space: the JPEG goes to other devices.
-        guard var image = ImageDecoder.decode(item.url, maxPixelSize: maxPixelSize, forDisplay: false) else {
-            throw ShareError.decodeFailed(item.fileName)
-        }
-        if let preset {
-            try Task.checkCancellation()
-            guard let rendered = PresetRenderer.export(image, preset: preset) else {
-                throw ShareError.writeFailed(item.fileName)
-            }
-            image = rendered
-        }
-
-        let destinationURL = folder.appending(path: name)
-        // GPS deliberately not copied.
-        try ImageWriter.write(image, to: destinationURL, original: item.url, quality: quality, keepsLocation: false)
-        return destinationURL
     }
 
     /// Removes share folders older than a day. Recent ones are kept in case a
