@@ -415,11 +415,15 @@ private struct GridHeader: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .background {
-                // Only collapsible headers look (and highlight) like a row you can click.
-                if isExpanded != nil {
-                    RoundedRectangle(cornerRadius: 7)
-                        .fill(isHovered ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary))
-                }
+                // Opaque only inside the rounded row, so presets scrolling
+                // under a pinned header don't show through it. A rectangle
+                // around the row showed as a darker band: the sidebar is a
+                // translucent material no solid colour matches.
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+                // Only collapsible headers highlight like a row you can click.
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isHovered && isExpanded != nil ? AnyShapeStyle(.fill.tertiary) : AnyShapeStyle(.fill.quinary))
             }
             .contentShape(RoundedRectangle(cornerRadius: 7))
         }
@@ -428,9 +432,6 @@ private struct GridHeader: View {
         .disabled(isExpanded == nil)
         .onHover { isHovered = $0 }
         .padding(.vertical, 3)
-        // Opaque around the rounded row, so presets scrolling under a pinned
-        // header don't show through.
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 }
 
@@ -552,6 +553,7 @@ private struct CurrentPresetCard: View {
                     CompatibilityDetails(preset: preset)
                 }
                 .font(.caption)
+                .focusable(false)
                 HStack {
                     Text("Approximate preview · [ ] previous / next")
                         .font(.caption2)
@@ -635,8 +637,8 @@ private struct PresetSearchField: View {
     @FocusState private var isFocused: Bool
     /// The pointer is over the field, so focus arriving now is a click.
     @State private var isHovered = false
-    /// Unasked focus was already handed back since the field appeared.
-    @State private var hasDeflected = false
+    /// When unasked focus was recently handed back to the photos.
+    @State private var deflections: [Date] = []
 
     var body: some View {
         HStack(spacing: 4) {
@@ -653,12 +655,23 @@ private struct PresetSearchField: View {
                 .onChange(of: isFocused) { _, focused in
                     // Only focus the photos, which also takes it from here:
                     // clearing `isFocused` as well made two competing moves,
-                    // and AppKit handed focus straight back, forever. Once
-                    // per appearance, so it can never ping-pong.
-                    if focused, !isHovered, !hasDeflected {
-                        hasDeflected = true
-                        library.returnKeyFocusToPhotos()
-                        return
+                    // and AppKit handed focus straight back, forever.
+                    //
+                    // AppKit gives this field focus again after clicks in the
+                    // sidebar (it is the only focusable control there), so
+                    // hand it back every time, not once per appearance: a
+                    // second time left it here and arrows stopped moving
+                    // between photos. At most three a second, so a tug of
+                    // war still ends. Not once there is text: macOS hides the
+                    // pointer while typing, and filtering hands focus back
+                    // to the field, which is the user's.
+                    if focused, !isHovered, query.isEmpty {
+                        let now = Date()
+                        deflections = deflections.filter { now.timeIntervalSince($0) < 1 } + [now]
+                        if deflections.count <= 3 {
+                            library.returnKeyFocusToPhotos()
+                            return
+                        }
                     }
                     library.isSearchFocused = focused
                 }
@@ -675,7 +688,6 @@ private struct PresetSearchField: View {
             }
         }
         .onHover { isHovered = $0 }
-        .onAppear { hasDeflected = false }
         .font(.callout)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
