@@ -11,7 +11,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0F7693213094CC1600C95388 /* rawpreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = rawpreview.app; path = RawPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F7693213094CC1600C95388 /* RawPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RawPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0FC0F1610000000000000001 /* RawPreview.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = RawPreview.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -44,20 +44,20 @@
 			);
 			sourceTree = "<group>";
 		};
+		0F7693223094CC1600C95388 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0F7693213094CC1600C95388 /* RawPreview.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		0FC0F1610000000000000002 /* Config */ = {
 			isa = PBXGroup;
 			children = (
 				0FC0F1610000000000000001 /* RawPreview.xcconfig */,
 			);
 			path = Config;
-			sourceTree = "<group>";
-		};
-		0F7693223094CC1600C95388 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				0F7693213094CC1600C95388 /* rawpreview.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -83,7 +83,7 @@
 				0F00D01F3095C0BD00568B48 /* Aptabase */,
 			);
 			productName = rawpreview;
-			productReference = 0F7693213094CC1600C95388 /* rawpreview.app */;
+			productReference = 0F7693213094CC1600C95388 /* RawPreview.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
