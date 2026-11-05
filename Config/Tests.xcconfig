@@ -1,0 +1,6 @@
+// Build settings for the rawpreviewTests target: the app's signing, without
+// its Info.plist.
+
+#include "RawPreview.xcconfig"
+
+INFOPLIST_FILE =

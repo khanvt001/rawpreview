@@ -1,5 +1,5 @@
 import React from 'react';
-import {Audio, Sequence, interpolate, staticFile} from 'remotion';
+import {Audio, Sequence, getStaticFiles, interpolate, staticFile} from 'remotion';
 import {FPS, sec} from './tokens';
 
 // "Fun is Fun" by Aylex (freetouse.com): 125 BPM; the drop's first kick
@@ -18,10 +18,17 @@ export const beatBefore = (frame: number) => {
   return Math.round(DROP_AT + beats * BEAT * FPS);
 };
 
-export const Music: React.FC<{total: number}> = ({total}) => (
-  <Audio src={staticFile('audio/music-fun-is-fun.mp3')} trimBefore={sec(TRACK_START)}
-    volume={(f) => 0.2 * interpolate(f, [total - sec(2), total], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />
-);
+// The track isn't in the repo (see public/audio/README.md): without it the
+// video renders with sound effects only.
+const MUSIC = 'audio/music-fun-is-fun.mp3';
+
+export const Music: React.FC<{total: number}> = ({total}) => {
+  if (!getStaticFiles().some((file) => file.name === MUSIC)) return null;
+  return (
+    <Audio src={staticFile(MUSIC)} trimBefore={sec(TRACK_START)}
+      volume={(f) => 0.2 * interpolate(f, [total - sec(2), total], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />
+  );
+};
 
 const files = {click: 'audio/click.mp3', pop: 'audio/pop.mp3', whoosh: 'audio/whoosh.mp3'};
 const levels = {click: 0.7, pop: 0.45, whoosh: 0.35};

@@ -38,6 +38,12 @@ else
     SIGN_ARGS=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM=)
 fi
 
+# Official builds pass the Aptabase key; other builds get it from
+# Config/Local.xcconfig, or go without analytics.
+if [[ -n "${APTABASE_APP_KEY:-}" ]]; then
+    SIGN_ARGS+=("APTABASE_APP_KEY=$APTABASE_APP_KEY")
+fi
+
 echo "==> Building $APP_NAME (Release, universal)"
 rm -rf "$DERIVED"
 xcodebuild \

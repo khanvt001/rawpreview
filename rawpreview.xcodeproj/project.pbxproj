@@ -10,14 +10,32 @@
 		0F00D0203095C0BD00568B48 /* Aptabase in Frameworks */ = {isa = PBXBuildFile; productRef = 0F00D01F3095C0BD00568B48 /* Aptabase */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		0FC0F161000000000000000A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 0F7693193094CC1600C95388 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0F7693203094CC1600C95388;
+			remoteInfo = rawpreview;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
-		0F7693213094CC1600C95388 /* rawpreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = rawpreview.app; path = RawPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0F7693213094CC1600C95388 /* RawPreview.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RawPreview.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0FC0F1610000000000000001 /* RawPreview.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = RawPreview.xcconfig; sourceTree = "<group>"; };
+		0FC0F1610000000000000003 /* Tests.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tests.xcconfig; sourceTree = "<group>"; };
+		0FC0F1610000000000000005 /* rawpreviewTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = rawpreviewTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0F7693233094CC1600C95388 /* rawpreview */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = rawpreview;
+			sourceTree = "<group>";
+		};
+		0FC0F1610000000000000004 /* rawpreviewTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = rawpreviewTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +49,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0FC0F1610000000000000008 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +63,8 @@
 			isa = PBXGroup;
 			children = (
 				0F7693233094CC1600C95388 /* rawpreview */,
+				0FC0F1610000000000000004 /* rawpreviewTests */,
+				0FC0F1610000000000000002 /* Config */,
 				0F7693223094CC1600C95388 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -45,9 +72,19 @@
 		0F7693223094CC1600C95388 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0F7693213094CC1600C95388 /* rawpreview.app */,
+				0F7693213094CC1600C95388 /* RawPreview.app */,
+				0FC0F1610000000000000005 /* rawpreviewTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		0FC0F1610000000000000002 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				0FC0F1610000000000000001 /* RawPreview.xcconfig */,
+				0FC0F1610000000000000003 /* Tests.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -73,8 +110,29 @@
 				0F00D01F3095C0BD00568B48 /* Aptabase */,
 			);
 			productName = rawpreview;
-			productReference = 0F7693213094CC1600C95388 /* rawpreview.app */;
+			productReference = 0F7693213094CC1600C95388 /* RawPreview.app */;
 			productType = "com.apple.product-type.application";
+		};
+		0FC0F1610000000000000006 /* rawpreviewTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0FC0F161000000000000000C /* Build configuration list for PBXNativeTarget "rawpreviewTests" */;
+			buildPhases = (
+				0FC0F1610000000000000007 /* Sources */,
+				0FC0F1610000000000000008 /* Frameworks */,
+				0FC0F1610000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0FC0F161000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				0FC0F1610000000000000004 /* rawpreviewTests */,
+			);
+			name = rawpreviewTests;
+			productName = rawpreviewTests;
+			productReference = 0FC0F1610000000000000005 /* rawpreviewTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -88,6 +146,10 @@
 				TargetAttributes = {
 					0F7693203094CC1600C95388 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					0FC0F1610000000000000006 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 0F7693203094CC1600C95388;
 					};
 				};
 			};
@@ -110,12 +172,20 @@
 			projectRoot = "";
 			targets = (
 				0F7693203094CC1600C95388 /* rawpreview */,
+				0FC0F1610000000000000006 /* rawpreviewTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		0F76931F3094CC1600C95388 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0FC0F1610000000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -132,7 +202,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		0FC0F1610000000000000007 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0FC0F161000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0F7693203094CC1600C95388 /* rawpreview */;
+			targetProxy = 0FC0F161000000000000000A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0F76932A3094CC1800C95388 /* Debug */ = {
@@ -170,7 +255,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = JVBLV36K3Y;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -234,7 +318,6 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = JVBLV36K3Y;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -257,13 +340,12 @@
 		};
 		0F76932D3094CC1800C95388 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FC0F1610000000000000001 /* RawPreview.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = JVBLV36K3Y;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -293,13 +375,12 @@
 		};
 		0F76932E3094CC1800C95388 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FC0F1610000000000000001 /* RawPreview.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 2;
-				DEVELOPMENT_TEAM = JVBLV36K3Y;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
@@ -327,6 +408,42 @@
 			};
 			name = Release;
 		};
+		0FC0F161000000000000000D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FC0F1610000000000000003 /* Tests.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.milusolution.rawpreviewTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RawPreview.app/Contents/MacOS/RawPreview";
+			};
+			name = Debug;
+		};
+		0FC0F161000000000000000E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0FC0F1610000000000000003 /* Tests.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.milusolution.rawpreviewTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RawPreview.app/Contents/MacOS/RawPreview";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -344,6 +461,15 @@
 			buildConfigurations = (
 				0F76932D3094CC1800C95388 /* Debug */,
 				0F76932E3094CC1800C95388 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0FC0F161000000000000000C /* Build configuration list for PBXNativeTarget "rawpreviewTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0FC0F161000000000000000D /* Debug */,
+				0FC0F161000000000000000E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,0 +1,29 @@
+name: Bug report
+description: Something doesn't work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected and what you got instead.
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: RawPreview version
+      description: In RawPreview → About RawPreview.
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+    validations:
+      required: true
+  - type: input
+    id: camera
+    attributes:
+      label: Camera and file format
+      description: For example, NIKON Z 50, NEF. Leave blank if it doesn't apply.
