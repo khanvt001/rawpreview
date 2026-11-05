@@ -64,6 +64,6 @@ The source code is under the [MIT License](LICENSE). That license doesn't cover:
 - the media in `marketing/` ([details](marketing/README.md))
 - third-party components ([details](THIRD_PARTY_NOTICES.md))
 
-RawPreview is an independent project and isn't affiliated with Adobe, or with any camera or film brand, photographer or app named in it.
+RawPreview is an independent project and isn't affiliated with Adobe, or with any camera or film brand, person or app named in it.
 
-Built-in presets come from [Emulsion Presets](https://github.com/peva3/EmulsionPresets) by peva3.
+Built-in presets come from [Emulsion Presets](https://github.com/peva3/EmulsionPresets) by peva3, with some renamed.

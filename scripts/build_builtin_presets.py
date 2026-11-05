@@ -5,7 +5,8 @@
 
 Reads `presets.json` (categories, names, descriptions) and every `.xmp` it
 lists, keeps only the develop settings (`crs:` attributes, tone curves, the
-complete nested `crs:Look`/profile references and ProcessVersion), and writes:
+complete nested `crs:Look`/profile references and ProcessVersion), applies the
+renames in `RENAMED`, and writes:
 
 - rawpreview/Resources/BuiltInPresets.json
 - rawpreview/Resources/EmulsionPresets-LICENSE.txt (MIT requires the notice)
@@ -24,6 +25,48 @@ RDF = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 # Bookkeeping attributes with no effect on the image.
 SKIPPED = {"UUID", "Cluster", "HasSettings", "PresetType", "Name"}
+
+# Upstream names these presets after real photographers. The app describes the
+# look instead, so it doesn't appear to trade on a person's name. A new
+# description is given only where the old one mentions the person or their work.
+RENAMED = {
+    "Alec Soth": {"name": "Quiet Muted Color"},
+    "Alex Webb": {"name": "Layered Street Color"},
+    "Ansel Adams Zone System": {"name": "Red Filter Skies B&W"},
+    "Cindy Sherman": {
+        "name": "Imagined Film Still",
+        "description": "Film still aesthetic: Color that carries a black-and-white mood, as if these are production stills from movies that don't exist",
+    },
+    "David LaChapelle": {"name": "Hyperreal Pop Color"},
+    "Fan Ho": {"name": "Geometric Light Shafts"},
+    "Gregory Crewdson": {"name": "Cinematic Teal Shadows"},
+    "Henri Cartier-Bresson": {
+        "name": "Classic Street B&W",
+        "description": "Moderate contrast: Neither dramatic nor flat. Natural tonal transitions.",
+    },
+    "Joel Meyerowitz": {
+        "name": "Golden Seaside Haze",
+        "description": "Seaside golden light: Warm, hazy, almost tangible — light you can feel.",
+    },
+    "Martin Parr": {"name": "Ring Flash Pop"},
+    "McCurry Kodachrome": {
+        "name": "Warm Earth Kodachrome",
+        "description": "Kodachrome toning with a warm golden earth-tone portrait palette",
+    },
+    "Michael Kenna": {"name": "Long Exposure Calm"},
+    "Nan Goldin": {"name": "Direct Flash Snapshot"},
+    "Peter Lindbergh": {"name": "Floating Midtones"},
+    "Saul Leiter": {"name": "Through the Glass"},
+    "Sebastiao Salgado": {"name": "Luminous Highlights"},
+    "Steve McCurry": {
+        "name": "Warm Skin Cool Background",
+        "description": "Warm and cool palette: Warm skin tones against cool/neutral backgrounds. The red-green contrast.",
+    },
+    "Tim Walker": {"name": "Soft Pastel Dream"},
+    "Todd Hido": {"name": "Streetlight Night Cast"},
+    "Vivian Maier": {"name": "Square Street Frame"},
+    "William Eggleston": {"name": "Everyday Bold Color"},
+}
 
 
 def value(text, key=""):
@@ -95,11 +138,20 @@ def main():
     index = json.loads((source / "presets.json").read_text(encoding="utf-8"))
     categories = {category["name"]: [] for category in index["categories"]}
     for entry in index["presets"]:
+        renamed = RENAMED.get(entry["name"], {})
+        name = renamed.get("name", entry["name"])
+        settings = settings_from(source / entry["file"])
+        if renamed:
+            settings["Name"] = [name]    # The .xmp carries the old name too.
         categories.setdefault(entry["category"], []).append({
-            "name": entry["name"],
-            "description": entry.get("description", ""),
-            "settings": settings_from(source / entry["file"]),
+            "name": name,
+            "description": renamed.get("description", entry.get("description", "")),
+            "settings": settings,
         })
+
+    missing = RENAMED.keys() - {entry["name"] for entry in index["presets"]}
+    if missing:
+        sys.exit(f"Not in the collection, update RENAMED: {sorted(missing)}")
 
     result = {
         "source": index.get("homepage", ""),

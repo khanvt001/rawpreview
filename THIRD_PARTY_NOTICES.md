@@ -27,4 +27,4 @@ See [marketing/README.md](marketing/README.md). None of this ships in the app.
 RawPreview is an independent project. It is not affiliated with, endorsed by or sponsored by any company, product or person named in the app or this repository.
 
 - Camera, film and software names such as Adobe, Lightroom, Kodak, Fujifilm, Ilford and Nikon are trademarks of their owners.
-- Built-in preset names come from the Emulsion Presets collection. Names of film stocks, photographers and photo apps describe the look a preset aims for. A preset does not reproduce that product's or person's work.
+- Built-in preset names come from the Emulsion Presets collection. RawPreview renames the 21 presets named after photographers. Names of film stocks, film directors and photo apps describe the look a preset aims for. A preset does not reproduce that product's or person's work.
