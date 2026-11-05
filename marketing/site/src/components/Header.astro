@@ -2,7 +2,7 @@
 import {Image} from 'astro:assets';
 import appIcon from '../assets/app-icon.png';
 import {copy, type Lang} from '../i18n/copy';
-import {DOWNLOAD_URL, homeOf} from '../site';
+import {DOWNLOAD_URL, GITHUB_URL, homeOf} from '../site';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -31,6 +31,9 @@ const other: Lang = lang === 'en' ? 'vi' : 'en';
       <a class="tool" href={homeOf(other)} hreflang={other} lang={other} aria-label={t.langSwitch.label}>
         <Icon name="globe" size={18} />
         <span>{t.langSwitch.short}</span>
+      </a>
+      <a class="tool" href={GITHUB_URL} aria-label={t.nav.github} title={t.nav.github}>
+        <Icon name="github" size={18} />
       </a>
       <button
         class="tool"

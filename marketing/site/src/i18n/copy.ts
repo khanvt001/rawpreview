@@ -11,9 +11,9 @@ const en = {
   meta: {
     title: 'RawPreview — From the card to your phone',
     description:
-      'A free macOS app for photographers: insert an SD card, mark the keepers, apply a preset and AirDrop them to your phone as JPEGs. No catalog, no import, no export.',
+      'A free, open source macOS app for photographers: insert an SD card, mark the keepers, apply a preset and AirDrop them to your phone as JPEGs. No catalog, no import, no export.',
   },
-  nav: {how: 'How it works', looks: 'Presets', formats: 'Formats', faq: 'FAQ', download: 'Download'},
+  nav: {how: 'How it works', looks: 'Presets', formats: 'Formats', faq: 'FAQ', download: 'Download', github: 'RawPreview on GitHub'},
   theme: {toDark: 'Switch to Darkroom (dark)', toLight: 'Switch to Daylight (light)'},
   langSwitch: {label: 'Tiếng Việt', short: 'VI'},
   hero: {
@@ -21,7 +21,7 @@ const en = {
     title: 'From the card to your phone.',
     body: 'No card adapter for your phone? Insert the card into your Mac, mark the keepers, apply a preset and AirDrop them as JPEGs. No catalog, no import, no export.',
     cta: 'Download for macOS',
-    note: 'Free · macOS 14 Sonoma or later',
+    note: 'Free and open source · macOS 14 Sonoma or later',
     firstLaunch: 'How to open it the first time',
     secondary: 'See how it works',
     videoLabel: 'RawPreview product tour, 54 seconds',
@@ -142,7 +142,7 @@ const en = {
       {q: 'Will Lightroom see my ratings?', a: 'Yes. Stars are saved in .xmp sidecars next to each RAW, which Lightroom Classic and Capture One read.'},
       {q: 'Can I use my own presets?', a: 'Yes. Import Lightroom develop presets (.lrtemplate or .xmp), or whole folders of them, and they sit beside the 451 built-in presets. Free packs such as Essential Lightroom Presets by Jason Stanley work too.'},
       {q: 'Can it delete rejects from the card?', a: 'Only if you turn on Delete on memory cards in Settings, and it asks before deleting anything.'},
-      {q: 'What do I need?', a: 'A Mac with macOS 14 Sonoma or later. RawPreview is free.'},
+      {q: 'What do I need?', a: 'A Mac with macOS 14 Sonoma or later. RawPreview is free and open source.'},
       {q: 'macOS says it can’t verify RawPreview. Why?', a: 'RawPreview isn’t notarized by Apple yet, so macOS can’t vouch for it and blocks the first launch. Allow it once in System Settings → Privacy & Security; the steps are under First launch. There’s no need to turn Gatekeeper off.'},
     ],
   },
@@ -165,7 +165,8 @@ const en = {
     title: 'Insert the card. Mark the keepers. AirDrop them.',
   },
   footer: {
-    tagline: 'A free macOS app for photographers.',
+    tagline: 'A free, open source macOS app for photographers.',
+    source: {lead: 'The source code is on', link: 'GitHub', after: ', under the MIT License.'},
   },
 };
 
@@ -175,9 +176,9 @@ const vi: Copy = {
   meta: {
     title: 'RawPreview — Từ thẻ nhớ sang điện thoại',
     description:
-      'Ứng dụng macOS miễn phí cho người chụp ảnh: cắm thẻ SD, chọn tấm ưng ý, áp preset rồi AirDrop sang điện thoại dưới dạng JPEG. Không catalog, không import, không export.',
+      'Ứng dụng macOS miễn phí, mã nguồn mở cho người chụp ảnh: cắm thẻ SD, chọn tấm ưng ý, áp preset rồi AirDrop sang điện thoại dưới dạng JPEG. Không catalog, không import, không export.',
   },
-  nav: {how: 'Cách dùng', looks: 'Preset', formats: 'Định dạng', faq: 'Hỏi đáp', download: 'Tải về'},
+  nav: {how: 'Cách dùng', looks: 'Preset', formats: 'Định dạng', faq: 'Hỏi đáp', download: 'Tải về', github: 'RawPreview trên GitHub'},
   theme: {toDark: 'Chuyển sang Darkroom (tối)', toLight: 'Chuyển sang Daylight (sáng)'},
   langSwitch: {label: 'English', short: 'EN'},
   hero: {
@@ -185,7 +186,7 @@ const vi: Copy = {
     title: 'Từ thẻ nhớ sang điện thoại.',
     body: 'Không có đầu đọc thẻ cho điện thoại? Cắm thẻ vào Mac, chọn tấm ưng ý, áp preset rồi AirDrop sang điện thoại dưới dạng JPEG. Không catalog, không import, không export.',
     cta: 'Tải về cho macOS',
-    note: 'Miễn phí · macOS 14 Sonoma trở lên',
+    note: 'Miễn phí, mã nguồn mở · macOS 14 Sonoma trở lên',
     firstLaunch: 'Cách mở ứng dụng lần đầu',
     secondary: 'Xem cách dùng',
     videoLabel: 'Video giới thiệu RawPreview, 54 giây',
@@ -305,7 +306,7 @@ const vi: Copy = {
       {q: 'Lightroom có thấy số sao tôi chấm không?', a: 'Có. Số sao được lưu trong tệp .xmp nằm cạnh mỗi ảnh RAW, Lightroom Classic và Capture One đều đọc được.'},
       {q: 'Tôi dùng preset riêng được không?', a: 'Được. Nhập preset develop của Lightroom (.lrtemplate hoặc .xmp), hoặc cả thư mục preset, chúng sẽ nằm cạnh 451 preset có sẵn. Các bộ miễn phí như Essential Lightroom Presets của Jason Stanley cũng dùng được.'},
       {q: 'Ứng dụng có xoá ảnh hỏng trên thẻ được không?', a: 'Chỉ khi bạn bật Delete on memory cards trong Settings, và ứng dụng luôn hỏi lại trước khi xoá.'},
-      {q: 'Máy tôi cần gì?', a: 'Một máy Mac chạy macOS 14 Sonoma trở lên. RawPreview miễn phí.'},
+      {q: 'Máy tôi cần gì?', a: 'Một máy Mac chạy macOS 14 Sonoma trở lên. RawPreview miễn phí và mã nguồn mở.'},
       {q: 'macOS báo không xác minh được RawPreview. Vì sao?', a: 'RawPreview chưa được Apple notarize, nên macOS không thể bảo chứng và chặn lần mở đầu tiên. Hãy cho phép một lần trong System Settings → Privacy & Security; các bước nằm ở phần Mở lần đầu. Không cần tắt Gatekeeper.'},
     ],
   },
@@ -328,7 +329,8 @@ const vi: Copy = {
     title: 'Cắm thẻ. Chọn tấm ưng\u00a0ý. AirDrop sang điện thoại.',
   },
   footer: {
-    tagline: 'Ứng dụng macOS miễn phí cho người chụp ảnh.',
+    tagline: 'Ứng dụng macOS miễn phí, mã nguồn mở cho người chụp ảnh.',
+    source: {lead: 'Mã nguồn có trên', link: 'GitHub', after: ', theo giấy phép MIT.'},
   },
 };
 
