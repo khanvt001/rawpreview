@@ -20,7 +20,7 @@ See [marketing/README.md](marketing/README.md). None of this ships in the app.
 | [Astro](https://astro.build) | Landing page | MIT |
 | [Remotion](https://www.remotion.dev) | Product video | [Remotion License](https://github.com/remotion-dev/remotion/blob/main/LICENSE.md), not an open source license: free for individuals and small companies, paid for larger ones |
 | Archivo, Instrument Sans, JetBrains Mono | Typefaces, loaded from Google Fonts | SIL Open Font License |
-| "Fun is Fun" by Aylex ([freetouse.com](https://freetouse.com)) | Music in the rendered video | Not in this repository |
+| Sound effects from [Pixabay](https://pixabay.com) | In the rendered video | [Pixabay Content License](https://pixabay.com/service/license-summary/). The files are not in this repository |
 
 ## Trademarks and names
 

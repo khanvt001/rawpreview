@@ -4,6 +4,7 @@
 
 - Prepared the project for open source. Builds from source now have no analytics and need no Apple Developer account.
 - Renamed the 21 built-in presets named after photographers. They now describe the look, and the settings are unchanged.
+- The support window now offers Ko-fi only.
 
 ## 2.0 (2026-11-02)
 

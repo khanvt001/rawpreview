@@ -166,7 +166,6 @@ const en = {
   },
   footer: {
     tagline: 'A free macOS app for photographers.',
-    music: 'Music in the video: “Fun is Fun” by Aylex (freetouse.com).',
   },
 };
 
@@ -330,7 +329,6 @@ const vi: Copy = {
   },
   footer: {
     tagline: 'Ứng dụng macOS miễn phí cho người chụp ảnh.',
-    music: 'Nhạc trong video: “Fun is Fun” của Aylex (freetouse.com).',
   },
 };
 

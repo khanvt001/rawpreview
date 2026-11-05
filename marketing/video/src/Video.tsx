@@ -3,7 +3,7 @@ import {AbsoluteFill} from 'remotion';
 import {linearTiming, TransitionSeries} from '@remotion/transitions';
 import {copy} from './copy';
 import {fonts, type Lang} from './fonts';
-import {Music, PAIN_SECONDS, Sfx, beatBefore} from './audio';
+import {PAIN_SECONDS, Sfx, beatBefore} from './audio';
 import {dip} from './dip';
 import {color, sec} from './tokens';
 import {Intro} from './scenes/Intro';
@@ -45,7 +45,6 @@ export const RawPreviewIntro: React.FC<{lang: Lang}> = ({lang}) => {
   const t = copy[lang];
   return (
     <AbsoluteFill style={{background: color.ground}}>
-      <Music total={DURATION} />
       {/* A whoosh as each scene starts to come in. */}
       {starts.slice(1).map((s) => <Sfx key={s} at={s} kind="whoosh" />)}
       <TransitionSeries>

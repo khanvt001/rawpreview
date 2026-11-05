@@ -48,7 +48,7 @@ const t = copy[lang].hero;
 </section>
 
 <script>
-  // Plays muted on loop where motion is welcome; "Play with sound" restarts it with music and controls.
+  // Plays muted on loop where motion is welcome; "Play with sound" restarts it with sound and controls.
   for (const player of document.querySelectorAll<HTMLElement>('[data-player]')) {
     const video = player.querySelector('video')!;
     const sound = player.querySelector<HTMLButtonElement>('[data-sound]')!;

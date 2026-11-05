@@ -17,7 +17,7 @@ export const copy = {
     copy: {step: '4 / 4 · Copy', title: 'Copy only those. Eject.', caption: 'One shortcut copies the marked files to your Mac.',
       stat: '3 copied · 78.9 MB in 1 sec', statLabel: 'Stars travel in .xmp sidecars', eject: 'Card ejected', ejectLabel: 'Safe to pull out'},
     outro: {title: 'RawPreview', caption: 'Free · macOS 14 Sonoma or later', cta: 'Download for macOS',
-      credits: 'Built-in presets: Emulsion Presets by peva3 (MIT) · Music: “Fun is Fun” by Aylex (freetouse.com)'},
+      credits: 'Built-in presets: Emulsion Presets by peva3 (MIT)'},
   },
   vi: {
     tagline: 'Từ thẻ nhớ sang điện thoại. Không catalog, không export.',
@@ -34,7 +34,7 @@ export const copy = {
     copy: {step: '4 / 4 · Sao chép', title: 'Sao chép đúng tấm đã chọn.', caption: 'Nhấn ⌘↩ để sao chép ảnh đã đánh dấu về máy Mac.',
       stat: 'Đã chép 3 ảnh · 78,9 MB (1 giây)', statLabel: 'Giữ nguyên số sao qua tệp .xmp đi kèm', eject: 'Đã tháo thẻ', ejectLabel: 'Có thể rút thẻ an toàn'},
     outro: {title: 'RawPreview', caption: 'Miễn phí · macOS 14 Sonoma trở lên', cta: 'Tải về cho macOS',
-      credits: 'Preset có sẵn: Emulsion Presets của peva3 (MIT) · Nhạc: “Fun is Fun” của Aylex (freetouse.com)'},
+      credits: 'Preset có sẵn: Emulsion Presets của peva3 (MIT)'},
   },
 } satisfies Record<Lang, unknown>;
 

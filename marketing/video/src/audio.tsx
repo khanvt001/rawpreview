@@ -1,44 +1,33 @@
 import React from 'react';
-import {Audio, Sequence, getStaticFiles, interpolate, staticFile} from 'remotion';
+import {Audio, Sequence, getStaticFiles, staticFile} from 'remotion';
 import {FPS, sec} from './tokens';
 
-// "Fun is Fun" by Aylex (freetouse.com): 125 BPM; the drop's first kick
-// hits at 9.11 s.
+// The cuts sit on a 125 BPM grid, so a music bed at that tempo can be added.
 export const BEAT = 60 / 125;
-const DROP_IN_TRACK = 9.11;
-// The drop arrives as the Preview scene finishes fading in: after the 3.5 s
+// The grid starts as the Preview scene finishes fading in: after the 3.5 s
 // intro and the usual-way scene, less the 0.8 s cut between them.
 export const PAIN_SECONDS = 0.8 + 11 * BEAT;   // so the cut into it lands on a beat too
-export const DROP_AT = sec(3.5 + PAIN_SECONDS - 0.8);
-const TRACK_START = DROP_IN_TRACK - DROP_AT / FPS;
+const GRID_START = sec(3.5 + PAIN_SECONDS - 0.8);
 
 // The frame of the last beat at or before `frame`.
 export const beatBefore = (frame: number) => {
-  const beats = Math.floor((frame - DROP_AT) / (BEAT * FPS));
-  return Math.round(DROP_AT + beats * BEAT * FPS);
-};
-
-// The track isn't in the repo (see public/audio/README.md): without it the
-// video renders with sound effects only.
-const MUSIC = 'audio/music-fun-is-fun.mp3';
-
-export const Music: React.FC<{total: number}> = ({total}) => {
-  if (!getStaticFiles().some((file) => file.name === MUSIC)) return null;
-  return (
-    <Audio src={staticFile(MUSIC)} trimBefore={sec(TRACK_START)}
-      volume={(f) => 0.2 * interpolate(f, [total - sec(2), total], [1, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />
-  );
+  const beats = Math.floor((frame - GRID_START) / (BEAT * FPS));
+  return Math.round(GRID_START + beats * BEAT * FPS);
 };
 
 const files = {click: 'audio/click.mp3', pop: 'audio/pop.mp3', whoosh: 'audio/whoosh.mp3'};
 const levels = {click: 0.7, pop: 0.45, whoosh: 0.35};
 
-// One sound effect at a frame of the enclosing sequence.
-export const Sfx: React.FC<{at: number; kind: keyof typeof files; volume?: number}> = ({at, kind, volume = 1}) => (
-  <Sequence from={Math.max(0, Math.round(at))} durationInFrames={sec(1)} layout="none">
-    <Audio src={staticFile(files[kind])} volume={levels[kind] * volume} />
-  </Sequence>
-);
+// One sound effect at a frame of the enclosing sequence. The files aren't in
+// the repo (see public/audio/README.md): without them the video renders silent.
+export const Sfx: React.FC<{at: number; kind: keyof typeof files; volume?: number}> = ({at, kind, volume = 1}) => {
+  if (!getStaticFiles().some((file) => file.name === files[kind])) return null;
+  return (
+    <Sequence from={Math.max(0, Math.round(at))} durationInFrames={sec(1)} layout="none">
+      <Audio src={staticFile(files[kind])} volume={levels[kind] * volume} />
+    </Sequence>
+  );
+};
 
 // Frames into a live scene for a moment in clip time.
 export const clipFrame = (hold: number, start: number, rate: number) => (t: number) =>

@@ -1105,16 +1105,6 @@
         }
       }
     },
-    "Copy account number" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chép số tài khoản"
-          }
-        }
-      }
-    },
     "Copy Cancelled" : {
       "localizations" : {
         "vi" : {
@@ -2462,16 +2452,6 @@
         }
       }
     },
-    "Payment Method" : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cách thanh toán"
-          }
-        }
-      }
-    },
     "Permanently delete “%@”?" : {
       "localizations" : {
         "vi" : {
@@ -2801,16 +2781,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Điều chỉnh mức áp dụng các thông số preset được hỗ trợ. Chỉnh ánh sáng được cộng vào giá trị của preset."
-          }
-        }
-      }
-    },
-    "Scan with any Vietnamese banking app and enter any amount." : {
-      "localizations" : {
-        "vi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quét bằng app ngân hàng bất kỳ và nhập số tiền tuỳ ý."
           }
         }
       }

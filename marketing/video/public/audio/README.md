@@ -1,5 +1,5 @@
 # Audio
 
-`click.mp3`, `pop.mp3` and `whoosh.mp3` are the sound effects.
+The video's sound effects come from Pixabay. Its license doesn't allow sharing the files on their own, so they aren't in the repo.
 
-The music is not in the repo. To render the video with it, download "Fun is Fun" by Aylex from freetouse.com and save it here as `music-fun-is-fun.mp3`. Without the file, the video renders with sound effects only.
+To render with sound, add your own files here as `click.mp3`, `pop.mp3` and `whoosh.mp3`. Without them, the video renders silent.

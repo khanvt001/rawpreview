@@ -1,5 +1,5 @@
 node_modules
 out
 
-# Third-party track, not redistributed with the repo.
-public/audio/music-*.mp3
+# Third-party audio, whose licenses don't allow sharing the files.
+public/audio/*.mp3
