@@ -50,11 +50,13 @@ struct SettingsView: View {
                 Text("Quick share is Share as JPEGs and AirDrop as JPEGs. Export lets you choose the size each time.")
                     .foregroundStyle(.secondary)
             }
-            Section {
-                Toggle("Share anonymous usage statistics", isOn: $sharesUsage)
-            } footer: {
-                Text("Counts app launches and how many photos are copied or shared, with the app and macOS version. Never file names, folders or photos.")
-                    .foregroundStyle(.secondary)
+            if Analytics.isAvailable {
+                Section {
+                    Toggle("Share anonymous usage statistics", isOn: $sharesUsage)
+                } footer: {
+                    Text("Counts app launches and how many photos are copied or shared, with the app and macOS version. Never file names, folders or photos.")
+                        .foregroundStyle(.secondary)
+                }
             }
             Section {
                 LabeledContent("Enjoying RawPreview?") {

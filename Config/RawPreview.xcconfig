@@ -1,0 +1,19 @@
+// Build settings for the rawpreview target.
+//
+// The defaults here build and run for anyone: ad-hoc signed ("Sign to Run
+// Locally"), with analytics off. To sign with your own team or
+// set other local values, copy Local.xcconfig.example to Local.xcconfig, which
+// git ignores.
+
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+
+// Aptabase app key. Empty means no analytics: nothing is sent and the
+// Settings toggle is hidden.
+APTABASE_APP_KEY =
+
+// Generated at build time and merged with the keys in Info.plist.
+INFOPLIST_FILE = Config/Info.plist
+
+#include? "Local.xcconfig"

@@ -1,8 +1,8 @@
 // Turns the RawPreview design system's tokens.json into src/styles/tokens.css.
 //
-// src/design/tokens.json is a copy of project/tokens.json from the design system
-// (https://claude.ai/artifact/4w47cc6K3LD9YZZwG2WMDg). Copy it again after the
-// system changes; this script runs before every dev and build.
+// src/design/tokens.json is a copy of project/tokens.json from the design system.
+// Copy it again after the system changes; this script runs before every dev and
+// build.
 import {readFileSync, writeFileSync} from 'node:fs';
 
 const root = new URL('../', import.meta.url);

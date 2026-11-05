@@ -1,1 +1,23 @@
+# Build output
 build/
+DerivedData/
+*.dmg
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+.swiftpm/
+
+# Local settings and signing material
+Config/Local.xcconfig
+.claude/settings.local.json
+.env
+.env.*
+*.p12
+*.p8
+*.cer
+*.mobileprovision
+*.provisionprofile
+
+# macOS
+.DS_Store

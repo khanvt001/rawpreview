@@ -3,7 +3,8 @@ name: Build DMG
 # Every push to main builds an ad-hoc signed DMG and keeps it as a workflow
 # artifact. Pushing a tag like v1.0 also attaches the DMG to a GitHub Release
 # and uploads it to R2 (secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID,
-# R2_SECRET_ACCESS_KEY; variable R2_BUCKET).
+# R2_SECRET_ACCESS_KEY; variable R2_BUCKET). The variable APTABASE_APP_KEY
+# turns analytics on in these builds.
 on:
   push:
     branches: [main]
@@ -32,6 +33,8 @@ jobs:
         run: xcodebuild -downloadComponent MetalToolchain
 
       - name: Build DMG
+        env:
+          APTABASE_APP_KEY: ${{ vars.APTABASE_APP_KEY }}
         run: scripts/build_dmg.sh
 
       - uses: actions/upload-artifact@v4

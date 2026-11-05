@@ -1,6 +1,6 @@
 # RawPreview landing page
 
-A static Astro site in English (`/`) and Vietnamese (`/vi/`), dressed in the RawPreview design system (https://claude.ai/artifact/4w47cc6K3LD9YZZwG2WMDg).
+A static Astro site in English (`/`) and Vietnamese (`/vi/`), dressed in the RawPreview design system.
 
 ```sh
 npm install

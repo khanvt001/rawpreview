@@ -14,10 +14,15 @@ import os
 /// On by default; the Settings window turns it off, after which nothing is
 /// sent. Debug builds are tagged as such and show up separately in the
 /// dashboard.
+///
+/// The app key comes from the `APTABASE_APP_KEY` build setting. A build without
+/// one, such as a fork's, has no analytics and hides the Settings toggle.
 nonisolated enum Analytics {
     static let enabledKey = "shareAnonymousUsage"
-    private static let appKey = "A-US-9515763086"
+    private static let appKey = Bundle.main.object(forInfoDictionaryKey: "AptabaseAppKey") as? String ?? ""
     private static let started = OSAllocatedUnfairLock(initialState: false)
+
+    static var isAvailable: Bool { !appKey.isEmpty }
 
     static var isEnabled: Bool {
         UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
@@ -25,7 +30,7 @@ nonisolated enum Analytics {
 
     /// Call at launch and when the user turns sharing back on.
     static func start() {
-        guard isEnabled else { return }
+        guard isAvailable, isEnabled else { return }
         started.withLockUnchecked { started in
             guard !started else { return }
             Aptabase.shared.initialize(appKey: appKey)

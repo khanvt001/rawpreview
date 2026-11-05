@@ -1,0 +1,11 @@
+// Copy to Local.xcconfig. Values here override RawPreview.xcconfig.
+
+// Sign with your Apple Developer team. An ad-hoc signature changes on every
+// build, so macOS asks again for access to removable volumes; a team signature
+// keeps that permission across builds.
+// CODE_SIGN_STYLE = Automatic
+// CODE_SIGN_IDENTITY = Apple Development
+// DEVELOPMENT_TEAM = YOURTEAMID
+
+// Your own Aptabase app key, if you want analytics in your build.
+// APTABASE_APP_KEY = A-XX-0000000000
